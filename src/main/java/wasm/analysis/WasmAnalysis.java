@@ -14,7 +14,7 @@ import ghidra.program.model.listing.FunctionIterator;
 import ghidra.program.model.listing.Program;
 import ghidra.program.model.mem.Memory;
 import wasm.file.WasmModule;
-import wasm.format.Utils;
+import wasm.WasmLoader;
 import wasm.format.WasmFuncSignature;
 import wasm.format.WasmEnums.WasmExternalKind;
 import wasm.format.sections.WasmFunctionSection;
@@ -98,7 +98,7 @@ public class WasmAnalysis {
 				if(entry.getKind() != WasmExternalKind.EXT_FUNCTION) continue;
 				int typeIdx = entry.getFunctionType();
 				WasmFuncType funcType = typeSec.getType(typeIdx);
-				Address addr = Utils.toAddr(program, Utils.IMPORTS_BASE + Utils.IMPORT_STUB_LEN * funcIdx);
+				Address addr = WasmLoader.getImportAddress(program, funcIdx);
 				
 				functions.add(new WasmFuncSignature(funcType.getParamTypes(), funcType.getReturnTypes(), entry.getName(), addr));
 				funcIdx++;
