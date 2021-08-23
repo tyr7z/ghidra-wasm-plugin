@@ -194,6 +194,8 @@ inc_indent: " . "^inc_indent is inc_indent [ indent_lvl = indent_lvl-1; ]{}
 
 :""^indent^"end" is opc=0x0b; indent_lvl=0; indent {
 	returnCallOther();
+	# This is a redundant return statement, but it lets the disassembler know to stop disassembling
+	return [LR];
 }
 :""^indent^"end" is opc=0x0b; indent [ indent_lvl = indent_lvl - 1; globalset(inst_next, indent_lvl); ] {
 	endCallOther();
