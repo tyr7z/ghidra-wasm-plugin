@@ -235,6 +235,8 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 			long offset = dataSegment.getOffset();
 			if(offset == -1)
 				continue;
+			if(dataSegment.getIndex() != 0)
+				continue;
 			long fileOffset = dataSegment.getFileOffset() + section.getPayloadOffset();
 			Address dataStart = program.getAddressFactory().getAddressSpace("mem0").getAddress(offset);
 			MemoryBlock block = program.getMemory().createInitializedBlock(".data" + i, dataStart, fileBytes, fileOffset, dataSegment.getSize(), false);
