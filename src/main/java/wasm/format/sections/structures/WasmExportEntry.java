@@ -4,22 +4,18 @@ import java.io.IOException;
 
 import ghidra.app.util.bin.BinaryReader;
 import ghidra.app.util.bin.StructConverter;
-import ghidra.program.model.data.ArrayDataType;
 import ghidra.program.model.data.DataType;
 import ghidra.program.model.data.Structure;
-import ghidra.program.model.data.StructureDataType;
 import ghidra.util.exception.DuplicateNameException;
 import wasm.format.Leb128;
-import wasm.format.sections.WasmSection.WasmSectionId;
+import wasm.format.StructureUtils;
 
 public class WasmExportEntry implements StructConverter {
-	
-	Leb128 field_len;
-	String name;
+
+	private WasmName name;
 	WasmExternalKind kind;
 	Leb128 index;
-	
-	
+
 	public enum WasmExternalKind {
 		KIND_FUNCTION,
 		KIND_TABLE,
@@ -27,36 +23,30 @@ public class WasmExportEntry implements StructConverter {
 		KIND_GLOBAL
 	}
 
-
-	public WasmExportEntry (BinaryReader reader) throws IOException {
-		field_len = new Leb128(reader);
-		name = reader.readNextAsciiString((int)field_len.getValue());
-		kind = WasmExternalKind.values()[reader.readNextByte()]; 
+	public WasmExportEntry(BinaryReader reader) throws IOException {
+		name = new WasmName(reader);
+		kind = WasmExternalKind.values()[reader.readNextByte()];
 		index = new Leb128(reader);
 	}
-	
+
 	public String getName() {
-		return name;
+		return name.getValue();
 	}
-	
+
 	public int getIndex() {
-		return (int)index.getValue();
+		return (int) index.getValue();
 	}
-	
+
 	public WasmExternalKind getType() {
 		return kind;
 	}
 
 	@Override
 	public DataType toDataType() throws DuplicateNameException, IOException {
-		Structure structure = new StructureDataType("export_" + index, 0);
-		structure.add(field_len.toDataType(), field_len.toDataType().getLength(), "field_len", null);
-		structure.add(STRING, name.length(), "name", null);
-		structure.add(BYTE, 1, "kind", null);
-		structure.add(index.toDataType(), index.toDataType().getLength(), "index", null);
+		Structure structure = StructureUtils.createStructure("export_" + index.getValue());
+		StructureUtils.addField(structure, name, "name");
+		StructureUtils.addField(structure, BYTE, "kind");
+		StructureUtils.addField(structure, index, "index");
 		return structure;
 	}
-
-	
-
 }
