@@ -57,6 +57,7 @@ import wasm.format.sections.structures.WasmExportEntry;
 import wasm.format.sections.structures.WasmDataSegment;
 import wasm.format.sections.structures.WasmFunctionBody;
 import wasm.format.sections.structures.WasmImportEntry;
+
 /**
  * TODO: Provide class-level documentation that describes what this loader does.
  */
@@ -81,9 +82,8 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 		BinaryReader reader = new BinaryReader(provider, true);
 		WasmHeader header = new WasmHeader(reader);
 
-		if(WasmConstants.WASM_MAGIC_BASE.equals(new String(header.getMagic()))) {
-			loadSpecs.add(new LoadSpec(this, 0x10000000,
-					new LanguageCompilerSpecPair("Wasm:LE:32:default", "default"), true));
+		if (Arrays.equals(WasmConstants.WASM_MAGIC, header.getMagic()) && WasmConstants.WASM_VERSION == header.getVersion()) {
+			loadSpecs.add(new LoadSpec(this, 0x10000000, new LanguageCompilerSpecPair("Wasm:LE:32:default", "default"), true));
 		}
 
 		return loadSpecs;
