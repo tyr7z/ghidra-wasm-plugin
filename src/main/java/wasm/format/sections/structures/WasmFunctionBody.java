@@ -6,35 +6,33 @@ import java.util.List;
 
 import ghidra.app.util.bin.BinaryReader;
 import ghidra.app.util.bin.StructConverter;
-import ghidra.program.model.data.ArrayDataType;
 import ghidra.program.model.data.DataType;
 import ghidra.program.model.data.Structure;
-import ghidra.program.model.data.StructureDataType;
 import ghidra.util.exception.DuplicateNameException;
 import wasm.format.Leb128;
+import wasm.format.StructureUtils;
 
 public class WasmFunctionBody implements StructConverter {
 
-	private Leb128 body_size;
+	private Leb128 bodySize;
 	private List<WasmLocalEntry> locals = new ArrayList<WasmLocalEntry>();
-	private Leb128 local_count;
-	private long instructions_offset;
+	private Leb128 localCount;
+	private long instructionsOffset;
 	private byte[] instructions;
 	
 	public WasmFunctionBody (BinaryReader reader) throws IOException {
-		body_size = new Leb128(reader);
-		int body_start_offset = (int) reader.getPointerIndex();
-		local_count = new Leb128(reader);
-		for (int i = 0; i < local_count.getValue(); ++i) {
+		bodySize = new Leb128(reader);
+		int bodyStartOffset = (int) reader.getPointerIndex();
+		localCount = new Leb128(reader);
+		for (int i = 0; i < localCount.getValue(); ++i) {
 			locals.add(new WasmLocalEntry(reader));
 		}
-		instructions_offset = reader.getPointerIndex();
-		instructions = reader.readNextByteArray((int) (body_start_offset + body_size.getValue() - instructions_offset));
+		instructionsOffset = reader.getPointerIndex();
+		instructions = reader.readNextByteArray((int) (bodyStartOffset + bodySize.getValue() - instructionsOffset));
 	}
 
-
 	public long getOffset() {
-		return instructions_offset;
+		return instructionsOffset;
 	}
 	
 	public byte[] getInstructions() {
@@ -43,15 +41,13 @@ public class WasmFunctionBody implements StructConverter {
 
 	@Override
 	public DataType toDataType() throws DuplicateNameException, IOException {
-		Structure structure = new StructureDataType("function_body_" + instructions_offset, 0);
-		structure.add(body_size.toDataType(), body_size.toDataType().getLength(), "body_size", null);
-		structure.add(local_count.toDataType(), local_count.toDataType().getLength(), "local_count", null);
-		if (local_count.getValue() > 0) {
-			//kind of hack, but I don't know how does it work for arrays of structures
-			structure.add(new ArrayDataType(locals.get(0).toDataType(), locals.size(), 2), "locals", null);			
+		Structure structure = StructureUtils.createStructure("function_body_" + instructionsOffset);
+		StructureUtils.addField(structure, bodySize, "body_size");
+		StructureUtils.addField(structure, localCount, "local_count");
+		if (localCount.getValue() > 0) {
+			StructureUtils.addArrayField(structure, locals.get(0).toDataType(), locals.size(), "locals");
 		}
-		structure.add(new ArrayDataType(BYTE, instructions.length, BYTE.getLength()), "instructions", null);
+		StructureUtils.addArrayField(structure, BYTE, instructions.length, "instructions");
 		return structure;
 	}
-
 }

@@ -12,21 +12,23 @@ import wasm.format.sections.structures.WasmName;
 public abstract class WasmCustomSection extends WasmSection {
 	private WasmName name;
 	private long customLength;
-	
-	protected WasmCustomSection (BinaryReader reader) throws IOException {
+
+	protected WasmCustomSection(BinaryReader reader) throws IOException {
 		super(reader);
 		name = new WasmName(reader);
 		customLength = getContentSize() - name.getSize();
 	}
-	
+
 	public static WasmCustomSection create(BinaryReader reader) throws IOException {
 		long initialOffset = reader.getPointerIndex();
-		int id = reader.readNextUnsignedByte();
-		Leb128 contentLength = new Leb128(reader);
+		/* skip section header: id + contentLength */
+		reader.readNextUnsignedByte();
+		new Leb128(reader);
+
 		String name = new WasmName(reader).getValue();
 		reader.setPointerIndex(initialOffset);
 
-		if(name.equals("name")) {
+		if (name.equals("name")) {
 			return new WasmNameSection(reader);
 		}
 

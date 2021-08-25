@@ -13,8 +13,8 @@ import wasm.format.StructureUtils;
 public class WasmExportEntry implements StructConverter {
 
 	private WasmName name;
-	WasmExternalKind kind;
-	Leb128 index;
+	private WasmExternalKind kind;
+	private Leb128 index;
 
 	public enum WasmExternalKind {
 		KIND_FUNCTION,

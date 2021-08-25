@@ -9,20 +9,20 @@ import ghidra.app.util.bin.BinaryReader;
 import ghidra.program.model.data.Structure;
 import ghidra.util.exception.DuplicateNameException;
 import wasm.format.Leb128;
+import wasm.format.StructureUtils;
 import wasm.format.sections.structures.WasmDataSegment;
 
 public class WasmDataSection extends WasmSection {
-	
+
 	private Leb128 count;
 	private List<WasmDataSegment> dataSegments = new ArrayList<WasmDataSegment>();
 
-	public WasmDataSection (BinaryReader reader) throws IOException {
+	public WasmDataSection(BinaryReader reader) throws IOException {
 		super(reader);
 		count = new Leb128(reader);
-		for (int i =0; i < count.getValue(); ++i) {
+		for (int i = 0; i < count.getValue(); ++i) {
 			dataSegments.add(new WasmDataSegment(reader));
 		}
-
 	}
 
 	public List<WasmDataSegment> getSegments() {
@@ -31,9 +31,9 @@ public class WasmDataSection extends WasmSection {
 
 	@Override
 	protected void addToStructure(Structure structure) throws IllegalArgumentException, DuplicateNameException, IOException {
-		structure.add(count.toDataType(), count.toDataType().getLength(), "count", null);
-		for (int i = 0; i < count.getValue(); ++i) {
-			structure.add(dataSegments.get(i).toDataType(), dataSegments.get(i).toDataType().getLength(), "segment_"+i, null);
+		StructureUtils.addField(structure, count, "count");
+		for (int i = 0; i < dataSegments.size(); i++) {
+			StructureUtils.addField(structure, dataSegments.get(i), "segment_" + i);
 		}
 	}
 

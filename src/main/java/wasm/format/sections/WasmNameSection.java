@@ -49,6 +49,7 @@ public class WasmNameSection extends WasmCustomSection {
 	@Override
 	protected void addToStructure(Structure structure) throws IllegalArgumentException, DuplicateNameException, IOException {
 		super.addToStructure(structure);
+		/* TODO */
 	}
 	
 	public String getFunctionName(int idx) {

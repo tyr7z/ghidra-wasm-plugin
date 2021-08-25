@@ -20,7 +20,7 @@ public class WasmDataSegment implements StructConverter {
 	private byte[] data;
 
 	public WasmDataSegment(BinaryReader reader) throws IOException {
-		byte mode = reader.readNextByte();
+		int mode = reader.readNextUnsignedByte();
 		if (mode == 2) {
 			index = new Leb128(reader);
 		} else {

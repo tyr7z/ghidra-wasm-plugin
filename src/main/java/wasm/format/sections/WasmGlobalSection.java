@@ -10,10 +10,11 @@ public class WasmGlobalSection extends WasmSection {
 	
 	public WasmGlobalSection (BinaryReader reader) throws IOException {
 		super(reader);
+		/* TODO */
 	}
 
 	@Override
-	public void addToStructure(Structure structure) throws IllegalArgumentException, DuplicateNameException, IOException {
+	protected void addToStructure(Structure structure) throws IllegalArgumentException, DuplicateNameException, IOException {
 		
 	}
 

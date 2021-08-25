@@ -6,18 +6,18 @@ import ghidra.app.util.bin.BinaryReader;
 import ghidra.app.util.bin.StructConverter;
 import ghidra.program.model.data.DataType;
 import ghidra.program.model.data.Structure;
-import ghidra.program.model.data.StructureDataType;
 import ghidra.util.exception.DuplicateNameException;
 import wasm.format.Leb128;
+import wasm.format.StructureUtils;
 
 public class WasmResizableLimits implements StructConverter {
 
-	byte flags;
-	Leb128 initial;
-	Leb128 maximum;
-	
-	public WasmResizableLimits  (BinaryReader reader) throws IOException {
-		flags = reader.readNextByte();
+	private int flags;
+	private Leb128 initial;
+	private Leb128 maximum;
+
+	public WasmResizableLimits(BinaryReader reader) throws IOException {
+		flags = reader.readNextUnsignedByte();
 		initial = new Leb128(reader);
 		if (flags == 1) {
 			maximum = new Leb128(reader);
@@ -26,14 +26,12 @@ public class WasmResizableLimits implements StructConverter {
 
 	@Override
 	public DataType toDataType() throws DuplicateNameException, IOException {
-		Structure structure = new StructureDataType("global", 0);
-		structure.add(BYTE, 1, "flags", null);
-		structure.add(initial.toDataType(), initial.toDataType().getLength(), "mutability", null);
-		if (flags == 1) {
-			structure.add(maximum.toDataType(), maximum.toDataType().getLength(), "maximum", null);
+		Structure structure = StructureUtils.createStructure("limits");
+		StructureUtils.addField(structure, BYTE, "flags");
+		StructureUtils.addField(structure, initial, "initial");
+		if (maximum != null) {
+			StructureUtils.addField(structure, maximum, "maximum");
 		}
 		return structure;
 	}
-
-
 }

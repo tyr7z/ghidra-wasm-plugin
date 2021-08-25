@@ -33,7 +33,8 @@ public class StructureUtils {
     }
 
     public static void addArrayField(Structure structure, DataType dataType, int numElements, String name, String comment) {
-        structure.add(new ArrayDataType(dataType, numElements, dataType.getLength()), name, comment);
+        if (numElements > 0)
+            structure.add(new ArrayDataType(dataType, numElements, dataType.getLength()), name, comment);
     }
 
     public static void addArrayField(Structure structure, DataType dataType, int numElements, String name) {
