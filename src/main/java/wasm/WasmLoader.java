@@ -169,10 +169,11 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 
 	private void createImportStubBlock(Program program, long length) throws Exception {
 		Address address = getProgramAddress(program, IMPORTS_BASE);
-		MemoryBlock block = program.getMemory().createUninitializedBlock("import_stubs", address, length, false);
+		MemoryBlock block = program.getMemory().createUninitializedBlock(MemoryBlock.EXTERNAL_BLOCK_NAME, address, length, false);
 		block.setRead(true);
 		block.setWrite(false);
 		block.setExecute(true);
+		block.setComment("NOTE: This block is artificial and is used to represent imported functions");
 	}
 
 	private String getMethodName(WasmNameSection names, WasmExportSection exports, int id) {
