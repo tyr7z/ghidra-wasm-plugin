@@ -22,6 +22,8 @@ public class WasmModule {
 		header = new WasmHeader(reader);
 		while (reader.getPointerIndex() < reader.length()) {
 			WasmSection section = WasmSection.createSection(reader);
+			if (section == null)
+				continue;
 			sections.add(section);
 
 			/* Except for custom sections, all other sections may appear at most once. */
