@@ -34,7 +34,6 @@ import ghidra.program.model.data.DataUtilities;
 import ghidra.program.model.data.DataUtilities.ClearDataMode;
 import ghidra.program.model.lang.LanguageCompilerSpecPair;
 import ghidra.program.model.listing.Data;
-import ghidra.program.model.listing.Function;
 import ghidra.program.model.listing.Listing;
 import ghidra.program.model.listing.Program;
 import ghidra.program.model.mem.MemoryBlock;
@@ -52,7 +51,6 @@ import wasm.format.sections.WasmExportSection;
 import wasm.format.sections.WasmImportSection;
 import wasm.format.sections.WasmNameSection;
 import wasm.format.sections.WasmSection;
-import wasm.format.sections.WasmSection.WasmSectionId;
 import wasm.format.sections.structures.WasmExportEntry;
 import wasm.format.sections.structures.WasmDataSegment;
 import wasm.format.sections.structures.WasmFunctionBody;
@@ -67,7 +65,8 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 	public final static long METHOD_ADDRESS = 0x20000000;
 	public final static long MODULE_BASE = 0x30000000;
 	public final static long IMPORTS_BASE = 0x40000000;
-	// ^ this must be later than METHOD_ADDRESS since we assume that program.getFunctions(true) returns non-imported functions first
+	// ^ this must be later than METHOD_ADDRESS since we assume that
+	// program.getFunctions(true) returns non-imported functions first
 	public final static long IMPORT_STUB_LEN = 16;
 
 	@Override
@@ -102,14 +101,13 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 			Data d = listing.getDataAt(address);
 			if (d == null || !dt.isEquivalent(d.getDataType())) {
 				d = DataUtilities.createData(program, address, dt, -1, false,
-					ClearDataMode.CLEAR_ALL_UNDEFINED_CONFLICT_DATA);
+						ClearDataMode.CLEAR_ALL_UNDEFINED_CONFLICT_DATA);
 			}
 			return d;
 		} catch (CodeUnitInsertionException e) {
-			Msg.warn(WasmLoader.class, "ELF data markup conflict at " + address);
-			e.printStackTrace();
+			Msg.warn(WasmLoader.class, "Data markup conflict at " + address, e);
 		} catch (DataTypeConflictException e) {
-			Msg.error(WasmLoader.class, "ELF data type markup conflict:" + e.getMessage());
+			Msg.error(WasmLoader.class, "Data type markup conflict:" + e.getMessage(), e);
 		}
 		return null;
 	}
@@ -123,8 +121,8 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 			block.setExecute(false);
 			block.setSourceName("Wasm Module");
 			block.setComment("The full file contents of the Wasm module");
-		} catch(Exception e) {
-			e.printStackTrace();
+		} catch (Exception e) {
+			Msg.error(this, "Failed to create .module block", e);
 		}
 	}
 
@@ -135,10 +133,10 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 			block.setRead(true);
 			block.setWrite(false);
 			block.setExecute(false);
-				block.setSourceName("Wasm Module");
+			block.setSourceName("Wasm Module");
 			createData(program, program.getListing(), start, header.toDataType());
 		} catch (Exception e) {
-			e.printStackTrace();
+			Msg.error(this, "Failed to create .header block", e);
 		}
 	}
 
@@ -152,7 +150,7 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 			block.setSourceName("Wasm Section");
 			createData(program, program.getListing(), start, section.toDataType());
 		} catch (Exception e) {
-			e.printStackTrace();
+			Msg.error(this, "Failed to create " + section.getName() + " block", e);
 		}
 	}
 
@@ -174,14 +172,14 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 	}
 
 	private String getMethodName(WasmNameSection names, WasmExportSection exports, int id) {
-		if(names != null) {
+		if (names != null) {
 			String name = names.getFunctionName(id);
-			if(name != null) {
+			if (name != null) {
 				return "wasm_" + name;
 			}
 		}
 
-		if(exports != null) {
+		if (exports != null) {
 			WasmExportEntry entry = exports.findMethod(id);
 			if (entry != null) {
 				return "export_" + entry.getName();
@@ -202,11 +200,7 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 		for (int i = 0; i < functions.size(); ++i) {
 			WasmFunctionBody method = functions.get(i);
 
-			String methodName = getMethodName(
-				module.getNameSection(),
-				exports,
-				i + importsOffset
-			);
+			String methodName = getMethodName(module.getNameSection(), exports, i + importsOffset);
 
 			long methodOffset = method.getOffset();
 
@@ -219,20 +213,20 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 						methodName, methodAddress,
 						new AddressSet(methodAddress, methodEnd), SourceType.IMPORTED);
 				program.getSymbolTable().createLabel(methodAddress, methodName, SourceType.IMPORTED);
-			} catch(Exception e) {
-				e.printStackTrace();
+			} catch (Exception e) {
+				Msg.error(this, "Failed to load function " + methodName, e);
 			}
 		}
 	}
 
 	private void loadDataSection(Program program, FileBytes fileBytes, WasmDataSection dataSection, TaskMonitor monitor) throws Exception {
 		List<WasmDataSegment> dataSegments = dataSection.getSegments();
-		for(int i=0; i<dataSegments.size(); i++) {
+		for (int i = 0; i < dataSegments.size(); i++) {
 			WasmDataSegment dataSegment = dataSegments.get(i);
 			long offset = dataSegment.getOffset();
-			if(offset == -1)
+			if (offset == -1)
 				continue;
-			if(dataSegment.getIndex() != 0)
+			if (dataSegment.getIndex() != 0)
 				continue;
 			Address dataStart = program.getAddressFactory().getAddressSpace("mem0").getAddress(offset);
 			MemoryBlock block = program.getMemory().createInitializedBlock(".data" + i, dataStart, fileBytes, dataSegment.getFileOffset(), dataSegment.getSize(), false);
@@ -246,14 +240,14 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 	private void loadImportSection(Program program, FileBytes fileBytes, WasmImportSection importSection, TaskMonitor monitor) throws Exception {
 		createImportStubBlock(program, importSection.getCount() * IMPORT_STUB_LEN);
 		int nextFuncIdx = 0;
-		for(WasmImportEntry entry : importSection.getEntries()) {
-			if(entry.getKind() != WasmExternalKind.EXT_FUNCTION) {
+		for (WasmImportEntry entry : importSection.getEntries()) {
+			if (entry.getKind() != WasmExternalKind.EXT_FUNCTION) {
 				continue;
 			}
 
 			String methodName = "import__" + entry.getName();
 			Address methodAddress = getProgramAddress(program, IMPORTS_BASE + nextFuncIdx * IMPORT_STUB_LEN);
-			Address methodEnd = getProgramAddress(program,  IMPORTS_BASE + (nextFuncIdx + 1) * IMPORT_STUB_LEN - 1);
+			Address methodEnd = getProgramAddress(program, IMPORTS_BASE + (nextFuncIdx + 1) * IMPORT_STUB_LEN - 1);
 
 			program.getFunctionManager().createFunction(
 					methodName, methodAddress,
@@ -267,7 +261,7 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 
 	@Override
 	protected void load(ByteProvider provider, LoadSpec loadSpec, List<Option> options,
-		Program program, TaskMonitor monitor, MessageLog log) throws IOException {
+			Program program, TaskMonitor monitor, MessageLog log) throws IOException {
 
 		monitor.setMessage("Wasm Loader: Start loading");
 
@@ -275,7 +269,7 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 			doLoad(provider, program, monitor);
 		} catch (Exception e) {
 			monitor.setMessage("Wasm Loader: Error");
-			e.printStackTrace();
+			Msg.error(this, "Failed to load Wasm module", e);
 		}
 	}
 
@@ -288,18 +282,18 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 		createModuleBlock(program, fileBytes);
 		createHeaderBlock(program, fileBytes, module.getHeader());
 
-		for (WasmSection section: module.getSections()) {
+		for (WasmSection section : module.getSections()) {
 			monitor.setMessage("Wasm Loader: Loading section " + section.getId().toString());
 			createSectionBlock(program, fileBytes, section);
 		}
 
-		if(module.getDataSection() != null)
+		if (module.getDataSection() != null)
 			loadDataSection(program, fileBytes, module.getDataSection(), monitor);
 
-		if(module.getCodeSection() != null)
+		if (module.getCodeSection() != null)
 			loadCodeSection(program, fileBytes, module, module.getCodeSection(), monitor);
 
-		if(module.getImportSection() != null)
+		if (module.getImportSection() != null)
 			loadImportSection(program, fileBytes, module.getImportSection(), monitor);
 	}
 }

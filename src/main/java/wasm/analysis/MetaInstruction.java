@@ -7,6 +7,7 @@ import ghidra.program.model.lang.InjectContext;
 import ghidra.program.model.listing.Program;
 import ghidra.program.model.mem.MemoryAccessException;
 import ghidra.program.model.pcode.Varnode;
+import ghidra.util.Msg;
 import wasm.format.Leb128;
 import wasm.format.WasmFuncSignature;
 import wasm.format.sections.structures.WasmFuncType;
@@ -107,7 +108,7 @@ public abstract class MetaInstruction {
 			}
 			
 		}catch(Exception e) {
-			e.printStackTrace();
+			Msg.error(MetaInstruction.class, "Failed to create MetaInstruction", e);
 		}
 		
 		return null;

@@ -13,6 +13,7 @@ import ghidra.program.model.listing.Function;
 import ghidra.program.model.listing.FunctionIterator;
 import ghidra.program.model.listing.Program;
 import ghidra.program.model.mem.Memory;
+import ghidra.util.Msg;
 import wasm.WasmLoader;
 import wasm.format.WasmFuncSignature;
 import wasm.format.WasmModule;
@@ -51,8 +52,7 @@ public class WasmAnalysis {
 		try {
 			module = new WasmModule(memBinaryReader);
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			Msg.error(this, "Failed to construct WasmModule", e);
 		}
 
 		this.module = module;
