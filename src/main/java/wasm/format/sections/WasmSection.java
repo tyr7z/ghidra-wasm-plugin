@@ -4,22 +4,18 @@ import java.io.IOException;
 
 import ghidra.app.util.bin.BinaryReader;
 import ghidra.app.util.bin.ByteArrayProvider;
-import ghidra.app.util.bin.ByteProvider;
 import ghidra.app.util.bin.StructConverter;
 import ghidra.program.model.data.DataType;
 import ghidra.program.model.data.Structure;
-import ghidra.program.model.data.StructureDataType;
 import ghidra.util.exception.DuplicateNameException;
 import wasm.format.Leb128;
+import wasm.format.StructureUtils;
 
-public class WasmSection implements StructConverter {
+public abstract class WasmSection implements StructConverter {
 	
 	private WasmSectionId id;
-	private Leb128 payload_len;
-	private long section_size;
-	private long section_offset;
-	private WasmPayload payload;
-	private long payload_offset;
+	private Leb128 contentLength;
+	private long sectionOffset;
 
 	public enum WasmSectionId {
 		SEC_CUSTOM,
@@ -36,77 +32,79 @@ public class WasmSection implements StructConverter {
 		SEC_DATA
 	}
 	
-	private static WasmPayload sectionsFactory(BinaryReader reader, WasmSectionId id, Leb128 len) throws IOException {
-		switch (id) {
+	public static WasmSection createSection(BinaryReader reader) throws IOException {
+		long sectionOffset = reader.getPointerIndex();
+		int id = reader.readNextUnsignedByte();
+		Leb128 contentLength = new Leb128(reader);
+		reader.setPointerIndex(reader.getPointerIndex() + contentLength.getValue());
+
+		if(id >= WasmSectionId.values().length)
+			return null;
+
+		BinaryReader sectionReader = reader.clone(sectionOffset);
+
+		switch (WasmSectionId.values()[id]) {
 			case SEC_CUSTOM:
-				return WasmCustomSection.create(reader, len.getValue());
+				return WasmCustomSection.create(sectionReader);
 			case SEC_TYPE:
-				return new WasmTypeSection(reader);
+				return new WasmTypeSection(sectionReader);
 			case SEC_IMPORT:
-				return new WasmImportSection(reader);
+				return new WasmImportSection(sectionReader);
 			case SEC_FUNCTION:
-				return new WasmFunctionSection(reader);
+				return new WasmFunctionSection(sectionReader);
 			case SEC_TABLE:
-				return new WasmTableSection(reader);
+				return new WasmTableSection(sectionReader);
 			case SEC_LINEARMEMORY:
-				return new WasmLinearMemorySection(reader);
+				return new WasmLinearMemorySection(sectionReader);
 			case SEC_GLOBAL:
-				return new WasmGlobalSection(reader);
+				return new WasmGlobalSection(sectionReader);
 			case SEC_EXPORT:
-				return new WasmExportSection(reader);
+				return new WasmExportSection(sectionReader);
 			case SEC_START:
-				return new WasmStartSection(reader);
+				return new WasmStartSection(sectionReader);
 			case SEC_ELEMENT:
-				return new WasmElementSection(reader);
+				return new WasmElementSection(sectionReader);
 			case SEC_CODE:
-				return new WasmCodeSection(reader);
+				return new WasmCodeSection(sectionReader);
 			case SEC_DATA:
-				return new WasmDataSection(reader);
+				return new WasmDataSection(sectionReader);
 			default:
 				return null;
 		}
 	}
 	
-	public WasmSection(BinaryReader reader) throws IOException {
-		section_offset = reader.getPointerIndex();
-		this.id = WasmSectionId.values()[(int)new Leb128(reader).getValue()];
-
-		this.payload_len = new Leb128(reader);
-
-		payload_offset = reader.getPointerIndex();
-		
-		byte payload_buf[] = reader.readNextByteArray((int)this.payload_len.getValue());
-		
-		payload = WasmSection.sectionsFactory(new BinaryReader(new ByteArrayProvider(payload_buf), true), id, this.payload_len);
-		section_size = reader.getPointerIndex() - section_offset;
+	protected WasmSection(BinaryReader reader) throws IOException {
+		sectionOffset = reader.getPointerIndex();
+		id = WasmSectionId.values()[reader.readNextUnsignedByte()];
+		contentLength = new Leb128(reader);
 	}
 	
 	@Override
 	public DataType toDataType() throws DuplicateNameException, IOException {
-		Structure structure = new StructureDataType(payload.getName(), 0);
-		structure.add(BYTE, 1, "id", null);
-		structure.add(payload_len.toDataType(), payload_len.getSize(), "size", null);
-		payload.addToStructure(structure);
+		Structure structure = StructureUtils.createStructure(getName());
+		StructureUtils.addField(structure, BYTE, "id");
+		StructureUtils.addField(structure, contentLength, "size");
+		addToStructure(structure);
 		return structure;
 	}
 	
+	public abstract String getName();
+
+	protected abstract void addToStructure(Structure s) throws IllegalArgumentException, DuplicateNameException, IOException;
+
 	public WasmSectionId getId() {
 		return id;
 	}
-	
-	public WasmPayload getPayload() {
-		return payload;
+
+	public long getSectionOffset() {
+		return sectionOffset;
 	}
-		
-	public long getPayloadOffset() {
-		return payload_offset;
+
+	public long getContentSize() {
+		return contentLength.getValue();
 	}
 
 	public long getSectionSize() {
-		return section_size;
-	}
-
-	public long getSectionOffset() {
-		return section_offset;
+		return 1 + contentLength.getSize() + contentLength.getValue();
 	}
 }

@@ -21,6 +21,10 @@ public class WasmName implements StructConverter {
 		value = new String(data, StandardCharsets.UTF_8);
 	}
 
+	public long getSize() {
+		return size.getSize() + size.getValue();
+	}
+
 	public String getValue() {
 		return value;
 	}

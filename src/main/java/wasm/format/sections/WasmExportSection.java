@@ -5,23 +5,19 @@ import java.util.ArrayList;
 import java.util.List;
 
 import ghidra.app.util.bin.BinaryReader;
-import ghidra.app.util.bin.StructConverter;
-import ghidra.program.model.data.DataType;
 import ghidra.program.model.data.Structure;
-import ghidra.program.model.data.StructureDataType;
 import ghidra.util.exception.DuplicateNameException;
 import wasm.format.Leb128;
 import wasm.format.sections.structures.WasmExportEntry;
 import wasm.format.sections.structures.WasmExportEntry.WasmExternalKind;
 
-public class WasmExportSection implements WasmPayload {
+public class WasmExportSection extends WasmSection {
 
 	private Leb128 count;
 	private List<WasmExportEntry> exports = new ArrayList<WasmExportEntry>();
-	
-	
-		
+
 	public WasmExportSection (BinaryReader reader) throws IOException {
+		super(reader);
 		count = new Leb128(reader);
 		for (int i =0; i < count.getValue(); ++i) {
 			exports.add(new WasmExportEntry(reader));
@@ -37,9 +33,8 @@ public class WasmExportSection implements WasmPayload {
 		return null;
 	}
 
-
 	@Override
-	public void addToStructure(Structure structure) throws IllegalArgumentException, DuplicateNameException, IOException {
+	protected void addToStructure(Structure structure) throws IllegalArgumentException, DuplicateNameException, IOException {
 		structure.add(count.toDataType(), count.toDataType().getLength(), "count", null);
 		for (int i = 0; i < count.getValue(); ++i) {
 			structure.add(exports.get(i).toDataType(), exports.get(i).toDataType().getLength(), "export_"+i, null);
@@ -50,5 +45,4 @@ public class WasmExportSection implements WasmPayload {
 	public String getName() {
 		return ".export";
 	}
-
 }

@@ -5,21 +5,18 @@ import java.util.ArrayList;
 import java.util.List;
 
 import ghidra.app.util.bin.BinaryReader;
-import ghidra.app.util.bin.StructConverter;
-import ghidra.program.model.data.DataType;
 import ghidra.program.model.data.Structure;
-import ghidra.program.model.data.StructureDataType;
 import ghidra.util.exception.DuplicateNameException;
 import wasm.format.Leb128;
-import wasm.format.sections.structures.WasmExportEntry;
 import wasm.format.sections.structures.WasmImportEntry;
 
-public class WasmImportSection implements WasmPayload {
+public class WasmImportSection extends WasmSection {
 
 	private Leb128 count;
 	private List<WasmImportEntry> imports = new ArrayList<WasmImportEntry>();
 
 	public WasmImportSection (BinaryReader reader) throws IOException {
+		super(reader);
 		count = new Leb128(reader);
 		for (int i =0; i < count.getValue(); ++i) {
 			imports.add(new WasmImportEntry(reader));

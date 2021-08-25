@@ -6,21 +6,18 @@ import java.util.Collections;
 import java.util.List;
 
 import ghidra.app.util.bin.BinaryReader;
-import ghidra.app.util.bin.StructConverter;
-import ghidra.program.model.data.DataType;
 import ghidra.program.model.data.Structure;
-import ghidra.program.model.data.StructureDataType;
 import ghidra.util.exception.DuplicateNameException;
 import wasm.format.Leb128;
 import wasm.format.sections.structures.WasmDataSegment;
 
-public class WasmDataSection implements WasmPayload {
-
+public class WasmDataSection extends WasmSection {
 	
 	private Leb128 count;
 	private List<WasmDataSegment> dataSegments = new ArrayList<WasmDataSegment>();
 
 	public WasmDataSection (BinaryReader reader) throws IOException {
+		super(reader);
 		count = new Leb128(reader);
 		for (int i =0; i < count.getValue(); ++i) {
 			dataSegments.add(new WasmDataSegment(reader));
@@ -33,7 +30,7 @@ public class WasmDataSection implements WasmPayload {
 	}
 
 	@Override
-	public void addToStructure(Structure structure) throws IllegalArgumentException, DuplicateNameException, IOException {
+	protected void addToStructure(Structure structure) throws IllegalArgumentException, DuplicateNameException, IOException {
 		structure.add(count.toDataType(), count.toDataType().getLength(), "count", null);
 		for (int i = 0; i < count.getValue(); ++i) {
 			structure.add(dataSegments.get(i).toDataType(), dataSegments.get(i).toDataType().getLength(), "segment_"+i, null);
@@ -44,6 +41,4 @@ public class WasmDataSection implements WasmPayload {
 	public String getName() {
 		return ".data";
 	}
-
-
 }
