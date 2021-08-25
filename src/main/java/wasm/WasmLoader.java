@@ -28,6 +28,7 @@ import ghidra.app.util.opinion.LoadSpec;
 import ghidra.program.database.mem.FileBytes;
 import ghidra.program.model.address.Address;
 import ghidra.program.model.address.AddressSet;
+import ghidra.program.model.address.AddressSpace;
 import ghidra.program.model.data.DataType;
 import ghidra.program.model.data.DataTypeConflictException;
 import ghidra.program.model.data.DataUtilities;
@@ -36,6 +37,7 @@ import ghidra.program.model.lang.LanguageCompilerSpecPair;
 import ghidra.program.model.listing.Data;
 import ghidra.program.model.listing.Listing;
 import ghidra.program.model.listing.Program;
+import ghidra.program.model.mem.Memory;
 import ghidra.program.model.mem.MemoryBlock;
 import ghidra.program.model.symbol.SourceType;
 import ghidra.program.model.util.CodeUnitInsertionException;
@@ -49,12 +51,14 @@ import wasm.format.sections.WasmCodeSection;
 import wasm.format.sections.WasmDataSection;
 import wasm.format.sections.WasmExportSection;
 import wasm.format.sections.WasmImportSection;
+import wasm.format.sections.WasmLinearMemorySection;
 import wasm.format.sections.WasmNameSection;
 import wasm.format.sections.WasmSection;
 import wasm.format.sections.structures.WasmExportEntry;
 import wasm.format.sections.structures.WasmDataSegment;
 import wasm.format.sections.structures.WasmFunctionBody;
 import wasm.format.sections.structures.WasmImportEntry;
+import wasm.format.sections.structures.WasmResizableLimits;
 
 /**
  * TODO: Provide class-level documentation that describes what this loader does.
@@ -219,6 +223,20 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 		}
 	}
 
+	private void loadMemorySection(Program program, FileBytes fileBytes, WasmLinearMemorySection memorySection, TaskMonitor monitor) throws Exception {
+		List<WasmResizableLimits> memories = memorySection.getMemories();
+		/* only handle memory 0 for now */
+		if (memories.size() > 0) {
+			WasmResizableLimits mem0 = memories.get(0);
+			long byteSize = mem0.getInitial() * 65536;
+			Address dataStart = program.getAddressFactory().getAddressSpace("mem0").getAddress(0);
+			MemoryBlock block = program.getMemory().createUninitializedBlock(".mem0", dataStart, byteSize, false);
+			block.setRead(true);
+			block.setWrite(true);
+			block.setExecute(false);
+		}
+	}
+
 	private void loadDataSection(Program program, FileBytes fileBytes, WasmDataSection dataSection, TaskMonitor monitor) throws Exception {
 		List<WasmDataSegment> dataSegments = dataSection.getSegments();
 		for (int i = 0; i < dataSegments.size(); i++) {
@@ -228,7 +246,27 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 				continue;
 			if (dataSegment.getIndex() != 0)
 				continue;
-			Address dataStart = program.getAddressFactory().getAddressSpace("mem0").getAddress(offset);
+			AddressSpace mem0space = program.getAddressFactory().getAddressSpace("mem0");
+			Address dataStart = mem0space.getAddress(offset);
+			Address dataEnd = mem0space.getAddress(offset + dataSegment.getSize() - 1);
+			Memory memory = program.getMemory();
+
+			/* Delete any overlapping portions of an existing block */
+			MemoryBlock b1 = memory.getBlock(dataStart);
+			if (b1 != null && !b1.getStart().equals(dataStart)) {
+				memory.split(b1, dataStart);
+			}
+
+			MemoryBlock b2 = memory.getBlock(dataEnd);
+			if (b2 != null && !b2.getEnd().equals(dataEnd)) {
+				memory.split(b2, dataEnd.add(1));
+			}
+
+			MemoryBlock toDelete = memory.getBlock(dataStart);
+			if (toDelete != null) {
+				memory.removeBlock(toDelete, monitor);
+			}
+
 			MemoryBlock block = program.getMemory().createInitializedBlock(".data" + i, dataStart, fileBytes, dataSegment.getFileOffset(), dataSegment.getSize(), false);
 			/* We have to assume that linear memory is writable */
 			block.setRead(true);
@@ -286,6 +324,9 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 			monitor.setMessage("Wasm Loader: Loading section " + section.getId().toString());
 			createSectionBlock(program, fileBytes, section);
 		}
+
+		if (module.getLinearMemorySection() != null)
+			loadMemorySection(program, fileBytes, module.getLinearMemorySection(), monitor);
 
 		if (module.getDataSection() != null)
 			loadDataSection(program, fileBytes, module.getDataSection(), monitor);

@@ -24,6 +24,17 @@ public class WasmResizableLimits implements StructConverter {
 		}
 	}
 
+	public long getInitial() {
+		return initial.getValue();
+	}
+
+	public long getMaximum() {
+		if (maximum != null) {
+			return maximum.getValue();
+		}
+		return -1;
+	}
+
 	@Override
 	public DataType toDataType() throws DuplicateNameException, IOException {
 		Structure structure = StructureUtils.createStructure("limits");
