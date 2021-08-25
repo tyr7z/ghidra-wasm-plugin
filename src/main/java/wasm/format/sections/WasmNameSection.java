@@ -14,6 +14,7 @@ import wasm.format.sections.structures.WasmName;
 public class WasmNameSection extends WasmCustomSection {
 	WasmName moduleName;
 	Map<Integer, WasmName> functionNames = new HashMap<>();
+	Map<Integer, Map<Integer, WasmName>> localNames = new HashMap<>();
 
 	public WasmNameSection(BinaryReader reader) throws IOException {
 		super(reader);
@@ -21,6 +22,28 @@ public class WasmNameSection extends WasmCustomSection {
 		while(reader.getPointerIndex() < sectionEnd) {
 			readSubsection(reader);
 		}
+	}
+
+	private static Map<Integer, WasmName> readNameMap(BinaryReader reader) throws IOException {
+		Map<Integer, WasmName> map = new HashMap<>();
+		long count = new Leb128(reader).getValue();
+		for(int i = 0; i < count; i++) {
+			int idx = (int)new Leb128(reader).getValue();
+			WasmName name = new WasmName(reader);
+			map.put(idx, name);
+		}
+		return map;
+	}
+
+	private static Map<Integer, Map<Integer, WasmName>> readIndirectNameMap(BinaryReader reader) throws IOException {
+		Map<Integer, Map<Integer, WasmName>> map = new HashMap<>();
+		long count = new Leb128(reader).getValue();
+		for(int i = 0; i < count; i++) {
+			int idx = (int)new Leb128(reader).getValue();
+			Map<Integer, WasmName> subMap = readNameMap(reader);
+			map.put(idx, subMap);
+		}
+		return map;
 	}
 
 	private void readSubsection(BinaryReader reader) throws IOException {
@@ -31,18 +54,13 @@ public class WasmNameSection extends WasmCustomSection {
 		switch(sectionId) {
 		case 0: //module name section
 			moduleName = new WasmName(subReader);
-			return;
-		case 2: //local name section
-			//no handling yet
-			return;
+			break;
 		case 1: //function name section
-			long numAssoc = new Leb128(subReader).getValue();
-			for(int i = 0; i < numAssoc; i++) {
-				int idx = (int)new Leb128(subReader).getValue();
-				WasmName name = new WasmName(subReader);
-				functionNames.put(idx, name);
-			}
-			return;
+			functionNames = readNameMap(subReader);
+			break;
+		case 2: //local name section
+			localNames = readIndirectNameMap(subReader);
+			break;
 		}
 	}
 
@@ -51,12 +69,26 @@ public class WasmNameSection extends WasmCustomSection {
 		super.addToStructure(structure);
 		/* TODO */
 	}
-	
+
+	public String getModuleName() {
+		return moduleName.getValue();
+	}
+
 	public String getFunctionName(int idx) {
-		WasmName name = functionNames.getOrDefault(idx, null);
-		if(name == null)
+		WasmName result = functionNames.get(idx);
+		if(result == null)
 			return null;
-		return name.getValue();
+		return result.getValue();
+	}
+
+	public String getLocalName(int funcidx, int localidx) {
+		Map<Integer, WasmName> localMap = localNames.get(funcidx);
+		if(localMap == null)
+			return null;
+		WasmName result = localMap.get(localidx);
+		if(result == null)
+			return null;
+		return result.getValue();
 	}
 
 	@Override

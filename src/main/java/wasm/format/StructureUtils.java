@@ -42,10 +42,11 @@ public class StructureUtils {
     }
 
     public static void addStringField(Structure structure, int byteSize, String name, String comment) {
-        structure.add(StructConverter.STRING, byteSize, name, comment);
+        if (byteSize > 0)
+            structure.add(StructConverter.STRING, byteSize, name, comment);
     }
 
     public static void addStringField(Structure structure, int byteSize, String name) {
-        structure.add(StructConverter.STRING, byteSize, name, null);
+        addStringField(structure, byteSize, name, null);
     }
 }
