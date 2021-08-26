@@ -9,7 +9,6 @@ import ghidra.program.model.data.Structure;
 import ghidra.util.exception.DuplicateNameException;
 import wasm.format.Leb128;
 import wasm.format.StructureUtils;
-import wasm.format.sections.structures.ConstantExpression.ConstantInstruction;
 
 public class WasmDataSegment implements StructConverter {
 
@@ -52,8 +51,11 @@ public class WasmDataSegment implements StructConverter {
 	}
 
 	public long getOffset() {
-		if (offsetExpr != null && offsetExpr.getInstructionType() == ConstantInstruction.I32_CONST) {
-			return ((Leb128) offsetExpr.getRawValue()).getValue();
+		if (offsetExpr != null) {
+			Long value = offsetExpr.getValueI32();
+			if (value != null) {
+				return value;
+			}
 		}
 		return -1;
 	}

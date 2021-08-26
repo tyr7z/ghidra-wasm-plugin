@@ -8,15 +8,24 @@ import ghidra.program.model.data.DataType;
 import ghidra.program.model.data.Structure;
 import ghidra.util.exception.DuplicateNameException;
 import wasm.format.StructureUtils;
+import wasm.format.WasmEnums.ValType;
 
 public class WasmGlobalType implements StructConverter {
 
-	private int value_type;
+	private ValType type;
 	private int mutability;
 
 	public WasmGlobalType(BinaryReader reader) throws IOException {
-		value_type = reader.readNextUnsignedByte();
+		type = ValType.fromByte(reader.readNextUnsignedByte());
 		mutability = reader.readNextUnsignedByte();
+	}
+
+	public ValType getType() {
+		return type;
+	}
+
+	public int getMutability() {
+		return mutability;
 	}
 
 	@Override

@@ -28,7 +28,7 @@ public final class ConstantExpression implements StructConverter {
 	private ConstantInstruction type;
 	private Object value;
 
-	public enum ConstantInstruction {
+	private enum ConstantInstruction {
 		I32_CONST, /* i32.const n: value is Leb128 */
 		I64_CONST, /* i64.const n: value is Leb128 */
 		F32_CONST, /* f32.const z: value is byte[4] */
@@ -89,12 +89,47 @@ public final class ConstantExpression implements StructConverter {
 		}
 	}
 
-	public ConstantInstruction getInstructionType() {
-		return type;
+	private static byte[] intToBytes(int value) {
+		byte[] result = new byte[4];
+		for (int i = 0; i < 4; i++) {
+			result[i] = (byte) value;
+			value >>= 8;
+		}
+		return result;
 	}
 
-	public Object getRawValue() {
-		return value;
+	private static byte[] longToBytes(long value) {
+		byte[] result = new byte[8];
+		for (int i = 0; i < 8; i++) {
+			result[i] = (byte) value;
+			value >>= 8;
+		}
+		return result;
+	}
+
+	/**
+	 * Return the bytes that correspond to the value produced, i.e. 4 bytes for
+	 * i32.const, 8 bytes for ref.null, etc. Return null if the initializer cannot
+	 * be determined (e.g. global)
+	 */
+	public byte[] getInitBytes() {
+		switch (type) {
+		case I32_CONST:
+			return intToBytes((int) ((Leb128) value).getValue());
+		case I64_CONST:
+		case REF_FUNC:
+			return longToBytes(((Leb128) value).getValue());
+		case F32_CONST:
+		case F64_CONST:
+			return (byte[]) value;
+		case REF_NULL_FUNCREF:
+		case REF_NULL_EXTERNREF:
+			return new byte[] { 0, 0, 0, 0, 0, 0, 0, 0 };
+		case GLOBAL_GET:
+			return null;
+		default:
+			return null;
+		}
 	}
 
 	public Long getValueI32() {

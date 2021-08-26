@@ -53,6 +53,7 @@ import wasm.format.WasmModule;
 import wasm.format.sections.WasmCodeSection;
 import wasm.format.sections.WasmDataSection;
 import wasm.format.sections.WasmExportSection;
+import wasm.format.sections.WasmGlobalSection;
 import wasm.format.sections.WasmImportSection;
 import wasm.format.sections.WasmLinearMemorySection;
 import wasm.format.sections.WasmNameSection;
@@ -60,6 +61,7 @@ import wasm.format.sections.WasmSection;
 import wasm.format.sections.structures.WasmDataSegment;
 import wasm.format.sections.structures.WasmExportEntry;
 import wasm.format.sections.structures.WasmFunctionBody;
+import wasm.format.sections.structures.WasmGlobalEntry;
 import wasm.format.sections.structures.WasmImportEntry;
 import wasm.format.sections.structures.WasmResizableLimits;
 
@@ -313,6 +315,31 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 		}
 	}
 
+	private void loadGlobalSection(Program program, FileBytes fileBytes, WasmGlobalSection globalSection, TaskMonitor monitor) throws Exception {
+		if (globalSection == null)
+			return;
+
+		List<WasmGlobalEntry> entries = globalSection.getEntries();
+		for (int i = 0; i < entries.size(); i++) {
+			WasmGlobalEntry entry = entries.get(i);
+			MemoryBlock block;
+			Address dataStart = program.getAddressFactory().getAddressSpace("global").getAddress(i * 8);
+
+			DataType dataType = entry.getDataType();
+			byte[] initBytes = entry.getInitData();
+			if (initBytes == null) {
+				block = program.getMemory().createUninitializedBlock("global" + i, dataStart, dataType.getLength(), false);
+			} else {
+				block = program.getMemory().createInitializedBlock("global" + i, dataStart, dataType.getLength(), (byte) 0xff, monitor, false);
+				program.getMemory().setBytes(dataStart, initBytes);
+			}
+			block.setRead(true);
+			block.setWrite(entry.isMutable());
+			block.setExecute(false);
+			createData(program, program.getListing(), dataStart, dataType);
+		}
+	}
+
 	@Override
 	protected void load(ByteProvider provider, LoadSpec loadSpec, List<Option> options,
 			Program program, TaskMonitor monitor, MessageLog log) throws IOException {
@@ -345,5 +372,6 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 		loadDataSection(program, fileBytes, module.getDataSection(), monitor);
 		loadCodeSection(program, fileBytes, module, module.getCodeSection(), monitor);
 		loadImportSection(program, fileBytes, module.getImportSection(), monitor);
+		loadGlobalSection(program, fileBytes, module.getGlobalSection(), monitor);
 	}
 }
