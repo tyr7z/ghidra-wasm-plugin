@@ -1,94 +1,64 @@
 package wasm.format.sections;
 
 import java.io.IOException;
-import java.util.HashMap;
+import java.util.ArrayList;
+import java.util.EnumMap;
+import java.util.List;
 import java.util.Map;
 
 import ghidra.app.util.bin.BinaryReader;
-import ghidra.app.util.bin.ByteArrayProvider;
 import ghidra.program.model.data.Structure;
 import ghidra.util.exception.DuplicateNameException;
-import wasm.format.Leb128;
-import wasm.format.sections.structures.WasmName;
+import wasm.format.StructureUtils;
+import wasm.format.sections.structures.WasmNameFunctionSubsection;
+import wasm.format.sections.structures.WasmNameLocalSubsection;
+import wasm.format.sections.structures.WasmNameModuleSubsection;
+import wasm.format.sections.structures.WasmNameSubsection;
+import wasm.format.sections.structures.WasmNameSubsection.WasmNameSubsectionId;;
 
 public class WasmNameSection extends WasmCustomSection {
-	WasmName moduleName;
-	Map<Integer, WasmName> functionNames = new HashMap<>();
-	Map<Integer, Map<Integer, WasmName>> localNames = new HashMap<>();
+	private List<WasmNameSubsection> subsections = new ArrayList<>();
+	private Map<WasmNameSubsectionId, WasmNameSubsection> subsectionMap = new EnumMap<>(WasmNameSubsectionId.class);
 
 	public WasmNameSection(BinaryReader reader) throws IOException {
 		super(reader);
 		long sectionEnd = getSectionOffset() + getSectionSize();
-		while(reader.getPointerIndex() < sectionEnd) {
-			readSubsection(reader);
-		}
-	}
-
-	private static Map<Integer, WasmName> readNameMap(BinaryReader reader) throws IOException {
-		Map<Integer, WasmName> map = new HashMap<>();
-		long count = new Leb128(reader).getValue();
-		for(int i = 0; i < count; i++) {
-			int idx = (int)new Leb128(reader).getValue();
-			WasmName name = new WasmName(reader);
-			map.put(idx, name);
-		}
-		return map;
-	}
-
-	private static Map<Integer, Map<Integer, WasmName>> readIndirectNameMap(BinaryReader reader) throws IOException {
-		Map<Integer, Map<Integer, WasmName>> map = new HashMap<>();
-		long count = new Leb128(reader).getValue();
-		for(int i = 0; i < count; i++) {
-			int idx = (int)new Leb128(reader).getValue();
-			Map<Integer, WasmName> subMap = readNameMap(reader);
-			map.put(idx, subMap);
-		}
-		return map;
-	}
-
-	private void readSubsection(BinaryReader reader) throws IOException {
-		byte sectionId = reader.readNextByte();
-		long size = new Leb128(reader).getValue();
-		byte[] subContents = reader.readNextByteArray((int)size);
-		BinaryReader subReader = new BinaryReader(new ByteArrayProvider(subContents), true);
-		switch(sectionId) {
-		case 0: //module name section
-			moduleName = new WasmName(subReader);
-			break;
-		case 1: //function name section
-			functionNames = readNameMap(subReader);
-			break;
-		case 2: //local name section
-			localNames = readIndirectNameMap(subReader);
-			break;
+		while (reader.getPointerIndex() < sectionEnd) {
+			WasmNameSubsection subsection = WasmNameSubsection.createSubsection(reader);
+			if (subsection == null)
+				continue;
+			subsections.add(subsection);
+			subsectionMap.put(subsection.getId(), subsection);
 		}
 	}
 
 	@Override
 	protected void addToStructure(Structure structure) throws IllegalArgumentException, DuplicateNameException, IOException {
 		super.addToStructure(structure);
-		/* TODO */
+		for(int i=0; i<subsections.size(); i++) {
+			StructureUtils.addField(structure, subsections.get(i), subsections.get(i).getName());
+		}
 	}
 
 	public String getModuleName() {
-		return moduleName.getValue();
+		WasmNameSubsection subsection = subsectionMap.get(WasmNameSubsectionId.NAME_MODULE);
+		if (subsection == null)
+			return null;
+		return ((WasmNameModuleSubsection) subsection).getModuleName();
 	}
 
 	public String getFunctionName(int idx) {
-		WasmName result = functionNames.get(idx);
-		if(result == null)
+		WasmNameSubsection subsection = subsectionMap.get(WasmNameSubsectionId.NAME_FUNCTION);
+		if (subsection == null)
 			return null;
-		return result.getValue();
+		return ((WasmNameFunctionSubsection) subsection).getFunctionName(idx);
 	}
 
 	public String getLocalName(int funcidx, int localidx) {
-		Map<Integer, WasmName> localMap = localNames.get(funcidx);
-		if(localMap == null)
+		WasmNameSubsection subsection = subsectionMap.get(WasmNameSubsectionId.NAME_LOCAL);
+		if (subsection == null)
 			return null;
-		WasmName result = localMap.get(localidx);
-		if(result == null)
-			return null;
-		return result.getValue();
+		return ((WasmNameLocalSubsection) subsection).getLocalName(funcidx, localidx);
 	}
 
 	@Override
