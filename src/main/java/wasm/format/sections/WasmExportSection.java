@@ -9,8 +9,8 @@ import ghidra.program.model.data.Structure;
 import ghidra.util.exception.DuplicateNameException;
 import wasm.format.Leb128;
 import wasm.format.StructureUtils;
+import wasm.format.WasmEnums.WasmExternalKind;
 import wasm.format.sections.structures.WasmExportEntry;
-import wasm.format.sections.structures.WasmExportEntry.WasmExternalKind;
 
 public class WasmExportSection extends WasmSection {
 
@@ -27,7 +27,7 @@ public class WasmExportSection extends WasmSection {
 
 	public WasmExportEntry findMethod(int id) {
 		for (WasmExportEntry entry : exports) {
-			if (entry.getType() == WasmExternalKind.KIND_FUNCTION && entry.getIndex() == id) {
+			if (entry.getType() == WasmExternalKind.EXT_FUNCTION && entry.getIndex() == id) {
 				return entry;
 			}
 		}

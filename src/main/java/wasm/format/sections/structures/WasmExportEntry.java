@@ -9,19 +9,13 @@ import ghidra.program.model.data.Structure;
 import ghidra.util.exception.DuplicateNameException;
 import wasm.format.Leb128;
 import wasm.format.StructureUtils;
+import wasm.format.WasmEnums.WasmExternalKind;
 
 public class WasmExportEntry implements StructConverter {
 
 	private WasmName name;
 	private WasmExternalKind kind;
 	private Leb128 index;
-
-	public enum WasmExternalKind {
-		KIND_FUNCTION,
-		KIND_TABLE,
-		KIND_MEMORY,
-		KIND_GLOBAL
-	}
 
 	public WasmExportEntry(BinaryReader reader) throws IOException {
 		name = new WasmName(reader);
