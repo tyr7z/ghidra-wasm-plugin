@@ -16,7 +16,10 @@
 package wasm;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
 
 import ghidra.app.util.MemoryBlockUtils;
 import ghidra.app.util.Option;
@@ -44,9 +47,9 @@ import ghidra.program.model.util.CodeUnitInsertionException;
 import ghidra.util.Msg;
 import ghidra.util.task.TaskMonitor;
 import wasm.format.WasmConstants;
+import wasm.format.WasmEnums.WasmExternalKind;
 import wasm.format.WasmHeader;
 import wasm.format.WasmModule;
-import wasm.format.WasmEnums.WasmExternalKind;
 import wasm.format.sections.WasmCodeSection;
 import wasm.format.sections.WasmDataSection;
 import wasm.format.sections.WasmExportSection;
@@ -54,8 +57,8 @@ import wasm.format.sections.WasmImportSection;
 import wasm.format.sections.WasmLinearMemorySection;
 import wasm.format.sections.WasmNameSection;
 import wasm.format.sections.WasmSection;
-import wasm.format.sections.structures.WasmExportEntry;
 import wasm.format.sections.structures.WasmDataSegment;
+import wasm.format.sections.structures.WasmExportEntry;
 import wasm.format.sections.structures.WasmFunctionBody;
 import wasm.format.sections.structures.WasmImportEntry;
 import wasm.format.sections.structures.WasmResizableLimits;
@@ -194,6 +197,9 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 	}
 
 	private void loadCodeSection(Program program, FileBytes fileBytes, WasmModule module, WasmCodeSection codeSection, TaskMonitor monitor) throws Exception {
+		if (codeSection == null)
+			return;
+
 		// The function index space begins with an index for each imported function,
 		// in the order the imports appear in the Import Section, if present,
 		// followed by an index for each function in the Function Section,
@@ -225,6 +231,9 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 	}
 
 	private void loadMemorySection(Program program, FileBytes fileBytes, WasmLinearMemorySection memorySection, TaskMonitor monitor) throws Exception {
+		if (memorySection == null)
+			return;
+
 		List<WasmResizableLimits> memories = memorySection.getMemories();
 		/* only handle memory 0 for now */
 		if (memories.size() > 0) {
@@ -239,6 +248,9 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 	}
 
 	private void loadDataSection(Program program, FileBytes fileBytes, WasmDataSection dataSection, TaskMonitor monitor) throws Exception {
+		if (dataSection == null)
+			return;
+
 		List<WasmDataSegment> dataSegments = dataSection.getSegments();
 		for (int i = 0; i < dataSegments.size(); i++) {
 			WasmDataSegment dataSegment = dataSegments.get(i);
@@ -277,6 +289,9 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 	}
 
 	private void loadImportSection(Program program, FileBytes fileBytes, WasmImportSection importSection, TaskMonitor monitor) throws Exception {
+		if (importSection == null)
+			return;
+
 		createImportStubBlock(program, importSection.getCount() * IMPORT_STUB_LEN);
 		int nextFuncIdx = 0;
 		for (WasmImportEntry entry : importSection.getEntries()) {
@@ -326,16 +341,9 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 			createSectionBlock(program, fileBytes, section);
 		}
 
-		if (module.getLinearMemorySection() != null)
-			loadMemorySection(program, fileBytes, module.getLinearMemorySection(), monitor);
-
-		if (module.getDataSection() != null)
-			loadDataSection(program, fileBytes, module.getDataSection(), monitor);
-
-		if (module.getCodeSection() != null)
-			loadCodeSection(program, fileBytes, module, module.getCodeSection(), monitor);
-
-		if (module.getImportSection() != null)
-			loadImportSection(program, fileBytes, module.getImportSection(), monitor);
+		loadMemorySection(program, fileBytes, module.getLinearMemorySection(), monitor);
+		loadDataSection(program, fileBytes, module.getDataSection(), monitor);
+		loadCodeSection(program, fileBytes, module, module.getCodeSection(), monitor);
+		loadImportSection(program, fileBytes, module.getImportSection(), monitor);
 	}
 }
