@@ -4,8 +4,20 @@ define token opcode (8)
 	opc = (0,7)
 ;
 
+define token opcode2 (8)
+	opc2 = (0,7)
+;
+
 define token byteval (8)
 	bytev = (0,7)
+;
+
+define token I32 (32)
+	f32 = (0,31)
+;
+
+define token I64 (64)
+    f64 = (0,63)
 ;
 
 ################################################################
@@ -53,78 +65,36 @@ macro pop64(ret64) {
 	SP = SP + 8; 
 }
 
-macro load8(memoffset, dest) {
-	x0:4 = 0;
-	pop32(x0);
-	addr:4 = memoffset[0,31] + x0;
-	dest = *[mem0]:1 addr;
-}
-
-macro load16(memoffset, dest) {
-	x0:4 = 0;
-	pop32(x0);
-	addr:4 = memoffset[0,31] + x0;
-	dest = *[mem0]:2 addr;
-}
-
-macro load32(memoffset, dest) {
-	x0:4 = 0;
-	pop32(x0);
-	addr:4 = memoffset[0,32] + x0;
-	dest = *[mem0]:4 addr;
-}
-
-macro load64(memoffset, dest) {
-	x0:4 = 0;
-	pop32(x0);
-	addr:4 = memoffset[0,31] + x0;
-	dest = *[mem0]:8 addr;
-}
-
-macro store8(memoffset, val) {
-	x0:4 = 0;
-	pop32(x0);
-	addr:4 = memoffset[0,31] + x0;
-	*[mem0]:1 addr = val;
-}
-
-macro store16(memoffset, val) {
-	x0:4 = 0;
-	pop32(x0);
-	addr:4 = memoffset[0,31] + x0;
-	*[mem0]:2 addr = val;
-}
-
-macro store32(memoffset, val) {
-	x0:4 = 0;
-	pop32(x0);
-	addr:4 = memoffset[0,31] + x0;
-	*[mem0]:4 addr = val;
-}
-
-macro store64(memoffset, val) {
-	x0:4 = 0;
-	pop32(x0);
-	addr:4 = memoffset[0,31] + x0;
-	*[mem0]:8 addr = val;
-}
-
-
 ################################################################
 
-define pcodeop trap;
+define pcodeop halt_trap;
 define pcodeop popcnt;
 define pcodeop clz;
 define pcodeop ctz;
 define pcodeop br_if;
 define pcodeop rotl;
 define pcodeop rotr;
+# TODO: define some of these in terms of a more generic "memcpy"/"memset" operation
+define pcodeop table_init;
+define pcodeop elem_drop;
+define pcodeop table_copy;
+define pcodeop table_grow;
+define pcodeop table_size;
+define pcodeop table_fill;
 define pcodeop memory_size;
 define pcodeop memory_grow;
+define pcodeop memory_init;
+define pcodeop data_drop;
+define pcodeop memory_copy;
+define pcodeop memory_fill;
 
 define pcodeop funcref;
 
 @include "Leb128.sinc"
+
+funcidx: ULeb128 is ULeb128 {
+	export ULeb128;
+}
 
 localidx: ULeb128 is ULeb128 {
 	export ULeb128;
@@ -138,7 +108,27 @@ typeidx: ULeb128 is ULeb128 {
 	export ULeb128;
 }
 
+elemidx: ULeb128 is ULeb128 {
+	export ULeb128;
+}
+
 tableidx: ULeb128 is ULeb128 {
+	export ULeb128;
+}
+
+tableidx2: ULeb128 is ULeb128 {
+	export ULeb128;
+}
+
+dataidx: ULeb128 is ULeb128 {
+	export ULeb128;
+}
+
+memidx: ULeb128 is ULeb128 {
+	export ULeb128;
+}
+
+memidx2: ULeb128 is ULeb128 {
 	export ULeb128;
 }
 
@@ -147,14 +137,10 @@ reftype: "reftype="^bytev is bytev {
 	export val;
 }
 
-memalign: "align="^ULeb128 is ULeb128 {
-	align:8 = ULeb128;
-	export align;
-}
-
-memoffset: "offset="^ULeb128 is ULeb128 {
-	off:8 = ULeb128;
-	export off;
+macro trap() {
+<trap_loop>
+	halt_trap();
+	goto <trap_loop>;
 }
 
 ################################################################
@@ -168,8 +154,7 @@ inc_indent: " . "^inc_indent is inc_indent [ indent_lvl = indent_lvl-1; ]{}
 
 @define INC_INDENT "inc_indent [ indent_lvl = indent_lvl + 1; globalset(inst_next, indent_lvl); ]"
 
-@include "br_table.sinc"
-
+## Control instructions
 :""^indent^"unreachable" is opc=0x00; indent {
 	trap();
 }
@@ -210,6 +195,9 @@ inc_indent: " . "^inc_indent is inc_indent [ indent_lvl = indent_lvl-1; ]{}
 	if(val == 0) goto inst_next;
 	brCallOther();
 }
+
+@include "br_table.sinc"
+
 :""^indent^"return" is opc=0x0f; indent {
 	returnCallOther();
 }
@@ -220,6 +208,7 @@ inc_indent: " . "^inc_indent is inc_indent [ indent_lvl = indent_lvl-1; ]{}
 	callIndirectCallOther();
 }
 
+## Reference Instructions
 :""^indent^"ref.null" reftype is opc=0xd0; reftype; indent {
 	val:8 = 0;
 	push64(val);
@@ -230,21 +219,13 @@ inc_indent: " . "^inc_indent is inc_indent [ indent_lvl = indent_lvl-1; ]{}
 	res:4 = zext(val == 0);
 	push32(res);
 }
-:""^indent^"ref.func" ULeb128 is opc=0xd2; ULeb128; indent {
-	val:8 = funcref(ULeb128);
+:""^indent^"ref.func" funcidx is opc=0xd2; funcidx; indent {
+	# TODO: make an (artificial) table of functions so we can statically resolve funcrefs
+	val:8 = funcref(funcidx);
 	push64(val);
 }
-:""^indent^"memory.size" is opc=0x3f; indent {
-	val:4 = memory_size();
-	push32(val);
-}
-:""^indent^"memory.grow" is opc=0x40; indent {
-	new_sz:4 = 0;
-	pop32(new_sz);
-	val:4 = memory_grow(new_sz);
-	push32(val);
-}
 
+## Parametric Instructions
 :""^indent^"drop" is opc=0x1a; indent {
 	val:8 = 0;
 	pop64(val);
@@ -265,9 +246,27 @@ inc_indent: " . "^inc_indent is inc_indent [ indent_lvl = indent_lvl-1; ]{}
 <finish>
 	push64(res);
 }
+# In the current version of WASM, only one type index is permitted in select t*.
+# This is functionally identical to regular select.
+:""^indent^"select" typeidx is opc=0x1c; opc2=0x01; typeidx; indent {
+	cond:4 = 0;
+	pop32(cond);
+	val1:8 = 0;
+	val2:8 = 0;
+	pop64(val2);
+	pop64(val1);
+	res:8 = 0;
+	if (cond != 0) goto <true>;
+	res = val1;
+	goto <finish>;
+<true>
+	res = val2;
+<finish>
+	push64(res);
+}
 
-#TODO: select t* 0x1c
-
+## Variable Instructions
+# TODO: these need to be callOther to process the size of the local correctly
 :""^indent^"local.get" localidx is opc=0x20; localidx; indent {
 	val:8 = *[register] (localidx:2 * 8);
 	push64(val);
@@ -293,23 +292,119 @@ inc_indent: " . "^inc_indent is inc_indent [ indent_lvl = indent_lvl-1; ]{}
 	*[global] (globalidx:4 * 8) = val;
 }
 
-:""^indent^"table.get" ULeb128 is opc=0x25; ULeb128; indent {
+## Table Instructions
+:""^indent^"table.get" tableidx is opc=0x25; tableidx; indent {
 	idx:4 = 0;
 	pop32(idx);
 	sidx:8 = sext(idx);
-	val:8 = *[table] ((ULeb128:8 << 32) + sidx * 8);
+	val:8 = *[table] ((tableidx:8 << 32) + sidx * 8);
 	push64(val);
 }
 
-:""^indent^"table.set" ULeb128 is opc=0x26; ULeb128; indent {
+:""^indent^"table.set" tableidx is opc=0x26; tableidx; indent {
 	val:8 = 0;
 	pop64(val);
 	idx:4 = 0;
 	pop32(idx);
 	sidx:8 = sext(idx);
-	*[table] ((ULeb128:8 << 32) + sidx * 8) = val;
+	*[table] ((tableidx:8 << 32) + sidx * 8) = val;
 }
 
+:""^indent^"table.init" elemidx tableidx is opc=0xfc; opc2=0x0c; elemidx; tableidx; indent {
+	count:4 = 0;
+	pop32(count);
+	src:4 = 0;
+	pop32(src);
+	dst:4 = 0;
+	pop32(dst);
+	table_init(elemidx:4, tableidx:4, count, src, dst);
+}
+
+:""^indent^"elem.drop" elemidx is opc=0xfc; opc2=0x0d; elemidx; indent {
+	elem_drop(elemidx:4);
+}
+
+:""^indent^"table.copy" tableidx tableidx2 is opc=0xfc; opc2=0x0e; tableidx; tableidx2; indent {
+	count:4 = 0;
+	pop32(count);
+	src:4 = 0;
+	pop32(src);
+	dst:4 = 0;
+	pop32(dst);
+	table_copy(tableidx:4, tableidx2:4, count, src, dst);
+}
+
+:""^indent^"table.grow" tableidx is opc=0xfc; opc2=0x0f; tableidx; indent {
+	new_sz:4 = 0;
+	pop32(new_sz);
+	val:4 = table_grow(tableidx:4, new_sz);
+	push32(val);
+}
+
+:""^indent^"table.size" tableidx is opc=0xfc; opc2=0x10; tableidx; indent {
+	val:4 = table_size(tableidx:4);
+	push32(val);
+}
+
+:""^indent^"table.fill" tableidx is opc=0xfc; opc2=0x11; tableidx; indent {
+	count:4 = 0;
+	pop32(count);
+	val:8 = 0;
+	pop64(val);
+	dst:4 = 0;
+	pop32(dst);
+	table_fill(tableidx:4, count, val, dst);
+}
+
+
+## Memory Instructions
+:""^indent^"memory.size" memidx is opc=0x3f; memidx; indent {
+	val:4 = memory_size(memidx:4);
+	push32(val);
+}
+
+:""^indent^"memory.grow" memidx is opc=0x40; memidx; indent {
+	new_sz:4 = 0;
+	pop32(new_sz);
+	val:4 = memory_grow(memidx:4, new_sz);
+	push32(val);
+}
+
+:""^indent^"memory.init" dataidx memidx is opc=0xfc; opc2=0x08; dataidx; memidx; indent {
+	count:4 = 0;
+	pop32(count);
+	src:4 = 0;
+	pop32(src);
+	dst:4 = 0;
+	pop32(dst);
+	memory_init(dataidx, memidx:4, count, src, dst);
+}
+
+:""^indent^"data.drop" dataidx is opc=0xfc; opc2=0x09; dataidx; indent {
+	data_drop(dataidx);
+}
+
+:""^indent^"memory.copy" memidx memidx2 is opc=0xfc; opc2=0x0a; memidx; memidx2; indent {
+	count:4 = 0;
+	pop32(count);
+	src:4 = 0;
+	pop32(src);
+	dst:4 = 0;
+	pop32(dst);
+	memory_copy(memidx:4, memidx2:4, count, src, dst);
+}
+
+:""^indent^"memory.fill" memidx is opc=0xfc; opc2=0x0b; memidx; indent {
+	count:4 = 0;
+	pop32(count);
+	val:4 = 0;
+	pop32(val);
+	dst:4 = 0;
+	pop32(dst);
+	memory_fill(memidx:4, count, val, dst);
+}
+
+## Numeric Instructions: const
 :""^indent^"i32.const" SLeb128 is opc=0x41; SLeb128; indent {
 	val:4 = SLeb128:4;
 	push32(val);
@@ -320,11 +415,14 @@ inc_indent: " . "^inc_indent is inc_indent [ indent_lvl = indent_lvl-1; ]{}
 	push64(val);
 }
 
-:" " is opc=0xff {
-	trap();
-	return [LR];
+:""^indent^"f32.const" f32 is opc=0x43; f32; indent {
+	val:4 = f32:4;
+	push32(val);
+}
+
+:""^indent^"f64.const" f64 is opc=0x44; f64; indent {
+	val:8 = f64:8;
+	push64(val);
 }
 
 @include "BasicOps.sinc"
-
-#TODO: 0x3f

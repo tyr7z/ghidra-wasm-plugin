@@ -1,3 +1,70 @@
+## Memory Instructions
+macro load8(memoffset, dest) {
+	x0:4 = 0;
+	pop32(x0);
+	addr:4 = memoffset:4 + x0;
+	dest = *[mem0]:1 addr;
+}
+
+macro load16(memoffset, dest) {
+	x0:4 = 0;
+	pop32(x0);
+	addr:4 = memoffset:4 + x0;
+	dest = *[mem0]:2 addr;
+}
+
+macro load32(memoffset, dest) {
+	x0:4 = 0;
+	pop32(x0);
+	addr:4 = memoffset:4 + x0;
+	dest = *[mem0]:4 addr;
+}
+
+macro load64(memoffset, dest) {
+	x0:4 = 0;
+	pop32(x0);
+	addr:4 = memoffset:4 + x0;
+	dest = *[mem0]:8 addr;
+}
+
+macro store8(memoffset, val) {
+	x0:4 = 0;
+	pop32(x0);
+	addr:4 = memoffset:4 + x0;
+	*[mem0]:1 addr = val;
+}
+
+macro store16(memoffset, val) {
+	x0:4 = 0;
+	pop32(x0);
+	addr:4 = memoffset:4 + x0;
+	*[mem0]:2 addr = val;
+}
+
+macro store32(memoffset, val) {
+	x0:4 = 0;
+	pop32(x0);
+	addr:4 = memoffset:4 + x0;
+	*[mem0]:4 addr = val;
+}
+
+macro store64(memoffset, val) {
+	x0:4 = 0;
+	pop32(x0);
+	addr:4 = memoffset:4 + x0;
+	*[mem0]:8 addr = val;
+}
+
+memalign: "align="^ULeb128 is ULeb128 {
+	align:8 = ULeb128;
+	export align;
+}
+
+memoffset: "offset="^ULeb128 is ULeb128 {
+	off:8 = ULeb128;
+	export off;
+}
+
 :""^indent^"i32.load" memalign memoffset is opc=0x28; memalign; memoffset; indent {
 	loaded:4 = 0;
 	load32(memoffset, loaded);
@@ -101,33 +168,35 @@
 :""^indent^"i32.store8" memalign memoffset is opc=0x3A; memalign; memoffset; indent {
 	tostore:4 = 0;
 	pop32(tostore);
-	truncated:1 = tostore[0,8];
+	truncated:1 = tostore:1;
 	store8(memoffset, truncated);
 }
 :""^indent^"i32.store16" memalign memoffset is opc=0x3B; memalign; memoffset; indent {
 	tostore:4 = 0;
 	pop32(tostore);
-	truncated:2 = tostore[0,16];
+	truncated:2 = tostore:2;
 	store16(memoffset, truncated);
 }
 :""^indent^"i64.store8" memalign memoffset is opc=0x3C; memalign; memoffset; indent {
 	tostore:8 = 0;
 	pop64(tostore);
-	truncated:1 = tostore[0,8];
+	truncated:1 = tostore:1;
 	store8(memoffset, truncated);
 }
 :""^indent^"i64.store16" memalign memoffset is opc=0x3D; memalign; memoffset; indent {
 	tostore:8 = 0;
 	pop64(tostore);
-	truncated:2 = tostore[0,16];
+	truncated:2 = tostore:2;
 	store16(memoffset, truncated);
 }
 :""^indent^"i64.store32" memalign memoffset is opc=0x3E; memalign; memoffset; indent {
 	tostore:8 = 0;
 	pop64(tostore);
-	truncated:4 = tostore[0,32];
+	truncated:4 = tostore:4;
 	store32(memoffset, truncated);
 }
+
+## Numeric Instructions
 :""^indent^"i32.eqz"  is opc=0x45; indent {
     x0:4 = 0;
     pop32(x0);
@@ -829,7 +898,7 @@
 :""^indent^"i32.wrap_i64"  is opc=0xA7; indent {
 	x0:8 = 0;
 	pop64(x0);
-	res:4 = x0[0,32];
+	res:4 = x0:4;
 	push32(res);
 }
 :""^indent^"i32.trunc_f32_s"  is opc=0xA8; indent {
@@ -961,35 +1030,85 @@
 :""^indent^"i32.extend8_s"  is opc=0xC0; indent {
 	x0:4 = 0;
 	pop32(x0);
-	singlebyte:1 = x0[0, 8];
-	res:4 = sext(singlebyte);
+	truncated:1 = x0:1;
+	res:4 = sext(truncated);
 	push32(res);
 }
 :""^indent^"i32.extend16_s"  is opc=0xC1; indent {
 	x0:4 = 0;
 	pop32(x0);
-	singleword:2 = x0[0, 16];
-	res:4 = sext(singleword);
+	truncated:2 = x0:2;
+	res:4 = sext(truncated);
 	push32(res);
 }
 :""^indent^"i64.extend8_s"  is opc=0xC2; indent {
 	x0:8 = 0;
 	pop64(x0);
-	singlebyte:1 = x0[0, 8];
-	res:8 = sext(singlebyte);
+	truncated:1 = x0:1;
+	res:8 = sext(truncated);
 	push64(res);
 }
 :""^indent^"i64.extend16_s"  is opc=0xC3; indent {
 	x0:8 = 0;
 	pop64(x0);
-	singleword:2 = x0[0, 16];
-	res:8 = sext(singleword);
+	truncated:2 = x0:2;
+	res:8 = sext(truncated);
 	push64(res);
 }
 :""^indent^"i64.extend32_s"  is opc=0xC4; indent {
 	x0:8 = 0;
 	pop64(x0);
-	dword:4 = x0[0, 32];
-	res:8 = sext(dword);
+	truncated:4 = x0:4;
+	res:8 = sext(truncated);
+	push64(res);
+}
+
+# TODO: actually handle saturation, or express semantics via pcodeop?
+:""^indent^"i32.trunc_sat_f32_s"  is opc=0xFC; opc2=0x00; indent {
+	x0:4 = 0;
+	pop32(x0);
+	res:4 = trunc(x0);
+	push32(res);
+}
+:""^indent^"i32.trunc_sat_f32_u"  is opc=0xFC; opc2=0x01; indent {
+	x0:4 = 0;
+	pop32(x0);
+	res:4 = trunc(x0); #TODO: Can we do an unsigned trunc?
+	push32(res);
+}
+:""^indent^"i32.trunc_sat_f64_s"  is opc=0xFC; opc2=0x02; indent {
+	x0:8 = 0;
+	pop64(x0);
+	res:4 = trunc(x0);
+	push32(res);
+}
+:""^indent^"i32.trunc_sat_f64_u"  is opc=0xFC; opc2=0x03; indent {
+	x0:8 = 0;
+	pop64(x0);
+	res:4 = trunc(x0);
+	push32(res);
+}
+:""^indent^"i64.trunc_sat_f32_s"  is opc=0xFC; opc2=0x04; indent {
+	x0:4 = 0;
+	pop32(x0);
+	res:8 = trunc(x0);
+	push64(res);
+}
+:""^indent^"i64.trunc_sat_f32_u"  is opc=0xFC; opc2=0x05; indent {
+	x0:4 = 0;
+	pop32(x0);
+	res:8 = trunc(x0);
+	push64(res);
+}
+:""^indent^"i64.trunc_sat_f64_s"  is opc=0xFC; opc2=0x06; indent {
+	x0:8 = 0;
+	pop64(x0);
+	res:8 = trunc(x0);
+	push64(res);
+}
+:""^indent^"i64.trunc_sat_f64_u"  is opc=0xFC; opc2=0x07; indent {
+	x0:8 = 0;
+	pop64(x0);
+	res:8 = trunc(x0);
 	push64(res);
 }
