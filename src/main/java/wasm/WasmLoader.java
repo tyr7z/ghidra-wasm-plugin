@@ -32,6 +32,7 @@ import ghidra.program.database.mem.FileBytes;
 import ghidra.program.model.address.Address;
 import ghidra.program.model.address.AddressSet;
 import ghidra.program.model.address.AddressSpace;
+import ghidra.program.model.data.ArrayDataType;
 import ghidra.program.model.data.DataType;
 import ghidra.program.model.data.DataTypeConflictException;
 import ghidra.program.model.data.DataUtilities;
@@ -58,12 +59,14 @@ import wasm.format.sections.WasmImportSection;
 import wasm.format.sections.WasmLinearMemorySection;
 import wasm.format.sections.WasmNameSection;
 import wasm.format.sections.WasmSection;
+import wasm.format.sections.WasmTableSection;
 import wasm.format.sections.structures.WasmDataSegment;
 import wasm.format.sections.structures.WasmExportEntry;
 import wasm.format.sections.structures.WasmFunctionBody;
 import wasm.format.sections.structures.WasmGlobalEntry;
 import wasm.format.sections.structures.WasmImportEntry;
 import wasm.format.sections.structures.WasmResizableLimits;
+import wasm.format.sections.structures.WasmTableType;
 
 /**
  * TODO: Provide class-level documentation that describes what this loader does.
@@ -181,6 +184,42 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 		block.setComment("NOTE: This block is artificial and is used to represent imported functions");
 	}
 
+	/**
+	 * Delete any overlapping portions of an existing memory block.
+	 * 
+	 * @param program
+	 * @param startAddress
+	 *            First address to clear, inclusive
+	 * @param endAddress
+	 *            Last address to clear, inclusive
+	 * @param monitor
+	 * @throws Exception
+	 */
+	private void removeOverlappingMemory(Program program, Address startAddress, Address endAddress, TaskMonitor monitor) throws Exception {
+		Memory memory = program.getMemory();
+
+		/* Delete any overlapping portions of an existing block */
+		MemoryBlock b1 = memory.getBlock(startAddress);
+		if (b1 != null && !b1.getStart().equals(startAddress)) {
+			String b1name = b1.getName();
+			memory.split(b1, startAddress);
+			/* remove automatically-added ".split" suffix */
+			memory.getBlock(startAddress).setName(b1name);
+		}
+
+		MemoryBlock b2 = memory.getBlock(endAddress);
+		if (b2 != null && !b2.getEnd().equals(endAddress)) {
+			String b2name = b1.getName();
+			memory.split(b2, endAddress.add(1));
+			memory.getBlock(endAddress.add(1)).setName(b2name);
+		}
+
+		MemoryBlock toDelete = memory.getBlock(startAddress);
+		if (toDelete != null) {
+			memory.removeBlock(toDelete, monitor);
+		}
+	}
+
 	private String getMethodName(WasmNameSection names, WasmExportSection exports, int id) {
 		if (names != null) {
 			String name = names.getFunctionName(id);
@@ -263,24 +302,7 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 				continue;
 			AddressSpace mem0space = program.getAddressFactory().getAddressSpace("mem0");
 			Address dataStart = mem0space.getAddress(offset);
-			Address dataEnd = mem0space.getAddress(offset + dataSegment.getSize() - 1);
-			Memory memory = program.getMemory();
-
-			/* Delete any overlapping portions of an existing block */
-			MemoryBlock b1 = memory.getBlock(dataStart);
-			if (b1 != null && !b1.getStart().equals(dataStart)) {
-				memory.split(b1, dataStart);
-			}
-
-			MemoryBlock b2 = memory.getBlock(dataEnd);
-			if (b2 != null && !b2.getEnd().equals(dataEnd)) {
-				memory.split(b2, dataEnd.add(1));
-			}
-
-			MemoryBlock toDelete = memory.getBlock(dataStart);
-			if (toDelete != null) {
-				memory.removeBlock(toDelete, monitor);
-			}
+			removeOverlappingMemory(program, dataStart, dataStart.add(dataSegment.getSize() - 1), monitor);
 
 			MemoryBlock block = program.getMemory().createInitializedBlock(".data" + i, dataStart, fileBytes, dataSegment.getFileOffset(), dataSegment.getSize(), false);
 			/* We have to assume that linear memory is writable */
@@ -340,6 +362,27 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 		}
 	}
 
+	private void loadTableSection(Program program, FileBytes fileBytes, WasmTableSection tableSection, TaskMonitor monitor) throws Exception {
+		if (tableSection == null)
+			return;
+
+		List<WasmTableType> tables = tableSection.getTables();
+		for (int i = 0; i < tables.size(); i++) {
+			WasmTableType table = tables.get(i);
+			DataType dataType = table.getElementDataType();
+
+			long numElements = table.getLimits().getInitial();
+			long tableIndex = i;
+			long byteSize = 8 * numElements;
+			Address dataStart = program.getAddressFactory().getAddressSpace("table").getAddress(tableIndex << 32);
+			MemoryBlock block = program.getMemory().createUninitializedBlock(".mem0", dataStart, byteSize, false);
+			block.setRead(true);
+			block.setWrite(true);
+			block.setExecute(false);
+			createData(program, program.getListing(), dataStart, new ArrayDataType(dataType, (int) numElements, dataType.getLength()));
+		}
+	}
+
 	@Override
 	protected void load(ByteProvider provider, LoadSpec loadSpec, List<Option> options,
 			Program program, TaskMonitor monitor, MessageLog log) throws IOException {
@@ -373,5 +416,6 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 		loadCodeSection(program, fileBytes, module, module.getCodeSection(), monitor);
 		loadImportSection(program, fileBytes, module.getImportSection(), monitor);
 		loadGlobalSection(program, fileBytes, module.getGlobalSection(), monitor);
+		loadTableSection(program, fileBytes, module.getTableSection(), monitor);
 	}
 }

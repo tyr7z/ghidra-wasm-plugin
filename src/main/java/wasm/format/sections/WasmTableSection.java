@@ -2,6 +2,7 @@ package wasm.format.sections;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import ghidra.app.util.bin.BinaryReader;
@@ -22,6 +23,10 @@ public class WasmTableSection extends WasmSection {
 		for (int i = 0; i < count.getValue(); ++i) {
 			tables.add(new WasmTableType(reader));
 		}
+	}
+
+	public List<WasmTableType> getTables() {
+		return Collections.unmodifiableList(tables);
 	}
 
 	@Override

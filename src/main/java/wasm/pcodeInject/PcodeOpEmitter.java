@@ -35,7 +35,7 @@ import wasm.format.sections.structures.WasmFuncType;
 
 public class PcodeOpEmitter {
 	static final String RAM = "ram";
-	static final String TABLE = "table0";
+	static final String TABLE = "table";
 
 	private HashMap<String, Varnode> nameToReg;
 	private ArrayList<PcodeOp> opList;
