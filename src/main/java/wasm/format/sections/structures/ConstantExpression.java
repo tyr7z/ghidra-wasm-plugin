@@ -89,7 +89,7 @@ public final class ConstantExpression implements StructConverter {
 		}
 	}
 
-	private static byte[] intToBytes(int value) {
+	public static byte[] intToBytes(int value) {
 		byte[] result = new byte[4];
 		for (int i = 0; i < 4; i++) {
 			result[i] = (byte) value;
@@ -98,7 +98,7 @@ public final class ConstantExpression implements StructConverter {
 		return result;
 	}
 
-	private static byte[] longToBytes(long value) {
+	public static byte[] longToBytes(long value) {
 		byte[] result = new byte[8];
 		for (int i = 0; i < 8; i++) {
 			result[i] = (byte) value;

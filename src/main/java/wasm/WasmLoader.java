@@ -53,6 +53,7 @@ import wasm.format.WasmHeader;
 import wasm.format.WasmModule;
 import wasm.format.sections.WasmCodeSection;
 import wasm.format.sections.WasmDataSection;
+import wasm.format.sections.WasmElementSection;
 import wasm.format.sections.WasmExportSection;
 import wasm.format.sections.WasmGlobalSection;
 import wasm.format.sections.WasmImportSection;
@@ -61,6 +62,7 @@ import wasm.format.sections.WasmNameSection;
 import wasm.format.sections.WasmSection;
 import wasm.format.sections.WasmTableSection;
 import wasm.format.sections.structures.WasmDataSegment;
+import wasm.format.sections.structures.WasmElementSegment;
 import wasm.format.sections.structures.WasmExportEntry;
 import wasm.format.sections.structures.WasmFunctionBody;
 import wasm.format.sections.structures.WasmGlobalEntry;
@@ -375,11 +377,37 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 			long tableIndex = i;
 			long byteSize = 8 * numElements;
 			Address dataStart = program.getAddressFactory().getAddressSpace("table").getAddress(tableIndex << 32);
-			MemoryBlock block = program.getMemory().createUninitializedBlock(".mem0", dataStart, byteSize, false);
+			MemoryBlock block = program.getMemory().createInitializedBlock(".table" + i, dataStart, byteSize, (byte)0xff, monitor, false);
 			block.setRead(true);
 			block.setWrite(true);
 			block.setExecute(false);
 			createData(program, program.getListing(), dataStart, new ArrayDataType(dataType, (int) numElements, dataType.getLength()));
+		}
+	}
+
+	private void loadElementSection(Program program, FileBytes fileBytes, WasmElementSection elementSection, TaskMonitor monitor) throws Exception {
+		if (elementSection == null)
+			return;
+
+		List<WasmElementSegment> entries = elementSection.getSegments();
+		for (int i = 0; i < entries.size(); i++) {
+			WasmElementSegment entry = entries.get(i);
+
+			long offset = entry.getOffset();
+			if (offset == -1)
+				continue;
+
+			byte[] initBytes = entry.getInitData();
+			if (initBytes == null)
+				continue;
+
+			long tableIndex = entry.getTableIndex();
+			Address dataStart = program.getAddressFactory().getAddressSpace("table").getAddress((tableIndex << 32) + (offset * 8));
+			try {
+				program.getMemory().setBytes(dataStart, initBytes);
+			} catch (Exception e) {
+				Msg.error(this, "Failed to process element segment " + i, e);
+			}
 		}
 	}
 
@@ -417,5 +445,6 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 		loadImportSection(program, fileBytes, module.getImportSection(), monitor);
 		loadGlobalSection(program, fileBytes, module.getGlobalSection(), monitor);
 		loadTableSection(program, fileBytes, module.getTableSection(), monitor);
+		loadElementSection(program, fileBytes, module.getElementSection(), monitor);
 	}
 }
