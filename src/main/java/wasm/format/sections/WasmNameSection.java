@@ -28,14 +28,15 @@ public class WasmNameSection extends WasmCustomSection {
 			if (subsection == null)
 				continue;
 			subsections.add(subsection);
-			subsectionMap.put(subsection.getId(), subsection);
+			if (subsection.getId() != null)
+				subsectionMap.put(subsection.getId(), subsection);
 		}
 	}
 
 	@Override
 	protected void addToStructure(Structure structure) throws IllegalArgumentException, DuplicateNameException, IOException {
 		super.addToStructure(structure);
-		for(int i=0; i<subsections.size(); i++) {
+		for (int i = 0; i < subsections.size(); i++) {
 			StructureUtils.addField(structure, subsections.get(i), subsections.get(i).getName());
 		}
 	}

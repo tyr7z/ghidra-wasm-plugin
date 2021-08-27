@@ -12,7 +12,7 @@ import wasm.format.StructureUtils;
 
 public abstract class WasmNameSubsection implements StructConverter {
 
-	private WasmNameSubsectionId id;
+	protected int id;
 	private Leb128 contentLength;
 	private long sectionOffset;
 
@@ -28,10 +28,11 @@ public abstract class WasmNameSubsection implements StructConverter {
 		Leb128 contentLength = new Leb128(reader);
 		reader.setPointerIndex(reader.getPointerIndex() + contentLength.getValue());
 
-		if (id >= WasmNameSubsectionId.values().length)
-			return null;
-
 		BinaryReader sectionReader = reader.clone(sectionOffset);
+
+		if (id >= WasmNameSubsectionId.values().length) {
+			return new WasmNameUnknownSubsection(sectionReader);
+		}
 
 		switch (WasmNameSubsectionId.values()[id]) {
 		case NAME_MODULE:
@@ -47,7 +48,7 @@ public abstract class WasmNameSubsection implements StructConverter {
 
 	protected WasmNameSubsection(BinaryReader reader) throws IOException {
 		sectionOffset = reader.getPointerIndex();
-		id = WasmNameSubsectionId.values()[reader.readNextUnsignedByte()];
+		id = reader.readNextUnsignedByte();
 		contentLength = new Leb128(reader);
 	}
 
@@ -65,7 +66,10 @@ public abstract class WasmNameSubsection implements StructConverter {
 	protected abstract void addToStructure(Structure s) throws IllegalArgumentException, DuplicateNameException, IOException;
 
 	public WasmNameSubsectionId getId() {
-		return id;
+		if (id < WasmNameSubsectionId.values().length) {
+			return WasmNameSubsectionId.values()[id];
+		}
+		return null;
 	}
 
 	public long getSectionOffset() {
