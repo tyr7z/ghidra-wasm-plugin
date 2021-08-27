@@ -10,7 +10,6 @@ import wasm.analysis.WasmFunctionAnalysis;
 
 public class InjectMeta extends InjectPayloadWasm{
 	MetaInstruction.Type opKind;
-	static boolean tested = false; // TODO: remove test var
 	
 	public InjectMeta(String sourceName, SleighLanguage language, long uniqBase, MetaInstruction.Type opKind) {
 		super(sourceName, language, uniqBase);

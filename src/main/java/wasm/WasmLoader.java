@@ -70,9 +70,6 @@ import wasm.format.sections.structures.WasmImportEntry;
 import wasm.format.sections.structures.WasmResizableLimits;
 import wasm.format.sections.structures.WasmTableType;
 
-/**
- * TODO: Provide class-level documentation that describes what this loader does.
- */
 public class WasmLoader extends AbstractLibrarySupportLoader {
 
 	public final static long HEADER_BASE = 0x10000000;

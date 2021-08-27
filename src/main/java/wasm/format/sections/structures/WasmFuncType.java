@@ -12,7 +12,8 @@ import wasm.format.StructureUtils;
 
 public class WasmFuncType implements StructConverter {
 
-	private int form;
+	@SuppressWarnings("unused")
+	private int form; /* always 0 in this version */
 	private Leb128 paramCount;
 	private byte[] paramTypes;
 	private Leb128 returnCount;

@@ -34,13 +34,11 @@ import wasm.format.WasmFuncSignature;
 import wasm.format.sections.structures.WasmFuncType;
 
 public class PcodeOpEmitter {
-	static final String RAM = "ram";
 	static final String TABLE = "table";
 
 	private HashMap<String, Varnode> nameToReg;
 	private ArrayList<PcodeOp> opList;
 	private SleighLanguage language;
-	private AddressSpace ramSpace;
 	private AddressSpace tableSpace;
 	private AddressSpace defSpace;
 	private AddressSpace constSpace;
@@ -116,7 +114,6 @@ public class PcodeOpEmitter {
 		nameToReg = new HashMap<String, Varnode>();
 		opList = new ArrayList<PcodeOp>();
 		this.language = language;
-		ramSpace = language.getAddressFactory().getAddressSpace(RAM);
 		tableSpace = language.getAddressFactory().getAddressSpace(TABLE);
 		constSpace = language.getAddressFactory().getConstantSpace();
 		defSpace = language.getDefaultSpace();
