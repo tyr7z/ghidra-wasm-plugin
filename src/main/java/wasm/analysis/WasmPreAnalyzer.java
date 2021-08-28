@@ -1,5 +1,6 @@
 package wasm.analysis;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import ghidra.app.services.AbstractAnalyzer;
@@ -9,11 +10,19 @@ import ghidra.app.util.bin.BinaryReader;
 import ghidra.app.util.bin.MemoryByteProvider;
 import ghidra.app.util.importer.MessageLog;
 import ghidra.program.model.address.AddressSetView;
+import ghidra.program.model.data.VoidDataType;
 import ghidra.program.model.lang.Processor;
+import ghidra.program.model.listing.Function;
+import ghidra.program.model.listing.Function.FunctionUpdateType;
+import ghidra.program.model.listing.Parameter;
+import ghidra.program.model.listing.ParameterImpl;
 import ghidra.program.model.listing.Program;
+import ghidra.program.model.listing.ReturnParameterImpl;
+import ghidra.program.model.symbol.SourceType;
 import ghidra.util.Msg;
 import ghidra.util.exception.CancelledException;
 import ghidra.util.task.TaskMonitor;
+import wasm.format.WasmEnums.ValType;
 
 public class WasmPreAnalyzer extends AbstractAnalyzer {
 	private final static String NAME = "Wasm Pre-Analyzer";
@@ -31,6 +40,24 @@ public class WasmPreAnalyzer extends AbstractAnalyzer {
 		return program.getLanguage().getProcessor().equals(Processor.findOrPossiblyCreateProcessor("Webassembly"));
 	}
 
+	private void setFunctionSignature(Program program, Function function, WasmFuncSignature sig) throws Exception {
+		Parameter returnVar;
+		if (sig.getReturns().length > 0) {
+			returnVar = new ReturnParameterImpl(sig.getReturns()[0].asDataType(), program);
+		} else {
+			returnVar = new ReturnParameterImpl(VoidDataType.dataType, program);
+		}
+
+		List<Parameter> params = new ArrayList<>();
+		ValType[] rawParams = sig.getParams();
+		for (int i = 0; i < rawParams.length; i++) {
+			params.add(new ParameterImpl("param" + (i + 1), rawParams[i].asDataType(), program));
+		}
+
+		function.updateFunction(null, returnVar, params,
+				FunctionUpdateType.DYNAMIC_STORAGE_ALL_PARAMS, true, SourceType.IMPORTED);
+	}
+
 	@Override
 	public boolean added(Program program, AddressSetView set, TaskMonitor monitor, MessageLog log) throws CancelledException {
 		WasmAnalysis state = WasmAnalysis.getState(program);
@@ -44,6 +71,12 @@ public class WasmPreAnalyzer extends AbstractAnalyzer {
 
 			WasmFuncSignature func = functions.get(i);
 			if (func.isImport()) {
+				Function function = program.getListing().getFunctionAt(func.getStartAddr());
+				try {
+					setFunctionSignature(program, function, func);
+				} catch(Exception e) {
+					Msg.error(this, "Failed to set function signature for " + func.getName(), e);
+				}
 				continue;
 			}
 

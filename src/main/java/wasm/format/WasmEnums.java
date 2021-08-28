@@ -2,6 +2,14 @@ package wasm.format;
 
 import java.util.HashMap;
 
+import ghidra.program.model.data.DataType;
+import ghidra.program.model.data.DoubleDataType;
+import ghidra.program.model.data.FloatDataType;
+import ghidra.program.model.data.LongDataType;
+import ghidra.program.model.data.Pointer64DataType;
+import ghidra.program.model.data.Undefined4DataType;
+import ghidra.program.model.data.Undefined8DataType;
+
 public class WasmEnums {
 	public enum WasmExternalKind {
 		EXT_FUNCTION,
@@ -30,6 +38,24 @@ public class WasmEnums {
 
 		private ValType(int v) {
 			this.typeByte = v;
+		}
+
+		public DataType asDataType() {
+			switch (this) {
+			case i32:
+				return Undefined4DataType.dataType;
+			case i64:
+				return Undefined8DataType.dataType;
+			case f32:
+				return FloatDataType.dataType;
+			case f64:
+				return DoubleDataType.dataType;
+			case funcref:
+				return Pointer64DataType.dataType;
+			case externref:
+				return LongDataType.dataType;
+			}
+			return null;
 		}
 
 		public static ValType fromByte(int b) {
