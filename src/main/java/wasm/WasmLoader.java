@@ -103,6 +103,10 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 		return getProgramAddress(program, IMPORTS_BASE + IMPORT_STUB_LEN * funcIdx);
 	}
 
+	public static Address getMethodAddress(Program program, long fileOffset) {
+		return getProgramAddress(program, METHOD_ADDRESS + fileOffset);
+	}
+
 	private static Address getProgramAddress(Program program, long offset) {
 		return program.getAddressFactory().getDefaultAddressSpace().getAddress(offset);
 	}
@@ -257,8 +261,8 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 
 			try {
 				createFunctionBodyBlock(program, fileBytes, methodName, methodOffset, method.getInstructions().length);
-				Address methodAddress = getProgramAddress(program, METHOD_ADDRESS + methodOffset);
-				Address methodEnd = getProgramAddress(program, METHOD_ADDRESS + methodOffset + method.getInstructions().length);
+				Address methodAddress = getMethodAddress(program, methodOffset);
+				Address methodEnd = getMethodAddress(program, methodOffset + method.getInstructions().length);
 
 				program.getFunctionManager().createFunction(
 						methodName, methodAddress,

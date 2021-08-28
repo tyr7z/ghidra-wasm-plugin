@@ -12,7 +12,6 @@ import ghidra.program.model.mem.MemoryAccessException;
 import ghidra.program.model.pcode.Varnode;
 import ghidra.util.Msg;
 import wasm.format.Leb128;
-import wasm.format.WasmFuncSignature;
 import wasm.format.sections.structures.WasmFuncType;
 import wasm.pcodeInject.PcodeHelper;
 import wasm.pcodeInject.PcodeOpEmitter;

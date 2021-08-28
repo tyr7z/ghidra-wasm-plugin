@@ -13,18 +13,26 @@ import wasm.format.StructureUtils;
 public class WasmLocalEntry implements StructConverter {
 
 	private Leb128 count;
-	private Leb128 type;
+	private int type;
 
 	public WasmLocalEntry(BinaryReader reader) throws IOException {
 		count = new Leb128(reader);
-		type = new Leb128(reader);
+		type = reader.readNextUnsignedByte();
+	}
+
+	public int getCount() {
+		return (int) count.getValue();
+	}
+
+	public int getType() {
+		return type;
 	}
 
 	@Override
 	public DataType toDataType() throws DuplicateNameException, IOException {
 		Structure structure = StructureUtils.createStructure("function_body");
 		StructureUtils.addField(structure, count, "count");
-		StructureUtils.addField(structure, type, "type");
+		StructureUtils.addField(structure, BYTE, "type");
 		return structure;
 	}
 }

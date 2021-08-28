@@ -7,7 +7,6 @@ import ghidra.app.decompiler.DecompileOptions;
 import ghidra.program.model.address.Address;
 import ghidra.program.model.listing.Function;
 import ghidra.program.model.listing.Program;
-import wasm.format.WasmFuncSignature;
 import wasm.format.sections.structures.WasmFuncType;
 
 public class WasmFunctionAnalysis {
@@ -174,7 +173,7 @@ public class WasmFunctionAnalysis {
 			case CALL_INDIRECT:
 				CallIndirectMetaInstruction callIndirect = (CallIndirectMetaInstruction) instr;
 				int typeIdx = callIndirect.typeIdx;
-				WasmFuncType type = parent.getTypeSection().getType(typeIdx);
+				WasmFuncType type = parent.getType(typeIdx);
 				callIndirect.signature = type;
 				valueStackDepth--;
 				valueStackDepth -= type.getParamTypes().length;

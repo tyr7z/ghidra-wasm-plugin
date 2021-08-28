@@ -40,11 +40,11 @@ define pcodeop returnCallOther;
 define pcodeop callIndirectCallOther;
 define pcodeop brTableCallOther;
 
-macro push32(val32) {
+macro push32(val) {
+	val32:4 = zext(val);
 	pushCallOther(32:4);
-	val64:8 = zext(val32);
 	SP = SP - 8;
-	*:8 SP = val64; 
+	*:4 SP = val32;
 }
 
 macro pop32(ret32) {
@@ -53,7 +53,8 @@ macro pop32(ret32) {
 	SP = SP + 8; 
 }
 
-macro push64(val64) {
+macro push64(val) {
+	val64:8 = zext(val);
 	pushCallOther(64:4);
 	SP = SP - 8;
 	*:8 SP = val64; 
@@ -220,7 +221,7 @@ inc_indent: " . "^inc_indent is inc_indent [ indent_lvl = indent_lvl-1; ]{}
 	push32(res);
 }
 :""^indent^"ref.func" funcidx is opc=0xd2; funcidx; indent {
-	# TODO: make an (artificial) table of functions so we can statically resolve funcrefs
+	# TODO: cpool this so that we obtain the right function to call?
 	val:8 = funcref(funcidx);
 	push64(val);
 }
@@ -267,26 +268,54 @@ inc_indent: " . "^inc_indent is inc_indent [ indent_lvl = indent_lvl-1; ]{}
 
 ## Variable Instructions
 # TODO: these need to be callOther to process the size of the local correctly
-:""^indent^"local.get" localidx is opc=0x20; localidx; indent {
+:""^indent^"local.get" localidx is opc=0x20; localidx; indent; is_op64=0 {
+	val:4 = *[register] (localidx:2 * 8);
+	push32(val);
+}
+:""^indent^"local.get" localidx is opc=0x20; localidx; indent; is_op64=1 {
 	val:8 = *[register] (localidx:2 * 8);
 	push64(val);
 }
-:""^indent^"local.set" localidx is opc=0x21; localidx; indent {
+
+:""^indent^"local.set" localidx is opc=0x21; localidx; indent; is_op64=0 {
+	val:4 = 0;
+	pop32(val);
+	*[register] (localidx:2 * 8) = val;
+}
+:""^indent^"local.set" localidx is opc=0x21; localidx; indent; is_op64=1 {
 	val:8 = 0;
 	pop64(val);
 	*[register] (localidx:2 * 8) = val;
 }
-:""^indent^"local.tee" localidx is opc=0x22; localidx; indent {
+
+:""^indent^"local.tee" localidx is opc=0x22; localidx; indent; is_op64=0 {
+	val:4 = 0;
+	pop32(val);
+	*[register] (localidx:2 * 8) = val;
+	push32(val);
+}
+:""^indent^"local.tee" localidx is opc=0x22; localidx; indent; is_op64=1 {
 	val:8 = 0;
 	pop64(val);
 	*[register] (localidx:2 * 8) = val;
 	push64(val);
 }
-:""^indent^"global.get" globalidx is opc=0x23; globalidx; indent {
+
+:""^indent^"global.get" globalidx is opc=0x23; globalidx; indent; is_op64=0 {
+	val:4 = *[global] (globalidx:4 * 8);
+	push32(val);
+}
+:""^indent^"global.get" globalidx is opc=0x23; globalidx; indent; is_op64=1 {
 	val:8 = *[global] (globalidx:4 * 8);
 	push64(val);
 }
-:""^indent^"global.set" globalidx is opc=0x24; globalidx; indent {
+
+:""^indent^"global.set" globalidx is opc=0x24; globalidx; indent; is_op64=0 {
+	val:4 = 0;
+	pop32(val);
+	*[global] (globalidx:4 * 8) = val;
+}
+:""^indent^"global.set" globalidx is opc=0x24; globalidx; indent; is_op64=1 {
 	val:8 = 0;
 	pop64(val);
 	*[global] (globalidx:4 * 8) = val;

@@ -30,7 +30,7 @@ import ghidra.program.model.pcode.PcodeOp;
 import ghidra.program.model.pcode.Varnode;
 import wasm.analysis.BrTable;
 import wasm.analysis.BrTarget;
-import wasm.format.WasmFuncSignature;
+import wasm.analysis.WasmFuncSignature;
 import wasm.format.sections.structures.WasmFuncType;
 
 public class PcodeOpEmitter {
@@ -336,7 +336,7 @@ public class PcodeOpEmitter {
 			throw new RuntimeException("Multiple returns not supported (yet)");
 		}
 
-		if (target.getAddr() == null) {
+		if (target.getStartAddr() == null) {
 			throw new RuntimeException("Call target unresolved");
 		}
 
@@ -347,7 +347,7 @@ public class PcodeOpEmitter {
 		emitPopParams(numParams);
 
 		// do the call
-		emitCall(target.getAddr());
+		emitCall(target.getStartAddr());
 
 		// restore previous local values
 		emitRestoreLocals(numParams);

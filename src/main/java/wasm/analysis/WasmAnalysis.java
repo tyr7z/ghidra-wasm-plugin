@@ -2,8 +2,10 @@ package wasm.analysis;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import ghidra.app.plugin.core.analysis.AnalysisState;
 import ghidra.app.plugin.core.analysis.AnalysisStateInfo;
@@ -12,18 +14,19 @@ import ghidra.app.util.bin.ByteProvider;
 import ghidra.app.util.bin.MemoryByteProvider;
 import ghidra.program.model.address.Address;
 import ghidra.program.model.listing.Function;
-import ghidra.program.model.listing.FunctionIterator;
 import ghidra.program.model.listing.Program;
 import ghidra.program.model.mem.Memory;
+import ghidra.program.model.symbol.Symbol;
 import ghidra.util.Msg;
 import wasm.WasmLoader;
-import wasm.format.WasmFuncSignature;
-import wasm.format.WasmModule;
 import wasm.format.WasmEnums.WasmExternalKind;
+import wasm.format.WasmModule;
+import wasm.format.sections.WasmCodeSection;
 import wasm.format.sections.WasmFunctionSection;
 import wasm.format.sections.WasmImportSection;
 import wasm.format.sections.WasmTypeSection;
 import wasm.format.sections.structures.WasmFuncType;
+import wasm.format.sections.structures.WasmFunctionBody;
 import wasm.format.sections.structures.WasmImportEntry;
 
 public class WasmAnalysis implements AnalysisState {
@@ -44,10 +47,10 @@ public class WasmAnalysis implements AnalysisState {
 	}
 
 	private Program program;
-	private HashMap<Function, WasmFunctionAnalysis> funcStates = new HashMap<>();
+	private Map<Function, WasmFunctionAnalysis> funcStates = new HashMap<>();
 	private WasmFunctionAnalysis currMetaFunc = null;
 	private WasmModule module = null;
-	private ArrayList<WasmFuncSignature> functions = null;
+	private List<WasmFuncSignature> functions = null;
 
 	public WasmAnalysis(Program p) {
 		this.program = p;
@@ -80,16 +83,16 @@ public class WasmAnalysis implements AnalysisState {
 		return funcStates.get(f);
 	}
 
-	public void setModule(WasmModule module) {
-		this.module = module;
+	public List<WasmFuncSignature> getFunctions() {
+		return Collections.unmodifiableList(functions);
 	}
 
 	public WasmFuncSignature getFuncSignature(int funcIdx) {
 		return functions.get(funcIdx);
 	}
 
-	public WasmTypeSection getTypeSection() {
-		return module.getTypeSection();
+	public WasmFuncType getType(int typeidx) {
+		return module.getTypeSection().getType(typeidx);
 	}
 
 	public void findFunctionSignatures() {
@@ -112,19 +115,31 @@ public class WasmAnalysis implements AnalysisState {
 		}
 
 		WasmFunctionSection functionSection = module.getFunctionSection();
-		if (functionSection != null) {
-			FunctionIterator funcIter = program.getFunctionManager().getFunctions(true);
-			int i = 0;
-			// non-imported functions will show up first and in order since we are iterating
-			// by entry point
-			for (Function func : funcIter) {
-				if (i >= functionSection.getTypeCount())
-					break;
+		WasmCodeSection codeSection = module.getCodeSection();
+		if (functionSection != null && codeSection != null) {
+			List<WasmFunctionBody> methods = codeSection.getFunctions();
+			for (int i = 0; i < methods.size(); ++i) {
 				int typeidx = functionSection.getTypeIdx(i);
 				WasmFuncType funcType = typeSection.getType(typeidx);
+				WasmFunctionBody method = methods.get(i);
 
-				functions.add(new WasmFuncSignature(funcType.getParamTypes(), funcType.getReturnTypes(), null, func.getEntryPoint()));
-				i++;
+				Address startAddress = WasmLoader.getMethodAddress(program, method.getOffset());
+				Address endAddress = WasmLoader.getMethodAddress(program, method.getOffset() + method.getInstructions().length);
+
+				String name = null;
+				Symbol[] labels = program.getSymbolTable().getSymbols(startAddress);
+				if (labels.length > 0) {
+					name = labels[0].getName();
+				}
+
+				byte[] params = funcType.getParamTypes();
+				byte[] returns = funcType.getReturnTypes();
+				byte[] nonparam_locals = method.getLocals();
+				byte[] locals = new byte[params.length + nonparam_locals.length];
+
+				System.arraycopy(params, 0, locals, 0, params.length);
+				System.arraycopy(nonparam_locals, 0, locals, params.length, nonparam_locals.length);
+				functions.add(new WasmFuncSignature(params, returns, name, startAddress, endAddress, locals));
 			}
 		}
 	}
