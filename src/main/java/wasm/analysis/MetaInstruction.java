@@ -1,7 +1,10 @@
 package wasm.analysis;
 
+import java.io.IOException;
 import java.util.ArrayList;
 
+import ghidra.app.util.bin.BinaryReader;
+import ghidra.app.util.bin.MemoryByteProvider;
 import ghidra.program.model.address.Address;
 import ghidra.program.model.lang.InjectContext;
 import ghidra.program.model.listing.Program;
@@ -116,9 +119,11 @@ public abstract class MetaInstruction {
 	}
 
 	private static Leb128 readLeb128(Program p, Address startAddr) throws MemoryAccessException {
-		byte[] buf = new byte[10];
-		p.getMemory().getBytes(startAddr, buf);
-		return Leb128.readUnsignedLeb128(buf);
+		try {
+			return new Leb128(new BinaryReader(new MemoryByteProvider(p.getMemory(), startAddr), true));
+		} catch(IOException e) {
+			throw new MemoryAccessException(e.getMessage());
+		}
 	}
 
 	// We have to do this since we cannot resolve non-constant varnode inputs to our
