@@ -374,7 +374,7 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 			long tableIndex = i;
 			long byteSize = 8 * numElements;
 			Address dataStart = program.getAddressFactory().getAddressSpace("table").getAddress(tableIndex << 32);
-			MemoryBlock block = program.getMemory().createInitializedBlock(".table" + i, dataStart, byteSize, (byte)0xff, monitor, false);
+			MemoryBlock block = program.getMemory().createInitializedBlock(".table" + i, dataStart, byteSize, (byte) 0xff, monitor, false);
 			block.setRead(true);
 			block.setWrite(true);
 			block.setExecute(false);

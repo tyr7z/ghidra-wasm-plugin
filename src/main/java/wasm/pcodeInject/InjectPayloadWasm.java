@@ -13,5 +13,4 @@ public class InjectPayloadWasm extends InjectPayloadCallother {
 		this.language = language;
 		this.uniqueBase = uniqBase;
 	}
-
 }
