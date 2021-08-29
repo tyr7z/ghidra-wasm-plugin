@@ -39,25 +39,17 @@ public class WasmFuncSignature {
 		return locals == null;
 	}
 
-	private static ValType[] translateTypeArray(byte[] types) {
-		ValType[] res = new ValType[types.length];
-		for (int i = 0; i < types.length; i++) {
-			res[i] = ValType.fromByte(types[i]);
-		}
-		return res;
-	}
-
 	public WasmFuncSignature(byte[] paramTypes, byte[] returnTypes, String name, Address addr) {
 		this.name = name;
 		this.startAddr = addr;
-		this.params = translateTypeArray(paramTypes);
-		this.returns = translateTypeArray(returnTypes);
+		this.params = ValType.fromBytes(paramTypes);
+		this.returns = ValType.fromBytes(returnTypes);
 	}
 
 	public WasmFuncSignature(byte[] paramTypes, byte[] returnTypes, String name, Address startAddr, Address endAddr, byte[] locals) {
 		this(paramTypes, returnTypes, name, startAddr);
 		this.endAddr = endAddr;
-		this.locals = translateTypeArray(locals);
+		this.locals = ValType.fromBytes(locals);
 	}
 
 	@Override

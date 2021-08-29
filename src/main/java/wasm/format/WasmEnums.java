@@ -61,5 +61,13 @@ public class WasmEnums {
 		public static ValType fromByte(int b) {
 			return BY_BYTE.get(b);
 		}
+
+		public static ValType[] fromBytes(byte[] types) {
+			ValType[] res = new ValType[types.length];
+			for (int i = 0; i < types.length; i++) {
+				res[i] = fromByte(types[i]);
+			}
+			return res;
+		}
 	}
 }

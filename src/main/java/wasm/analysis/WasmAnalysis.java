@@ -19,6 +19,7 @@ import ghidra.program.model.mem.Memory;
 import ghidra.program.model.symbol.Symbol;
 import ghidra.util.Msg;
 import wasm.WasmLoader;
+import wasm.format.WasmEnums.ValType;
 import wasm.format.WasmEnums.WasmExternalKind;
 import wasm.format.WasmModule;
 import wasm.format.sections.WasmCodeSection;
@@ -93,6 +94,10 @@ public class WasmAnalysis implements AnalysisState {
 
 	public WasmFuncType getType(int typeidx) {
 		return module.getTypeSection().getType(typeidx);
+	}
+
+	public ValType getGlobalType(int globalidx) {
+		return module.getGlobalSection().getEntries().get(globalidx).getType();
 	}
 
 	public void findFunctionSignatures() {

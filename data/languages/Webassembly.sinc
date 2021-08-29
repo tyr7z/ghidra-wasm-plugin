@@ -8,6 +8,10 @@ define token opcode2 (8)
 	opc2 = (0,7)
 ;
 
+define token valtypet (8)
+	valtype = (0,7) hex
+;
+
 define token byteval (8)
 	bytev = (0,7)
 ;
@@ -160,7 +164,8 @@ inc_indent: " . "^inc_indent is inc_indent [ indent_lvl = indent_lvl-1; ]{}
 	trap();
 }
 
-:""^indent^"nop" is opc=0x01; indent {}
+:""^indent^"nop" is opc=0x01; indent {
+}
 
 :""^inc_indent^"block" "blocktype="^ULeb128 is opc=0x02; ULeb128; $(INC_INDENT) {
 	beginBlockCallOther();
@@ -231,7 +236,25 @@ inc_indent: " . "^inc_indent is inc_indent [ indent_lvl = indent_lvl-1; ]{}
 	val:8 = 0;
 	pop64(val);
 }
-:""^indent^"select" is opc=0x1b; indent {
+
+macro select32() {
+	cond:4 = 0;
+	pop32(cond);
+	val1:4 = 0;
+	val2:4 = 0;
+	pop32(val2);
+	pop32(val1);
+	res:4 = 0;
+	if (cond != 0) goto <true>;
+	res = val1;
+	goto <finish>;
+<true>
+	res = val2;
+<finish>
+	push32(res);
+}
+
+macro select64() {
 	cond:4 = 0;
 	pop32(cond);
 	val1:8 = 0;
@@ -247,23 +270,27 @@ inc_indent: " . "^inc_indent is inc_indent [ indent_lvl = indent_lvl-1; ]{}
 <finish>
 	push64(res);
 }
+
+:""^indent^"select" is opc=0x1b; indent; is_op64=0 {
+	select32();
+}
+:""^indent^"select" is opc=0x1b; indent; is_op64=1 {
+	select64();
+}
 # In the current version of WASM, only one type index is permitted in select t*.
 # This is functionally identical to regular select.
-:""^indent^"select" typeidx is opc=0x1c; opc2=0x01; typeidx; indent {
-	cond:4 = 0;
-	pop32(cond);
-	val1:8 = 0;
-	val2:8 = 0;
-	pop64(val2);
-	pop64(val1);
-	res:8 = 0;
-	if (cond != 0) goto <true>;
-	res = val1;
-	goto <finish>;
-<true>
-	res = val2;
-<finish>
-	push64(res);
+
+:""^indent^"select" is opc=0x1c; opc2=0x01; valtype; indent {
+	# i64, f64, funcref, externref
+	select64();
+}
+:""^indent^"select" 0x7f is opc=0x1c; opc2=0x01; valtype=0x7f; indent {
+	# i32
+	select32();
+}
+:""^indent^"select" 0x7d is opc=0x1c; opc2=0x01; valtype=0x7d; indent {
+	# f32
+	select32();
 }
 
 ## Variable Instructions
