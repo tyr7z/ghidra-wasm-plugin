@@ -76,9 +76,6 @@ define pcodeop halt_trap;
 define pcodeop popcnt;
 define pcodeop clz;
 define pcodeop ctz;
-define pcodeop br_if;
-define pcodeop rotl;
-define pcodeop rotr;
 # TODO: define some of these in terms of a more generic "memcpy"/"memset" operation
 define pcodeop table_init;
 define pcodeop elem_drop;
@@ -92,8 +89,6 @@ define pcodeop memory_init;
 define pcodeop data_drop;
 define pcodeop memory_copy;
 define pcodeop memory_fill;
-
-define pcodeop funcref;
 
 @include "Leb128.sinc"
 

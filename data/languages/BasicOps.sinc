@@ -524,28 +524,32 @@ memoffset: "offset="^ULeb128 is ULeb128 {
 	x1:4 = 0;
 	pop32(x1);
 	pop32(x0);
-	push32(x0 << x1);
+	cnt:4 = x1 & 31;
+	push32(x0 << cnt);
 }
 :""^indent^"i32.shr_s"  is opc=0x75; indent {
 	x0:4 = 0;
 	x1:4 = 0;
 	pop32(x1);
 	pop32(x0);
-	push32(x0 s>> x1);
+	cnt:4 = x1 & 31;
+	push32(x0 s>> cnt);
 }
 :""^indent^"i32.shr_u"  is opc=0x76; indent {
 	x0:4 = 0;
 	x1:4 = 0;
 	pop32(x1);
 	pop32(x0);
-	push32(x0 >> x1);
+	cnt:4 = x1 & 31;
+	push32(x0 >> cnt);
 }
 :""^indent^"i32.rotl"  is opc=0x77; indent {
 	x0:4 = 0;
 	x1:4 = 0;
 	pop32(x1);
 	pop32(x0);
-	res:4 = rotl(x0, x1);
+	cnt:4 = x1 & 31;
+	res:4 = (x0 << cnt) | (x0 >> (32 - cnt));
 	push32(res);
 }
 :""^indent^"i32.rotr"  is opc=0x78; indent {
@@ -553,7 +557,8 @@ memoffset: "offset="^ULeb128 is ULeb128 {
 	x1:4 = 0;
 	pop32(x1);
 	pop32(x0);
-	res:4 = rotr(x0, x1);
+	cnt:4 = x1 & 31;
+	res:4 = (x0 >> cnt) | (x0 << (32 - cnt));
 	push32(res);
 }
 :""^indent^"i64.clz"  is opc=0x79; indent {
@@ -649,28 +654,32 @@ memoffset: "offset="^ULeb128 is ULeb128 {
 	x1:8 = 0;
 	pop64(x1);
 	pop64(x0);
-	push64(x0 << x1);
+	cnt:8 = x1 & 63;
+	push64(x0 << cnt);
 }
 :""^indent^"i64.shr_s"  is opc=0x87; indent {
 	x0:8 = 0;
 	x1:8 = 0;
 	pop64(x1);
 	pop64(x0);
-	push64(x0 s>> x1);
+	cnt:8 = x1 & 63;
+	push64(x0 s>> cnt);
 }
 :""^indent^"i64.shr_u"  is opc=0x88; indent {
 	x0:8 = 0;
 	x1:8 = 0;
 	pop64(x1);
 	pop64(x0);
-	push64(x0 >> x1);
+	cnt:8 = x1 & 63;
+	push64(x0 >> cnt);
 }
 :""^indent^"i64.rotl"  is opc=0x89; indent {
 	x0:8 = 0;
 	x1:8 = 0;
 	pop64(x1);
 	pop64(x0);
-	res:8 = rotl(x0, x1);
+	cnt:8 = x1 & 63;
+	res:8 = (x0 << cnt) | (x0 >> (64 - cnt));
 	push64(res);
 }
 :""^indent^"i64.rotr"  is opc=0x8A; indent {
@@ -678,7 +687,8 @@ memoffset: "offset="^ULeb128 is ULeb128 {
 	x1:8 = 0;
 	pop64(x1);
 	pop64(x0);
-	res:8 = rotr(x0, x1);
+	cnt:8 = x1 & 63;
+	res:8 = (x0 >> cnt) | (x0 << (64 - cnt));
 	push64(res);
 }
 :""^indent^"f32.abs"  is opc=0x8B; indent {
