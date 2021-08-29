@@ -10,8 +10,10 @@ import ghidra.app.util.bin.StructConverter;
 import ghidra.program.model.data.DataType;
 import ghidra.program.model.data.Structure;
 import ghidra.util.exception.DuplicateNameException;
+import wasm.WasmLoader;
 import wasm.format.Leb128;
 import wasm.format.StructureUtils;
+import wasm.format.WasmModule;
 import wasm.format.WasmEnums.ValType;
 
 public class WasmElementSegment implements StructConverter {
@@ -19,14 +21,14 @@ public class WasmElementSegment implements StructConverter {
 	private int flags;
 	private ElementSegmentMode mode;
 
-	private Leb128 tableidx; 				/* if (flags & 3) == 2 */
-	private ConstantExpression offset; 		/* if (flags & 1) == 0 */
+	private Leb128 tableidx; /* if (flags & 3) == 2 */
+	private ConstantExpression offset; /* if (flags & 1) == 0 */
 	private Leb128 count;
 
-	int elemkind; 							/* if (flags & 4) == 0 */
-	private List<Leb128> funcidxs; 			/* if (flags & 4) == 0 */
+	int elemkind; /* if (flags & 4) == 0 */
+	private List<Leb128> funcidxs; /* if (flags & 4) == 0 */
 
-	ValType elemtype; 						/* if (flags & 4) != 0 */
+	ValType elemtype; /* if (flags & 4) != 0 */
 	private List<ConstantExpression> exprs; /* if (flags & 4) != 0 */
 
 	public enum ElementSegmentMode {
@@ -121,14 +123,16 @@ public class WasmElementSegment implements StructConverter {
 		}
 	}
 
-	public byte[] getInitData() {
+	public byte[] getInitData(WasmModule module) {
 		int count = (int) this.count.getValue();
 		byte[] result = new byte[count * 8];
 		Arrays.fill(result, (byte) 0xff);
 
 		if (funcidxs != null) {
 			for (int i = 0; i < count; i++) {
-				byte[] v = ConstantExpression.longToBytes(funcidxs.get(i).getValue());
+				long funcidx = funcidxs.get(i).getValue();
+				long funcaddr = WasmLoader.getFunctionAddress(module, (int) funcidx);
+				byte[] v = ConstantExpression.longToBytes(funcaddr);
 				System.arraycopy(v, 0, result, i * 8, 8);
 			}
 			return result;
@@ -136,7 +140,7 @@ public class WasmElementSegment implements StructConverter {
 
 		if (exprs != null) {
 			for (int i = 0; i < count; i++) {
-				byte[] v = exprs.get(i).getInitBytes();
+				byte[] v = exprs.get(i).getInitBytes(module);
 				if (v != null)
 					System.arraycopy(v, 0, result, i * 8, 8);
 			}

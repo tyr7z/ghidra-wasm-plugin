@@ -9,8 +9,10 @@ import ghidra.program.model.data.Float4DataType;
 import ghidra.program.model.data.Float8DataType;
 import ghidra.program.model.data.Structure;
 import ghidra.util.exception.DuplicateNameException;
+import wasm.WasmLoader;
 import wasm.format.Leb128;
 import wasm.format.StructureUtils;
+import wasm.format.WasmModule;
 
 /* A reader for expressions containing a single constant instruction.
 
@@ -110,15 +112,17 @@ public final class ConstantExpression implements StructConverter {
 	/**
 	 * Return the bytes that correspond to the value produced, i.e. 4 bytes for
 	 * i32.const, 8 bytes for ref.null, etc. Return null if the initializer cannot
-	 * be determined (e.g. global)
+	 * be determined (e.g. global) This needs a reference to the module so that
+	 * function references can be resolved to their static addresses.
 	 */
-	public byte[] getInitBytes() {
+	public byte[] getInitBytes(WasmModule module) {
 		switch (type) {
 		case I32_CONST:
 			return intToBytes((int) ((Leb128) value).getValue());
 		case I64_CONST:
-		case REF_FUNC:
 			return longToBytes(((Leb128) value).getValue());
+		case REF_FUNC:
+			return longToBytes(WasmLoader.getFunctionAddress(module, (int) ((Leb128) value).getValue()));
 		case F32_CONST:
 		case F64_CONST:
 			return (byte[]) value;

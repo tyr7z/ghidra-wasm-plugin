@@ -111,6 +111,27 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 		return program.getAddressFactory().getDefaultAddressSpace().getAddress(offset);
 	}
 
+	public static long getFunctionAddress(WasmModule module, int funcIdx) {
+		WasmImportSection importSection = module.getImportSection();
+		if (importSection != null) {
+			List<WasmImportEntry> imports = importSection.getEntries();
+			if (funcIdx < imports.size()) {
+				return IMPORTS_BASE + IMPORT_STUB_LEN * funcIdx;
+			} else {
+				funcIdx -= imports.size();
+			}
+		}
+
+		WasmCodeSection codeSection = module.getCodeSection();
+		if (codeSection != null) {
+			List<WasmFunctionBody> methods = codeSection.getFunctions();
+			if (funcIdx < methods.size()) {
+				return METHOD_ADDRESS + methods.get(funcIdx).getOffset();
+			}
+		}
+		return -1;
+	}
+
 	public static Data createData(Program program, Listing listing, Address address, DataType dt) {
 		try {
 			Data d = listing.getDataAt(address);
@@ -340,7 +361,7 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 		}
 	}
 
-	private void loadGlobalSection(Program program, FileBytes fileBytes, WasmGlobalSection globalSection, TaskMonitor monitor) throws Exception {
+	private void loadGlobalSection(Program program, FileBytes fileBytes, WasmModule module, WasmGlobalSection globalSection, TaskMonitor monitor) throws Exception {
 		if (globalSection == null)
 			return;
 
@@ -351,7 +372,7 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 			Address dataStart = program.getAddressFactory().getAddressSpace("global").getAddress(i * 8);
 
 			DataType dataType = entry.getDataType();
-			byte[] initBytes = entry.getInitData();
+			byte[] initBytes = entry.getInitData(module);
 			if (initBytes == null) {
 				block = program.getMemory().createUninitializedBlock("global" + i, dataStart, dataType.getLength(), false);
 			} else {
@@ -386,7 +407,7 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 		}
 	}
 
-	private void loadElementSection(Program program, FileBytes fileBytes, WasmElementSection elementSection, TaskMonitor monitor) throws Exception {
+	private void loadElementSection(Program program, FileBytes fileBytes, WasmModule module, WasmElementSection elementSection, TaskMonitor monitor) throws Exception {
 		if (elementSection == null)
 			return;
 
@@ -398,7 +419,7 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 			if (offset == -1)
 				continue;
 
-			byte[] initBytes = entry.getInitData();
+			byte[] initBytes = entry.getInitData(module);
 			if (initBytes == null)
 				continue;
 
@@ -444,8 +465,8 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 		loadDataSection(program, fileBytes, module.getDataSection(), monitor);
 		loadCodeSection(program, fileBytes, module, module.getCodeSection(), monitor);
 		loadImportSection(program, fileBytes, module.getImportSection(), monitor);
-		loadGlobalSection(program, fileBytes, module.getGlobalSection(), monitor);
+		loadGlobalSection(program, fileBytes, module, module.getGlobalSection(), monitor);
 		loadTableSection(program, fileBytes, module.getTableSection(), monitor);
-		loadElementSection(program, fileBytes, module.getElementSection(), monitor);
+		loadElementSection(program, fileBytes, module, module.getElementSection(), monitor);
 	}
 }
