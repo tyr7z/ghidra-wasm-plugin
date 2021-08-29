@@ -3,9 +3,7 @@ package wasm.analysis;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import ghidra.app.plugin.core.analysis.AnalysisState;
 import ghidra.app.plugin.core.analysis.AnalysisStateInfo;
@@ -13,7 +11,6 @@ import ghidra.app.util.bin.BinaryReader;
 import ghidra.app.util.bin.ByteProvider;
 import ghidra.app.util.bin.MemoryByteProvider;
 import ghidra.program.model.address.Address;
-import ghidra.program.model.listing.Function;
 import ghidra.program.model.listing.Program;
 import ghidra.program.model.mem.Memory;
 import ghidra.program.model.symbol.Symbol;
@@ -48,8 +45,6 @@ public class WasmAnalysis implements AnalysisState {
 	}
 
 	private Program program;
-	private Map<Function, WasmFunctionAnalysis> funcStates = new HashMap<>();
-	private WasmFunctionAnalysis currMetaFunc = null;
 	private WasmModule module = null;
 	private List<WasmFuncSignature> functions = null;
 
@@ -74,14 +69,6 @@ public class WasmAnalysis implements AnalysisState {
 
 	public Program getProgram() {
 		return program;
-	}
-
-	public WasmFunctionAnalysis getFuncState(Function f) {
-		if (!funcStates.containsKey(f)) {
-			System.out.println("Creating new function analysis state for " + f.getName());
-			funcStates.put(f, new WasmFunctionAnalysis(this, f));
-		}
-		return funcStates.get(f);
 	}
 
 	public List<WasmFuncSignature> getFunctions() {
@@ -151,29 +138,5 @@ public class WasmAnalysis implements AnalysisState {
 				functions.add(new WasmFuncSignature(params, returns, name, startAddress, endAddress, locals));
 			}
 		}
-	}
-
-	public boolean collectingMetas() {
-		return currMetaFunc != null;
-	}
-
-	public void startCollectingMetas(WasmFunctionAnalysis f) {
-		this.currMetaFunc = f;
-	}
-
-	public void stopCollectingMetas() {
-		this.currMetaFunc = null;
-	}
-
-	public void performResolution() {
-		for (HashMap.Entry<Function, WasmFunctionAnalysis> entry : funcStates.entrySet()) {
-			entry.getValue().performResolution();
-		}
-	}
-
-	public void collectMeta(MetaInstruction meta) {
-		if (currMetaFunc == null)
-			return;
-		currMetaFunc.collectMeta(meta);
 	}
 }

@@ -40,7 +40,7 @@ public class WasmPreAnalyzer extends AbstractAnalyzer {
 		return program.getLanguage().getProcessor().equals(Processor.findOrPossiblyCreateProcessor("Webassembly"));
 	}
 
-	private void setFunctionSignature(Program program, Function function, WasmFuncSignature sig) throws Exception {
+	private static void setFunctionSignature(Program program, Function function, WasmFuncSignature sig) throws Exception {
 		Parameter returnVar;
 		if (sig.getReturns().length > 0) {
 			returnVar = new ReturnParameterImpl(sig.getReturns()[0].asDataType(), program);

@@ -4,7 +4,7 @@
 
 <processor_spec>
   <properties>
-    <property key="pcodeInjectLibraryClass" value="wasm.pcodeInject.PcodeInjectLibraryWasm"/>
+    <property key="pcodeInjectLibraryClass" value="wasm.pcode.PcodeInjectLibraryWasm"/>
   </properties>
   <inferptrbounds>
     <range space="mem0" first="0x400" last="0xffffffff"/>
