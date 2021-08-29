@@ -54,7 +54,7 @@ public class WasmPreAnalyzer extends AbstractAnalyzer {
 			params.add(new ParameterImpl("param" + (i + 1), rawParams[i].asDataType(), program));
 		}
 
-		function.updateFunction(null, returnVar, params,
+		function.updateFunction("__wasm", returnVar, params,
 				FunctionUpdateType.DYNAMIC_STORAGE_ALL_PARAMS, true, SourceType.IMPORTED);
 	}
 
@@ -70,13 +70,14 @@ public class WasmPreAnalyzer extends AbstractAnalyzer {
 			monitor.setProgress(i);
 
 			WasmFuncSignature func = functions.get(i);
+			Function function = program.getListing().getFunctionAt(func.getStartAddr());
+			try {
+				setFunctionSignature(program, function, func);
+			} catch (Exception e) {
+				Msg.error(this, "Failed to set function signature for " + func.getName(), e);
+			}
+
 			if (func.isImport()) {
-				Function function = program.getListing().getFunctionAt(func.getStartAddr());
-				try {
-					setFunctionSignature(program, function, func);
-				} catch(Exception e) {
-					Msg.error(this, "Failed to set function signature for " + func.getName(), e);
-				}
 				continue;
 			}
 

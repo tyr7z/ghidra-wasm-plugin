@@ -34,9 +34,13 @@ public class WasmFunctionPreAnalysis {
 
 	private static class ProgramContext {
 		/* These labels must be synced with WebAssembly.slaspec */
-		private static final String REG_ISOP64 = "is_op64";
-		private static final String REG_SPADJ = "SPAdjust";
-		private static final String REG_BRTARGET = "BRTarget";
+		private static final String REG_INDENT = "ctx_indent";
+		private static final String REG_ISOP64 = "ctx_is_op64";
+		private static final String REG_SPADJ = "ctx_sp_adjust";
+		private static final String REG_BRTARGET = "ctx_br_target";
+		private static final String REG_IS_CASE = "ctx_is_case";
+		private static final String REG_IS_DEFAULT = "ctx_is_default";
+		private static final String REG_CASE_INDEX = "ctx_case_index";
 
 		private static void setRegister(Program program, Address address, String name, long value) {
 			Register register = program.getRegister(name);
@@ -50,6 +54,10 @@ public class WasmFunctionPreAnalysis {
 			} catch (ContextChangeException e) {
 				Msg.error(ProgramContext.class, "Failed to set context register", e);
 			}
+		}
+
+		public static void setIndent(Program program, Address address, int value) {
+			setRegister(program, address, REG_INDENT, value);
 		}
 
 		public static void setIsOp64(Program program, Address address, ValType type) {
@@ -70,6 +78,15 @@ public class WasmFunctionPreAnalysis {
 
 		public static void setStackAdjust(Program program, Address address, long value) {
 			setRegister(program, address, REG_SPADJ, value);
+		}
+
+		public static void setBrTableCase(Program program, Address address, int index) {
+			setRegister(program, address, REG_IS_CASE, 1);
+			if (index == -1) {
+				setRegister(program, address, REG_IS_DEFAULT, 1);
+			} else {
+				setRegister(program, address, REG_CASE_INDEX, index);
+			}
 		}
 	}
 
@@ -307,6 +324,7 @@ public class WasmFunctionPreAnalysis {
 	// #endregion
 
 	private void analyzeOpcode(Program program, Address instAddress, BinaryReader reader) throws IOException {
+		ProgramContext.setIndent(program, instAddress, controlStack.size() - 1);
 		int opcode = reader.readNextUnsignedByte();
 		Msg.info(this, func.getName() + "@" + instAddress + ": " + String.format("0x%02x", opcode) + " blocks=" + controlStack + " stack=" + valueStack);
 		switch (opcode) {
@@ -374,12 +392,13 @@ public class WasmFunctionPreAnalysis {
 		case 0x0E: /* br_table l* l */ {
 			long count = readLeb128(reader);
 			popValue(instAddress, ValType.i32);
-			for (int i = 0; i < count; i++) {
-				long case_labelidx = readLeb128(reader);
-				branchToBlock(program, instAddress, case_labelidx);
+			for (int i = 0; i < count + 1; i++) {
+				Address caseAddress = func.getStartAddr().add(reader.getPointerIndex());
+				ProgramContext.setIndent(program, caseAddress, controlStack.size() - 1);
+				ProgramContext.setBrTableCase(program, caseAddress, (i < count) ? i : -1);
+				long labelidx = readLeb128(reader);
+				branchToBlock(program, caseAddress, labelidx);
 			}
-			long default_labelidx = readLeb128(reader);
-			branchToBlock(program, instAddress, default_labelidx);
 			markUnreachable(instAddress);
 			break;
 		}

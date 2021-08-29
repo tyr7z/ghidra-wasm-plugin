@@ -1,19 +1,22 @@
 # sleigh include file for Skeleton language instructions
 
-define token opcode (8)
-	opc = (0,7)
-;
+define token opbyte (8)
+	opc = (0, 7)
+	opc2 = (0, 7)
+	valtype = (0, 7)
+	bytev = (0, 7)
 
-define token opcode2 (8)
-	opc2 = (0,7)
-;
-
-define token valtypet (8)
-	valtype = (0,7) hex
-;
-
-define token byteval (8)
-	bytev = (0,7)
+	topbit = (7, 7)
+	v0 = (0, 6)
+	v1 = (0, 6)
+	v2 = (0, 6)
+	v3 = (0, 6)
+	v4 = (0, 6)
+	v5 = (0, 6)
+	v6 = (0, 6)
+	v7 = (0, 6)
+	v8 = (0, 6)
+	v9 = (0, 6)
 ;
 
 define token I32 (32)
@@ -28,44 +31,24 @@ define token I64 (64)
 # Macros
 ################################################################
 
-# These pcodeop's have NOP semantics, they just signal to the analyzer to modify the controlStack and valueStack
-define pcodeop pushCallOther;
-define pcodeop popCallOther;
-define pcodeop beginLoopCallOther;
-define pcodeop beginBlockCallOther;
-define pcodeop endCallOther;
-
-# These pcodeop's do not have NOP semantics, they are dynamically injected into by PcodeInjectLibraryWasm
-define pcodeop brCallOther;
-define pcodeop callCallOther;
-define pcodeop ifCallOther;
-define pcodeop elseCallOther;
-define pcodeop returnCallOther;
-define pcodeop callIndirectCallOther;
-define pcodeop brTableCallOther;
-
 macro push32(val) {
 	val32:4 = zext(val);
-	pushCallOther(32:4);
 	SP = SP - 8;
 	*:4 SP = val32;
 }
 
 macro pop32(ret32) {
-	popCallOther(32:4);
 	ret32 = *:4 SP;
 	SP = SP + 8; 
 }
 
 macro push64(val) {
 	val64:8 = zext(val);
-	pushCallOther(64:4);
 	SP = SP - 8;
 	*:8 SP = val64; 
 }
 
 macro pop64(ret64) {
-	popCallOther(64:4);
 	ret64 = *:8 SP;
 	SP = SP + 8; 
 }
@@ -92,15 +75,38 @@ define pcodeop memory_fill;
 
 @include "Leb128.sinc"
 
+# This is a silly hack because I couldn't work out how to use Leb128 itself
+# in the disassembly actions section of another constructor...
+@define SYMBOL local4
+@define DEST_EXPR "0x1000000000 + 8 * "
+@define EXPORT_EXPR "export *[register]:4 dest;"
+@include "Leb128_u32.sinc"
+
+@define SYMBOL local8
+@define DEST_EXPR "0x1000000000 + 8 * "
+@define EXPORT_EXPR "export *[register]:8 dest;"
+@include "Leb128_u32.sinc"
+
+@define SYMBOL global4
+@define DEST_EXPR "8 * "
+@define EXPORT_EXPR "export *[global]:4 dest;"
+@include "Leb128_u32.sinc"
+
+@define SYMBOL global8
+@define DEST_EXPR "8 * "
+@define EXPORT_EXPR "export *[global]:8 dest;"
+@include "Leb128_u32.sinc"
+
+@define SYMBOL tableref
+@define DEST_EXPR "(1<<32) * "
+@define EXPORT_EXPR "export *[table]:8 dest;"
+@include "Leb128_u32.sinc"
+
+br_target: ctx_br_target is ctx_br_target {
+	export *[ram]:4 ctx_br_target;
+}
+
 funcidx: ULeb128 is ULeb128 {
-	export ULeb128;
-}
-
-localidx: ULeb128 is ULeb128 {
-	export ULeb128;
-}
-
-globalidx: ULeb128 is ULeb128 {
 	export ULeb128;
 }
 
@@ -143,16 +149,23 @@ macro trap() {
 	goto <trap_loop>;
 }
 
+macro doBranch(ctx_sp_adjust, br_target) {
+	# copyBranchArgsCallOther();
+	SP = SP + ctx_sp_adjust * 8;
+	goto br_target;
+}
+
 ################################################################
 
-indent: "" is indent_lvl=0 {}
-indent: " . "^indent is indent [ indent_lvl = indent_lvl - 1; ]{}
+indent: "" is ctx_indent=0 & ctx_is_case=0 {}
+indent: "  "^indent is indent & ctx_is_case=0 [ ctx_indent = ctx_indent - 1; ] {}
 
-# This outputs one less indentation than indent, use this when the indent_lvl is increased by the current instruction
-inc_indent: "" is indent_lvl=1 | indent_lvl=0 {}
-inc_indent: " . "^inc_indent is inc_indent [ indent_lvl = indent_lvl-1; ]{}
+# This outputs one less indentation than indent, use this when the ctx_indent is decreased by the current instruction
+dec_indent: "" is (ctx_indent=1 | ctx_indent=0) & ctx_is_case=0 {}
+dec_indent: "  "^dec_indent is dec_indent & ctx_is_case=0 [ ctx_indent = ctx_indent-1; ]{}
 
-@define INC_INDENT "inc_indent [ indent_lvl = indent_lvl + 1; globalset(inst_next, indent_lvl); ]"
+case_indent: "" is ctx_indent=0 & ctx_is_case=1 {}
+case_indent: "  "^case_indent is case_indent & ctx_is_case=1 [ ctx_indent = ctx_indent - 1; ] {}
 
 ## Control instructions
 :""^indent^"unreachable" is opc=0x00; indent {
@@ -162,51 +175,68 @@ inc_indent: " . "^inc_indent is inc_indent [ indent_lvl = indent_lvl-1; ]{}
 :""^indent^"nop" is opc=0x01; indent {
 }
 
-:""^inc_indent^"block" "blocktype="^ULeb128 is opc=0x02; ULeb128; $(INC_INDENT) {
-	beginBlockCallOther();
+:""^indent^"block" "blocktype="^ULeb128 is opc=0x02; ULeb128; indent {
 }
-:""^inc_indent^"loop" "blocktype="^ULeb128 is opc=0x03; ULeb128; $(INC_INDENT) {
-	beginLoopCallOther();
+:""^indent^"loop" "blocktype="^ULeb128 is opc=0x03; ULeb128; indent {
 }
-:""^inc_indent^"if" "blocktype="^ULeb128 is opc=0x04; ULeb128; $(INC_INDENT) {
+:""^indent^"if" "blocktype="^ULeb128 is opc=0x04; ULeb128; ctx_sp_adjust; br_target; indent {
 	val:4 = 0;
 	pop32(val);
 	if(val != 0) goto inst_next;
-	ifCallOther();
+	doBranch(ctx_sp_adjust, br_target);
 }
-:""^inc_indent^"else" is opc=0x05; inc_indent {
-	elseCallOther();
+:""^indent^"else" is opc=0x05; ctx_sp_adjust; br_target; indent {
+	doBranch(ctx_sp_adjust, br_target);
 }
 
-:""^indent^"end" is opc=0x0b; indent_lvl=0; indent {
-	returnCallOther();
-	# This is a redundant return statement, but it lets the disassembler know to stop disassembling
+:end is opc=0x0b; ctx_indent=0; indent {
+#	returnPopReturnsCallOther();
 	return [LR];
 }
-:""^indent^"end" is opc=0x0b; indent [ indent_lvl = indent_lvl - 1; globalset(inst_next, indent_lvl); ] {
-	endCallOther();
+:""^dec_indent^"end" is opc=0x0b; dec_indent {
 }
 
-:""^indent^"br" ULeb128 is opc=0x0c; ULeb128; indent {
-	brCallOther();
+:""^indent^"br" br_target is opc=0x0c; ULeb128; ctx_sp_adjust; br_target; indent {
+	doBranch(ctx_sp_adjust, br_target);
 }
-:""^indent^"br_if" ULeb128 is opc=0x0d; ULeb128; indent {
+:""^indent^"br_if" br_target is opc=0x0d; ULeb128; ctx_sp_adjust; br_target; indent {
 	val:4 = 0;
 	pop32(val);
 	if(val == 0) goto inst_next;
-	brCallOther();
+	doBranch(ctx_sp_adjust, br_target);
 }
 
-@include "br_table.sinc"
+:""^case_indent^".case" ctx_case_index br_target is ULeb128; ctx_sp_adjust; br_target; ctx_case_index; ctx_is_default=0; case_indent {
+	if(BRTableInput != ctx_case_index) goto inst_next;
+	doBranch(ctx_sp_adjust, br_target);
+}
 
-:""^indent^"return" is opc=0x0f; indent {
-	returnCallOther();
+:""^case_indent^".default" br_target is ULeb128; ctx_sp_adjust; br_target; ctx_is_default=1; case_indent {
+	doBranch(ctx_sp_adjust, br_target);
 }
-:""^indent^"call" ULeb128 is opc=0x10; ULeb128; indent {
-	callCallOther();
+
+:""^indent^"br_table" is opc=0x0e; ULeb128; indent {
+	pop32(BRTableInput);
 }
-:""^indent^"call_indirect" typeidx tableidx is opc=0x11; typeidx; tableidx; indent {
-	callIndirectCallOther();
+
+:""^indent^"return" is opc=0x0f; ctx_sp_adjust; indent {
+#	returnPopReturnsCallOther();
+	SP = SP + ctx_sp_adjust * 8;
+	return [LR];
+}
+:""^indent^"call" br_target is opc=0x10; ULeb128; br_target; indent {
+#	callPopParamsCallOther();
+	call br_target;
+#	callPushReturnsCallOther();
+}
+:""^indent^"call_indirect" "type="^typeidx tableref is opc=0x11; typeidx; tableref; indent {
+	idx:4 = 0;
+	pop32(idx);
+	addr:8 = &tableref + sext(idx) * 8;
+	val:8 = *[table] addr;
+#	callPopParamsCallOther();
+	call [val];
+#	callPushReturnsCallOther();
 }
 
 ## Reference Instructions
@@ -220,9 +250,8 @@ inc_indent: " . "^inc_indent is inc_indent [ indent_lvl = indent_lvl-1; ]{}
 	res:4 = zext(val == 0);
 	push32(res);
 }
-:""^indent^"ref.func" funcidx is opc=0xd2; funcidx; indent {
-	# TODO: cpool this so that we obtain the right function to call?
-	val:8 = funcref(funcidx);
+:""^indent^"ref.func" funcidx is opc=0xd2; funcidx; br_target; indent {
+	val:8 = zext(br_target:4);
 	push64(val);
 }
 
@@ -266,10 +295,10 @@ macro select64() {
 	push64(res);
 }
 
-:""^indent^"select" is opc=0x1b; indent; is_op64=0 {
+:""^indent^"select" is opc=0x1b; indent; ctx_is_op64=0 {
 	select32();
 }
-:""^indent^"select" is opc=0x1b; indent; is_op64=1 {
+:""^indent^"select" is opc=0x1b; indent; ctx_is_op64=1 {
 	select64();
 }
 # In the current version of WASM, only one type index is permitted in select t*.
@@ -289,76 +318,59 @@ macro select64() {
 }
 
 ## Variable Instructions
-# TODO: these need to be callOther to process the size of the local correctly
-:""^indent^"local.get" localidx is opc=0x20; localidx; indent; is_op64=0 {
-	val:4 = *[register] (localidx:2 * 8);
-	push32(val);
+:""^indent^"local.get" local4 is opc=0x20; local4; indent; ctx_is_op64=0 {
+	push32(local4);
 }
-:""^indent^"local.get" localidx is opc=0x20; localidx; indent; is_op64=1 {
-	val:8 = *[register] (localidx:2 * 8);
-	push64(val);
+:""^indent^"local.get" local8 is opc=0x20; local8; indent; ctx_is_op64=1 {
+	push64(local8);
 }
 
-:""^indent^"local.set" localidx is opc=0x21; localidx; indent; is_op64=0 {
-	val:4 = 0;
-	pop32(val);
-	*[register] (localidx:2 * 8) = val;
+:""^indent^"local.set" local4 is opc=0x21; local4; indent; ctx_is_op64=0 {
+	pop32(local4);
 }
-:""^indent^"local.set" localidx is opc=0x21; localidx; indent; is_op64=1 {
-	val:8 = 0;
-	pop64(val);
-	*[register] (localidx:2 * 8) = val;
+:""^indent^"local.set" local8 is opc=0x21; local8; indent; ctx_is_op64=1 {
+	pop64(local8);
 }
 
-:""^indent^"local.tee" localidx is opc=0x22; localidx; indent; is_op64=0 {
-	val:4 = 0;
-	pop32(val);
-	*[register] (localidx:2 * 8) = val;
-	push32(val);
+:""^indent^"local.tee" local4 is opc=0x22; local4; indent; ctx_is_op64=0 {
+	pop32(local4);
+	push32(local4);
 }
-:""^indent^"local.tee" localidx is opc=0x22; localidx; indent; is_op64=1 {
-	val:8 = 0;
-	pop64(val);
-	*[register] (localidx:2 * 8) = val;
-	push64(val);
+:""^indent^"local.tee" local8 is opc=0x22; local8; indent; ctx_is_op64=1 {
+	pop64(local8);
+	push64(local8);
 }
 
-:""^indent^"global.get" globalidx is opc=0x23; globalidx; indent; is_op64=0 {
-	val:4 = *[global] (globalidx:4 * 8);
-	push32(val);
+:""^indent^"global.get" global4 is opc=0x23; global4; indent; ctx_is_op64=0 {
+	push32(global4);
 }
-:""^indent^"global.get" globalidx is opc=0x23; globalidx; indent; is_op64=1 {
-	val:8 = *[global] (globalidx:4 * 8);
-	push64(val);
+:""^indent^"global.get" global8 is opc=0x23; global8; indent; ctx_is_op64=1 {
+	push64(global8);
 }
 
-:""^indent^"global.set" globalidx is opc=0x24; globalidx; indent; is_op64=0 {
-	val:4 = 0;
-	pop32(val);
-	*[global] (globalidx:4 * 8) = val;
+:""^indent^"global.set" global4 is opc=0x24; global4; indent; ctx_is_op64=0 {
+	pop32(global4);
 }
-:""^indent^"global.set" globalidx is opc=0x24; globalidx; indent; is_op64=1 {
-	val:8 = 0;
-	pop64(val);
-	*[global] (globalidx:4 * 8) = val;
+:""^indent^"global.set" global8 is opc=0x24; global8; indent; ctx_is_op64=1 {
+	pop64(global8);
 }
 
 ## Table Instructions
-:""^indent^"table.get" tableidx is opc=0x25; tableidx; indent {
+:""^indent^"table.get" tableref is opc=0x25; tableref; indent {
 	idx:4 = 0;
 	pop32(idx);
-	sidx:8 = sext(idx);
-	val:8 = *[table] ((tableidx:8 << 32) + sidx * 8);
+	addr:8 = &tableref + sext(idx) * 8;
+	val:8 = *[table] addr;
 	push64(val);
 }
 
-:""^indent^"table.set" tableidx is opc=0x26; tableidx; indent {
+:""^indent^"table.set" tableref is opc=0x26; tableref; indent {
 	val:8 = 0;
 	pop64(val);
 	idx:4 = 0;
 	pop32(idx);
-	sidx:8 = sext(idx);
-	*[table] ((tableidx:8 << 32) + sidx * 8) = val;
+	addr:8 = &tableref + sext(idx) * 8;
+	*[table] addr = val;
 }
 
 :""^indent^"table.init" elemidx tableidx is opc=0xfc; opc2=0x0c; elemidx; tableidx; indent {
