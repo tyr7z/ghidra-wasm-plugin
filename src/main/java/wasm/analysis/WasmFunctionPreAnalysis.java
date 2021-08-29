@@ -158,6 +158,7 @@ public class WasmFunctionPreAnalysis {
 			if (blockKind != BlockKind.IF) {
 				throw new ValidationException(address, "else without corresponding if");
 			}
+			ProgramContext.setStackAdjust(program, address, 0);
 			ProgramContext.setBranchTarget(program, startAddress, address.add(1));
 		}
 
@@ -773,7 +774,9 @@ public class WasmFunctionPreAnalysis {
 			break;
 		case 0xD2: /* ref.func x */ {
 			long funcidx = readLeb128(reader);
-			/* TODO: resolve funcidx to a function pointer */
+			WasmAnalysis analysis = WasmAnalysis.getState(program);
+			WasmFuncSignature targetFunc = analysis.getFuncSignature((int) funcidx);
+			ProgramContext.setBranchTarget(program, instAddress, targetFunc.getStartAddr());
 			pushValue(instAddress, ValType.funcref);
 		}
 		case 0xFC: {
