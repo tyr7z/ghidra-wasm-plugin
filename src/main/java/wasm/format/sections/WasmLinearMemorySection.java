@@ -6,21 +6,21 @@ import java.util.Collections;
 import java.util.List;
 
 import ghidra.app.util.bin.BinaryReader;
+import ghidra.app.util.bin.format.dwarf4.LEB128;
 import ghidra.program.model.data.Structure;
 import ghidra.util.exception.DuplicateNameException;
-import wasm.format.Leb128;
 import wasm.format.StructureUtils;
 import wasm.format.sections.structures.WasmResizableLimits;
 
 public class WasmLinearMemorySection extends WasmSection {
 
-	private Leb128 count;
+	private LEB128 count;
 	private List<WasmResizableLimits> limits = new ArrayList<WasmResizableLimits>();
 
 	public WasmLinearMemorySection(BinaryReader reader) throws IOException {
 		super(reader);
-		count = new Leb128(reader);
-		for (int i = 0; i < count.getValue(); ++i) {
+		count = LEB128.readUnsignedValue(reader);
+		for (int i = 0; i < count.asLong(); ++i) {
 			limits.add(new WasmResizableLimits(reader));
 		}
 	}

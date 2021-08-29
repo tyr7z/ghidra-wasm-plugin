@@ -8,30 +8,30 @@ import java.util.Map;
 
 import ghidra.app.util.bin.BinaryReader;
 import ghidra.app.util.bin.StructConverter;
+import ghidra.app.util.bin.format.dwarf4.LEB128;
 import ghidra.program.model.data.DataType;
 import ghidra.program.model.data.Structure;
 import ghidra.util.exception.DuplicateNameException;
-import wasm.format.Leb128;
 import wasm.format.StructureUtils;
 
 public class WasmNameMap implements StructConverter {
-	private Leb128 count;
+	private LEB128 count;
 	private List<WasmAssoc> entries = new ArrayList<>();
 	private Map<Long, WasmName> map = new HashMap<>();
 
 	private static class WasmAssoc {
-		Leb128 idx;
+		LEB128 idx;
 		WasmName name;
 	}
 
 	public WasmNameMap(BinaryReader reader) throws IOException {
-		count = new Leb128(reader);
-		for (int i = 0; i < count.getValue(); i++) {
+		count = LEB128.readUnsignedValue(reader);
+		for (int i = 0; i < count.asLong(); i++) {
 			WasmAssoc assoc = new WasmAssoc();
-			assoc.idx = new Leb128(reader);
+			assoc.idx = LEB128.readUnsignedValue(reader);
 			assoc.name = new WasmName(reader);
 			entries.add(assoc);
-			map.put(assoc.idx.getValue(), assoc.name);
+			map.put(assoc.idx.asLong(), assoc.name);
 		}
 	}
 

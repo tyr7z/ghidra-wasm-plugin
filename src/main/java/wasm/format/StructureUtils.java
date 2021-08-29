@@ -3,6 +3,7 @@ package wasm.format;
 import java.io.IOException;
 
 import ghidra.app.util.bin.StructConverter;
+import ghidra.app.util.bin.format.dwarf4.LEB128;
 import ghidra.program.model.data.ArrayDataType;
 import ghidra.program.model.data.CategoryPath;
 import ghidra.program.model.data.DataType;
@@ -22,6 +23,14 @@ public class StructureUtils {
 
 	public static void addField(Structure structure, DataType dataType, String name) {
 		addField(structure, dataType, name, null);
+	}
+
+	public static void addField(Structure structure, LEB128 leb128, String name, String comment) {
+		addArrayField(structure, StructConverter.BYTE, leb128.getLength(), name, comment);
+	}
+
+	public static void addField(Structure structure, LEB128 leb128, String name) {
+		addField(structure, leb128, name, null);
 	}
 
 	public static void addField(Structure structure, StructConverter converter, String name, String comment) throws DuplicateNameException, IOException {

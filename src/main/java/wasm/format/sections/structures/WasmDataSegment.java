@@ -4,24 +4,24 @@ import java.io.IOException;
 
 import ghidra.app.util.bin.BinaryReader;
 import ghidra.app.util.bin.StructConverter;
+import ghidra.app.util.bin.format.dwarf4.LEB128;
 import ghidra.program.model.data.DataType;
 import ghidra.program.model.data.Structure;
 import ghidra.util.exception.DuplicateNameException;
-import wasm.format.Leb128;
 import wasm.format.StructureUtils;
 
 public class WasmDataSegment implements StructConverter {
 
-	private Leb128 index;
+	private LEB128 index;
 	private ConstantExpression offsetExpr;
 	private long fileOffset;
-	private Leb128 size;
+	private LEB128 size;
 	private byte[] data;
 
 	public WasmDataSegment(BinaryReader reader) throws IOException {
 		int mode = reader.readNextUnsignedByte();
 		if (mode == 2) {
-			index = new Leb128(reader);
+			index = LEB128.readUnsignedValue(reader);
 		} else {
 			/* for mode < 2, index defaults to 0 */
 			index = null;
@@ -35,15 +35,15 @@ public class WasmDataSegment implements StructConverter {
 			offsetExpr = null;
 		}
 
-		size = new Leb128(reader);
+		size = LEB128.readUnsignedValue(reader);
 		fileOffset = reader.getPointerIndex();
-		data = reader.readNextByteArray((int) size.getValue());
+		data = reader.readNextByteArray((int) size.asLong());
 	}
 
 	public long getIndex() {
 		if (index == null)
 			return 0;
-		return index.getValue();
+		return index.asLong();
 	}
 
 	public long getFileOffset() {
@@ -58,7 +58,7 @@ public class WasmDataSegment implements StructConverter {
 	}
 
 	public long getSize() {
-		return size.getValue();
+		return size.asLong();
 	}
 
 	public byte[] getData() {

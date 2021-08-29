@@ -8,8 +8,8 @@ import ghidra.program.model.data.DataType;
 import ghidra.program.model.data.Structure;
 import ghidra.util.exception.DuplicateNameException;
 import wasm.format.StructureUtils;
-import wasm.format.WasmModule;
 import wasm.format.WasmEnums.ValType;
+import wasm.format.WasmModule;
 
 public class WasmGlobalEntry implements StructConverter {
 

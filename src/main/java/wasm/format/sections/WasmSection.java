@@ -4,16 +4,16 @@ import java.io.IOException;
 
 import ghidra.app.util.bin.BinaryReader;
 import ghidra.app.util.bin.StructConverter;
+import ghidra.app.util.bin.format.dwarf4.LEB128;
 import ghidra.program.model.data.DataType;
 import ghidra.program.model.data.Structure;
 import ghidra.util.exception.DuplicateNameException;
-import wasm.format.Leb128;
 import wasm.format.StructureUtils;
 
 public abstract class WasmSection implements StructConverter {
 	
 	private WasmSectionId id;
-	private Leb128 contentLength;
+	private LEB128 contentLength;
 	private long sectionOffset;
 
 	public enum WasmSectionId {
@@ -34,8 +34,8 @@ public abstract class WasmSection implements StructConverter {
 	public static WasmSection createSection(BinaryReader reader) throws IOException {
 		long sectionOffset = reader.getPointerIndex();
 		int id = reader.readNextUnsignedByte();
-		Leb128 contentLength = new Leb128(reader);
-		reader.setPointerIndex(reader.getPointerIndex() + contentLength.getValue());
+		LEB128 contentLength = LEB128.readUnsignedValue(reader);
+		reader.setPointerIndex(reader.getPointerIndex() + contentLength.asLong());
 
 		if(id >= WasmSectionId.values().length)
 			return null;
@@ -75,7 +75,7 @@ public abstract class WasmSection implements StructConverter {
 	protected WasmSection(BinaryReader reader) throws IOException {
 		sectionOffset = reader.getPointerIndex();
 		id = WasmSectionId.values()[reader.readNextUnsignedByte()];
-		contentLength = new Leb128(reader);
+		contentLength = LEB128.readUnsignedValue(reader);
 	}
 	
 	@Override
@@ -100,10 +100,10 @@ public abstract class WasmSection implements StructConverter {
 	}
 
 	public long getContentSize() {
-		return contentLength.getValue();
+		return contentLength.asLong();
 	}
 
 	public long getSectionSize() {
-		return 1 + contentLength.getSize() + contentLength.getValue();
+		return 1 + contentLength.getLength() + contentLength.asLong();
 	}
 }

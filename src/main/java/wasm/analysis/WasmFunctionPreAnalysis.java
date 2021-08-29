@@ -6,13 +6,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 import ghidra.app.util.bin.BinaryReader;
+import ghidra.app.util.bin.format.dwarf4.LEB128;
 import ghidra.program.model.address.Address;
 import ghidra.program.model.lang.Register;
 import ghidra.program.model.listing.ContextChangeException;
 import ghidra.program.model.listing.Program;
 import ghidra.util.Msg;
 import ghidra.util.task.TaskMonitor;
-import wasm.format.Leb128;
 import wasm.format.WasmEnums.ValType;
 import wasm.format.sections.structures.WasmFuncType;
 
@@ -203,11 +203,11 @@ public class WasmFunctionPreAnalysis {
 
 	// #region BinaryReader utilities
 	private static long readLeb128(BinaryReader reader) throws IOException {
-		return new Leb128(reader).getValue();
+		return LEB128.readUnsignedValue(reader).asLong();
 	}
 
 	private static long readSignedLeb128(BinaryReader reader) throws IOException {
-		return new Leb128(reader).getSignedValue();
+		return LEB128.readSignedValue(reader).asLong();
 	}
 	// #endregion
 

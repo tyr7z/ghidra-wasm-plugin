@@ -7,26 +7,26 @@ import java.util.List;
 
 import ghidra.app.util.bin.BinaryReader;
 import ghidra.app.util.bin.StructConverter;
+import ghidra.app.util.bin.format.dwarf4.LEB128;
 import ghidra.program.model.data.DataType;
 import ghidra.program.model.data.Structure;
 import ghidra.util.exception.DuplicateNameException;
 import wasm.WasmLoader;
-import wasm.format.Leb128;
 import wasm.format.StructureUtils;
-import wasm.format.WasmModule;
 import wasm.format.WasmEnums.ValType;
+import wasm.format.WasmModule;
 
 public class WasmElementSegment implements StructConverter {
 
 	private int flags;
 	private ElementSegmentMode mode;
 
-	private Leb128 tableidx; /* if (flags & 3) == 2 */
+	private LEB128 tableidx; /* if (flags & 3) == 2 */
 	private ConstantExpression offset; /* if (flags & 1) == 0 */
-	private Leb128 count;
+	private LEB128 count;
 
 	int elemkind; /* if (flags & 4) == 0 */
-	private List<Leb128> funcidxs; /* if (flags & 4) == 0 */
+	private List<LEB128> funcidxs; /* if (flags & 4) == 0 */
 
 	ValType elemtype; /* if (flags & 4) != 0 */
 	private List<ConstantExpression> exprs; /* if (flags & 4) != 0 */
@@ -41,7 +41,7 @@ public class WasmElementSegment implements StructConverter {
 		flags = reader.readNextUnsignedByte();
 		if ((flags & 3) == 2) {
 			/* active segment with explicit table index */
-			tableidx = new Leb128(reader);
+			tableidx = LEB128.readUnsignedValue(reader);
 		} else {
 			/* tableidx defaults to 0 */
 			tableidx = null;
@@ -73,17 +73,17 @@ public class WasmElementSegment implements StructConverter {
 			}
 		}
 
-		count = new Leb128(reader);
+		count = LEB128.readUnsignedValue(reader);
 		if ((flags & 4) == 0) {
 			/* vector of funcidx */
 			funcidxs = new ArrayList<>();
-			for (int i = 0; i < count.getValue(); i++) {
-				funcidxs.add(new Leb128(reader));
+			for (int i = 0; i < count.asLong(); i++) {
+				funcidxs.add(LEB128.readUnsignedValue(reader));
 			}
 		} else {
 			/* vector of expr */
 			exprs = new ArrayList<>();
-			for (int i = 0; i < count.getValue(); i++) {
+			for (int i = 0; i < count.asLong(); i++) {
 				exprs.add(new ConstantExpression(reader));
 			}
 		}
@@ -97,7 +97,7 @@ public class WasmElementSegment implements StructConverter {
 		if (tableidx == null) {
 			return 0;
 		}
-		return tableidx.getValue();
+		return tableidx.asLong();
 	}
 
 	public Long getOffset() {
@@ -119,12 +119,12 @@ public class WasmElementSegment implements StructConverter {
 	}
 
 	public Long[] getAddresses(WasmModule module) {
-		int count = (int) this.count.getValue();
+		int count = (int) this.count.asLong();
 		Long[] result = new Long[count];
 
 		if (funcidxs != null) {
 			for (int i = 0; i < count; i++) {
-				long funcidx = funcidxs.get(i).getValue();
+				long funcidx = funcidxs.get(i).asLong();
 				result[i] = WasmLoader.getFunctionAddress(module, (int) funcidx);
 			}
 			return result;
@@ -140,13 +140,13 @@ public class WasmElementSegment implements StructConverter {
 	}
 
 	public byte[] getInitData(WasmModule module) {
-		int count = (int) this.count.getValue();
+		int count = (int) this.count.asLong();
 		byte[] result = new byte[count * 8];
 		Arrays.fill(result, (byte) 0xff);
 
 		if (funcidxs != null) {
 			for (int i = 0; i < count; i++) {
-				long funcidx = funcidxs.get(i).getValue();
+				long funcidx = funcidxs.get(i).asLong();
 				long funcaddr = WasmLoader.getFunctionAddress(module, (int) funcidx);
 				byte[] v = ConstantExpression.longToBytes(funcaddr);
 				System.arraycopy(v, 0, result, i * 8, 8);

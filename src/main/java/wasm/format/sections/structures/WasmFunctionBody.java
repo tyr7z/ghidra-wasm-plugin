@@ -7,29 +7,29 @@ import java.util.List;
 
 import ghidra.app.util.bin.BinaryReader;
 import ghidra.app.util.bin.StructConverter;
+import ghidra.app.util.bin.format.dwarf4.LEB128;
 import ghidra.program.model.data.DataType;
 import ghidra.program.model.data.Structure;
 import ghidra.util.exception.DuplicateNameException;
-import wasm.format.Leb128;
 import wasm.format.StructureUtils;
 
 public class WasmFunctionBody implements StructConverter {
 
-	private Leb128 bodySize;
+	private LEB128 bodySize;
 	private List<WasmLocalEntry> locals = new ArrayList<WasmLocalEntry>();
-	private Leb128 localCount;
+	private LEB128 localCount;
 	private long instructionsOffset;
 	private byte[] instructions;
 
 	public WasmFunctionBody(BinaryReader reader) throws IOException {
-		bodySize = new Leb128(reader);
+		bodySize = LEB128.readUnsignedValue(reader);
 		int bodyStartOffset = (int) reader.getPointerIndex();
-		localCount = new Leb128(reader);
-		for (int i = 0; i < localCount.getValue(); ++i) {
+		localCount = LEB128.readUnsignedValue(reader);
+		for (int i = 0; i < localCount.asLong(); ++i) {
 			locals.add(new WasmLocalEntry(reader));
 		}
 		instructionsOffset = reader.getPointerIndex();
-		instructions = reader.readNextByteArray((int) (bodyStartOffset + bodySize.getValue() - instructionsOffset));
+		instructions = reader.readNextByteArray((int) (bodyStartOffset + bodySize.asLong() - instructionsOffset));
 	}
 
 	public long getOffset() {
@@ -59,7 +59,7 @@ public class WasmFunctionBody implements StructConverter {
 		Structure structure = StructureUtils.createStructure("function_body_" + instructionsOffset);
 		StructureUtils.addField(structure, bodySize, "body_size");
 		StructureUtils.addField(structure, localCount, "local_count");
-		if (localCount.getValue() > 0) {
+		if (localCount.asLong() > 0) {
 			StructureUtils.addArrayField(structure, locals.get(0).toDataType(), locals.size(), "locals");
 		}
 		StructureUtils.addArrayField(structure, BYTE, instructions.length, "instructions");

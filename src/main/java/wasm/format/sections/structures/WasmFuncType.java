@@ -4,27 +4,27 @@ import java.io.IOException;
 
 import ghidra.app.util.bin.BinaryReader;
 import ghidra.app.util.bin.StructConverter;
+import ghidra.app.util.bin.format.dwarf4.LEB128;
 import ghidra.program.model.data.DataType;
 import ghidra.program.model.data.Structure;
 import ghidra.util.exception.DuplicateNameException;
-import wasm.format.Leb128;
 import wasm.format.StructureUtils;
 
 public class WasmFuncType implements StructConverter {
 
 	@SuppressWarnings("unused")
 	private int form; /* always 0 in this version */
-	private Leb128 paramCount;
+	private LEB128 paramCount;
 	private byte[] paramTypes;
-	private Leb128 returnCount;
+	private LEB128 returnCount;
 	private byte[] returnTypes;
 
 	public WasmFuncType(BinaryReader reader) throws IOException {
 		form = reader.readNextUnsignedByte();
-		paramCount = new Leb128(reader);
-		paramTypes = reader.readNextByteArray((int) paramCount.getValue());
-		returnCount = new Leb128(reader);
-		returnTypes = reader.readNextByteArray((int) returnCount.getValue());
+		paramCount = LEB128.readUnsignedValue(reader);
+		paramTypes = reader.readNextByteArray((int) paramCount.asLong());
+		returnCount = LEB128.readUnsignedValue(reader);
+		returnTypes = reader.readNextByteArray((int) returnCount.asLong());
 	}
 
 	public byte[] getParamTypes() {
@@ -42,12 +42,12 @@ public class WasmFuncType implements StructConverter {
 
 	@Override
 	public DataType toDataType() throws DuplicateNameException, IOException {
-		Structure structure = StructureUtils.createStructure("func_type_" + paramCount.getValue() + "_" + returnCount.getValue());
+		Structure structure = StructureUtils.createStructure("func_type_" + paramCount.asLong() + "_" + returnCount.asLong());
 		StructureUtils.addField(structure, BYTE, "form");
 		StructureUtils.addField(structure, paramCount, "param_count");
-		StructureUtils.addArrayField(structure, BYTE, (int) paramCount.getValue(), "param_types");
+		StructureUtils.addArrayField(structure, BYTE, (int) paramCount.asLong(), "param_types");
 		StructureUtils.addField(structure, returnCount, "return_count");
-		StructureUtils.addArrayField(structure, BYTE, (int) returnCount.getValue(), "return_types");
+		StructureUtils.addArrayField(structure, BYTE, (int) returnCount.asLong(), "return_types");
 		return structure;
 	}
 }

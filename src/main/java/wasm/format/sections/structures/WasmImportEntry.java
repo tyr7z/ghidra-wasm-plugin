@@ -4,10 +4,10 @@ import java.io.IOException;
 
 import ghidra.app.util.bin.BinaryReader;
 import ghidra.app.util.bin.StructConverter;
+import ghidra.app.util.bin.format.dwarf4.LEB128;
 import ghidra.program.model.data.DataType;
 import ghidra.program.model.data.Structure;
 import ghidra.util.exception.DuplicateNameException;
-import wasm.format.Leb128;
 import wasm.format.StructureUtils;
 import wasm.format.WasmEnums.WasmExternalKind;
 
@@ -17,7 +17,7 @@ public class WasmImportEntry implements StructConverter {
 	private WasmName field;
 	private WasmExternalKind kind;
 
-	private Leb128 function_type;
+	private LEB128 function_type;
 	private WasmResizableLimits memory_type;
 	private WasmTableType table_type;
 	private WasmGlobalType global_type;
@@ -28,7 +28,7 @@ public class WasmImportEntry implements StructConverter {
 		kind = WasmExternalKind.values()[reader.readNextByte()];
 		switch (kind) {
 		case EXT_FUNCTION:
-			function_type = new Leb128(reader);
+			function_type = LEB128.readUnsignedValue(reader);
 			break;
 		case EXT_MEMORY:
 			memory_type = new WasmResizableLimits(reader);
@@ -52,16 +52,16 @@ public class WasmImportEntry implements StructConverter {
 		if (kind != WasmExternalKind.EXT_FUNCTION) {
 			throw new RuntimeException("Cannot get function type of non-function import");
 		}
-		return (int) function_type.getValue();
+		return (int) function_type.asLong();
 	}
 
 	public String getName() {
-		return module.getValue() + "__" + field.getValue();
+		return module.getValue() + "::" + field.getValue();
 	}
 
 	@Override
 	public DataType toDataType() throws DuplicateNameException, IOException {
-		Structure structure = StructureUtils.createStructure("import_" + "_" + module.getValue() + "_" + field.getValue());
+		Structure structure = StructureUtils.createStructure("import_" + getName());
 		StructureUtils.addField(structure, module, "module");
 		StructureUtils.addField(structure, field, "field");
 		StructureUtils.addField(structure, BYTE, "kind");

@@ -4,33 +4,33 @@ import java.io.IOException;
 
 import ghidra.app.util.bin.BinaryReader;
 import ghidra.app.util.bin.StructConverter;
+import ghidra.app.util.bin.format.dwarf4.LEB128;
 import ghidra.program.model.data.DataType;
 import ghidra.program.model.data.Structure;
 import ghidra.util.exception.DuplicateNameException;
-import wasm.format.Leb128;
 import wasm.format.StructureUtils;
 
 public class WasmResizableLimits implements StructConverter {
 
 	private int flags;
-	private Leb128 initial;
-	private Leb128 maximum;
+	private LEB128 initial;
+	private LEB128 maximum;
 
 	public WasmResizableLimits(BinaryReader reader) throws IOException {
 		flags = reader.readNextUnsignedByte();
-		initial = new Leb128(reader);
+		initial = LEB128.readUnsignedValue(reader);
 		if (flags == 1) {
-			maximum = new Leb128(reader);
+			maximum = LEB128.readUnsignedValue(reader);
 		}
 	}
 
 	public long getInitial() {
-		return initial.getValue();
+		return initial.asLong();
 	}
 
 	public long getMaximum() {
 		if (maximum != null) {
-			return maximum.getValue();
+			return maximum.asLong();
 		}
 		return -1;
 	}

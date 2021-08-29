@@ -4,10 +4,10 @@ import java.io.IOException;
 
 import ghidra.app.util.bin.BinaryReader;
 import ghidra.app.util.bin.StructConverter;
+import ghidra.app.util.bin.format.dwarf4.LEB128;
 import ghidra.program.model.data.DataType;
 import ghidra.program.model.data.Structure;
 import ghidra.util.exception.DuplicateNameException;
-import wasm.format.Leb128;
 import wasm.format.StructureUtils;
 import wasm.format.WasmEnums.WasmExternalKind;
 
@@ -15,12 +15,12 @@ public class WasmExportEntry implements StructConverter {
 
 	private WasmName name;
 	private WasmExternalKind kind;
-	private Leb128 index;
+	private LEB128 index;
 
 	public WasmExportEntry(BinaryReader reader) throws IOException {
 		name = new WasmName(reader);
 		kind = WasmExternalKind.values()[reader.readNextByte()];
-		index = new Leb128(reader);
+		index = LEB128.readUnsignedValue(reader);
 	}
 
 	public String getName() {
@@ -28,7 +28,7 @@ public class WasmExportEntry implements StructConverter {
 	}
 
 	public int getIndex() {
-		return (int) index.getValue();
+		return (int) index.asLong();
 	}
 
 	public WasmExternalKind getType() {
@@ -37,7 +37,7 @@ public class WasmExportEntry implements StructConverter {
 
 	@Override
 	public DataType toDataType() throws DuplicateNameException, IOException {
-		Structure structure = StructureUtils.createStructure("export_" + index.getValue());
+		Structure structure = StructureUtils.createStructure("export_" + getIndex());
 		StructureUtils.addField(structure, name, "name");
 		StructureUtils.addField(structure, BYTE, "kind");
 		StructureUtils.addField(structure, index, "index");
