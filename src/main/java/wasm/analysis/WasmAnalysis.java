@@ -100,6 +100,10 @@ public class WasmAnalysis implements AnalysisState {
 		return module.getGlobalSection().getEntries().get(globalidx).getType();
 	}
 
+	public ValType getTableType(int tableidx) {
+		return module.getTableSection().getTables().get(tableidx).getElementType();
+	}
+
 	public void findFunctionSignatures() {
 		functions = new ArrayList<>();
 		WasmImportSection importSection = module.getImportSection();

@@ -21,6 +21,10 @@ public class WasmTableType implements StructConverter {
 		limits = new WasmResizableLimits(reader);
 	}
 
+	public ValType getElementType() {
+		return elemType;
+	}
+
 	public DataType getElementDataType() {
 		switch (elemType) {
 		case funcref:

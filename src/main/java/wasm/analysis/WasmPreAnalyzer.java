@@ -81,9 +81,9 @@ public class WasmPreAnalyzer extends AbstractAnalyzer {
 			}
 
 			BinaryReader codeReader = new BinaryReader(new MemoryByteProvider(program.getMemory(), func.getStartAddr()), true);
-			WasmFunctionPreAnalysis preAnalysis = new WasmFunctionPreAnalysis(func, codeReader);
+			WasmFunctionPreAnalysis preAnalysis = new WasmFunctionPreAnalysis(func);
 			try {
-				preAnalysis.analyzeFunction(program, monitor);
+				preAnalysis.analyzeFunction(program, codeReader, monitor);
 			} catch (Exception e) {
 				Msg.error(this, "Failed to analyze function at index " + i + " (" + func.getName() + ")", e);
 			}
