@@ -30,6 +30,21 @@
           <addr offset="0x3000000000" space="register"/>
         </pentry>
       </output>
+      <unaffected>
+        <varnode space="ram" offset="0" size="4"/>
+        <register name="SP"/>
+      </unaffected>
+      <pcode inject="uponentry" dynamic="true" />
     </prototype>
   </default_proto>
+  <callotherfixup targetop="popCallOther">
+    <pcode dynamic="true">
+      <input name="regoffset" />
+    </pcode>
+  </callotherfixup>
+  <callotherfixup targetop="pushCallOther">
+    <pcode dynamic="true">
+      <input name="regoffset" />
+    </pcode>
+  </callotherfixup>
 </compiler_spec>

@@ -55,6 +55,9 @@ macro pop64(ret64) {
 
 ################################################################
 
+define pcodeop popCallOther;
+define pcodeop pushCallOther;
+
 define pcodeop halt_trap;
 define pcodeop popcnt;
 define pcodeop clz;
@@ -150,8 +153,9 @@ macro trap() {
 }
 
 macro doBranch(ctx_sp_adjust, br_target) {
-	# copyBranchArgsCallOther();
+	popCallOther(&t0);
 	SP = SP + ctx_sp_adjust * 8;
+	pushCallOther(&t0);
 	goto br_target;
 }
 
@@ -190,7 +194,7 @@ case_indent: "  "^case_indent is case_indent & ctx_is_case=1 [ ctx_indent = ctx_
 }
 
 :end is opc=0x0b; ctx_indent=0; indent {
-#	returnPopReturnsCallOther();
+	popCallOther(&o0);
 	return [LR];
 }
 :""^dec_indent^"end" is opc=0x0b; dec_indent {
@@ -220,23 +224,23 @@ case_indent: "  "^case_indent is case_indent & ctx_is_case=1 [ ctx_indent = ctx_
 }
 
 :""^indent^"return" is opc=0x0f; ctx_sp_adjust; indent {
-#	returnPopReturnsCallOther();
+	popCallOther(&o0);
 	SP = SP + ctx_sp_adjust * 8;
 	return [LR];
 }
 :""^indent^"call" br_target is opc=0x10; ULeb128; br_target; indent {
-#	callPopParamsCallOther();
+	popCallOther(&i0);
 	call br_target;
-#	callPushReturnsCallOther();
+	pushCallOther(&o0);
 }
 :""^indent^"call_indirect" "type="^typeidx tableref is opc=0x11; typeidx; tableref; indent {
 	idx:4 = 0;
 	pop32(idx);
 	addr:8 = &tableref + sext(idx) * 8;
 	val:8 = *[table] addr;
-#	callPopParamsCallOther();
+	popCallOther(&i0);
 	call [val];
-#	callPushReturnsCallOther();
+	pushCallOther(&o0);
 }
 
 ## Reference Instructions

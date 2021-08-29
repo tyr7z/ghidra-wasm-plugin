@@ -57,6 +57,20 @@ public class WasmEnums {
 			return null;
 		}
 
+		public int getSize() {
+			switch (this) {
+			case i32:
+			case f32:
+				return 4;
+			case i64:
+			case f64:
+			case funcref:
+			case externref:
+				return 8;
+			}
+			return 4;
+		}
+
 		public static ValType fromByte(int b) {
 			return BY_BYTE.get(b);
 		}

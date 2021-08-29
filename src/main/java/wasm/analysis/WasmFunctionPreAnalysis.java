@@ -3,7 +3,9 @@ package wasm.analysis;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import ghidra.app.util.bin.BinaryReader;
 import ghidra.app.util.bin.format.dwarf4.LEB128;
@@ -23,10 +25,12 @@ import wasm.format.sections.structures.WasmFuncType;
  */
 public class WasmFunctionPreAnalysis {
 
-	WasmFuncSignature func;
+	private static Map<Address, StackEffect> stackEffects = new HashMap<>();
+
+	private WasmFuncSignature func;
 	/* null in the value stack means Unknown */
-	List<ValType> valueStack = new ArrayList<>();
-	List<ControlFrame> controlStack = new ArrayList<>();
+	private List<ValType> valueStack = new ArrayList<>();
+	private List<ControlFrame> controlStack = new ArrayList<>();
 
 	public WasmFunctionPreAnalysis(WasmFuncSignature func) {
 		this.func = func;
@@ -78,6 +82,10 @@ public class WasmFunctionPreAnalysis {
 
 		public static void setStackAdjust(Program program, Address address, long value) {
 			setRegister(program, address, REG_SPADJ, value);
+		}
+
+		public static void setStackEffect(Program program, Address address, ValType[] toPop, ValType[] toPush) {
+			stackEffects.put(address, new StackEffect(toPop, toPush));
 		}
 
 		public static void setBrTableCase(Program program, Address address, int index) {
@@ -201,6 +209,40 @@ public class WasmFunctionPreAnalysis {
 		}
 	}
 
+	// #region Exported pre-analysis results
+	public static class StackEffect {
+		private ValType[] toPop;
+		private ValType[] toPush;
+
+		public StackEffect(ValType[] toPop, ValType[] toPush) {
+			this.toPop = toPop;
+			this.toPush = toPush;
+		}
+
+		public ValType[] getToPop() {
+			if (toPop == null) {
+				return new ValType[0];
+			}
+			return toPop;
+		}
+
+		public ValType[] getToPush() {
+			if (toPush == null) {
+				return new ValType[0];
+			}
+			return toPush;
+		}
+	}
+
+	public WasmFuncSignature getSignature() {
+		return func;
+	}
+
+	public StackEffect getStackEffect(Address address) {
+		return stackEffects.get(address);
+	}
+	// #endregion
+
 	// #region BinaryReader utilities
 	private static long readLeb128(BinaryReader reader) throws IOException {
 		return LEB128.readUnsignedValue(reader).asLong();
@@ -291,7 +333,9 @@ public class WasmFunctionPreAnalysis {
 	// #region Common instruction code
 	private void branchToBlock(Program program, Address instAddress, long labelidx) {
 		ControlFrame block = getBlock(instAddress, labelidx);
-		popValues(instAddress, block.getBranchArguments());
+		ValType[] arguments = block.getBranchArguments();
+		popValues(instAddress, arguments);
+		ProgramContext.setStackEffect(program, instAddress, arguments, arguments);
 		block.addBranch(program, valueStack, instAddress);
 		markUnreachable(instAddress);
 	}
@@ -326,7 +370,6 @@ public class WasmFunctionPreAnalysis {
 	private void analyzeOpcode(Program program, Address instAddress, BinaryReader reader) throws IOException {
 		ProgramContext.setIndent(program, instAddress, controlStack.size() - 1);
 		int opcode = reader.readNextUnsignedByte();
-		Msg.info(this, func.getName() + "@" + instAddress + ": " + String.format("0x%02x", opcode) + " blocks=" + controlStack + " stack=" + valueStack);
 		switch (opcode) {
 		case 0x00: /* unreachable */
 			markUnreachable(instAddress);
@@ -372,6 +415,8 @@ public class WasmFunctionPreAnalysis {
 		}
 		case 0x0B: /* end */ {
 			ControlFrame block = popBlock(instAddress);
+			// this stack effect will only be used by the final end
+			ProgramContext.setStackEffect(program, instAddress, block.blockType.returns, block.blockType.returns);
 			pushValues(instAddress, block.blockType.returns);
 			block.setEnd(program, instAddress);
 			break;
@@ -404,6 +449,7 @@ public class WasmFunctionPreAnalysis {
 		}
 		case 0x0F: /* return */ {
 			popValues(instAddress, func.getReturns());
+			ProgramContext.setStackEffect(program, instAddress, func.getReturns(), null);
 			ProgramContext.setStackAdjust(program, instAddress, valueStack.size());
 			markUnreachable(instAddress);
 			break;
@@ -411,11 +457,13 @@ public class WasmFunctionPreAnalysis {
 		case 0x10: /* call x */ {
 			long funcidx = readLeb128(reader);
 			WasmAnalysis analysis = WasmAnalysis.getState(program);
-			WasmFuncSignature targetFunc = analysis.getFuncSignature((int) funcidx);
-			popValues(instAddress, targetFunc.getParams());
-			/* TODO: Set a call type override? */
+			WasmFuncSignature targetFunc = analysis.getFunction((int) funcidx);
+			ValType[] params = targetFunc.getParams();
+			ValType[] returns = targetFunc.getReturns();
+			popValues(instAddress, params);
+			ProgramContext.setStackEffect(program, instAddress, params, returns);
 			ProgramContext.setBranchTarget(program, instAddress, targetFunc.getStartAddr());
-			pushValues(instAddress, targetFunc.getReturns());
+			pushValues(instAddress, returns);
 			break;
 		}
 		case 0x11: /* call_indirect x y */ {
@@ -426,9 +474,11 @@ public class WasmFunctionPreAnalysis {
 				throw new ValidationException(instAddress, "call_indirect does not reference a function table");
 			}
 			WasmFuncType type = analysis.getType((int) typeidx);
-			popValues(instAddress, ValType.fromBytes(type.getParamTypes()));
-			/* TODO: Set a call type override? */
-			pushValues(instAddress, ValType.fromBytes(type.getReturnTypes()));
+			ValType[] params = ValType.fromBytes(type.getParamTypes());
+			ValType[] returns = ValType.fromBytes(type.getReturnTypes());
+			popValues(instAddress, params);
+			ProgramContext.setStackEffect(program, instAddress, params, returns);
+			pushValues(instAddress, returns);
 			break;
 		}
 
@@ -794,7 +844,7 @@ public class WasmFunctionPreAnalysis {
 		case 0xD2: /* ref.func x */ {
 			long funcidx = readLeb128(reader);
 			WasmAnalysis analysis = WasmAnalysis.getState(program);
-			WasmFuncSignature targetFunc = analysis.getFuncSignature((int) funcidx);
+			WasmFuncSignature targetFunc = analysis.getFunction((int) funcidx);
 			ProgramContext.setBranchTarget(program, instAddress, targetFunc.getStartAddr());
 			pushValue(instAddress, ValType.funcref);
 		}
@@ -898,7 +948,6 @@ public class WasmFunctionPreAnalysis {
 		Address startAddress = func.getStartAddr();
 		long functionLength = func.getEndAddr().subtract(func.getStartAddr());
 
-		Msg.info(this, "Analyzing " + func.getName() + "@" + startAddress);
 		pushBlock(startAddress, new ControlFrame(program, startAddress, new BlockType(program, func)));
 		while (reader.getPointerIndex() < functionLength) {
 			if (monitor.isCancelled()) {

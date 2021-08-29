@@ -3,7 +3,9 @@ package wasm.analysis;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import ghidra.app.plugin.core.analysis.AnalysisState;
 import ghidra.app.plugin.core.analysis.AnalysisStateInfo;
@@ -11,6 +13,7 @@ import ghidra.app.util.bin.BinaryReader;
 import ghidra.app.util.bin.ByteProvider;
 import ghidra.app.util.bin.MemoryByteProvider;
 import ghidra.program.model.address.Address;
+import ghidra.program.model.listing.Function;
 import ghidra.program.model.listing.Program;
 import ghidra.program.model.mem.Memory;
 import ghidra.program.model.symbol.Symbol;
@@ -44,13 +47,11 @@ public class WasmAnalysis implements AnalysisState {
 		return analysisState;
 	}
 
-	private Program program;
 	private WasmModule module = null;
 	private List<WasmFuncSignature> functions = null;
+	private Map<Function, WasmFunctionPreAnalysis> functionPreAnalyses = new HashMap<>();
 
-	public WasmAnalysis(Program p) {
-		this.program = p;
-
+	public WasmAnalysis(Program program) {
 		Memory mem = program.getMemory();
 		Address moduleStart = mem.getBlock(".module").getStart();
 		ByteProvider memByteProvider = new MemoryByteProvider(mem, moduleStart);
@@ -63,20 +64,23 @@ public class WasmAnalysis implements AnalysisState {
 		}
 
 		this.module = module;
-
-		this.findFunctionSignatures();
-	}
-
-	public Program getProgram() {
-		return program;
+		this.functions = getFunctions(program, module);
 	}
 
 	public List<WasmFuncSignature> getFunctions() {
 		return Collections.unmodifiableList(functions);
 	}
 
-	public WasmFuncSignature getFuncSignature(int funcIdx) {
+	public WasmFuncSignature getFunction(int funcIdx) {
 		return functions.get(funcIdx);
+	}
+
+	public WasmFunctionPreAnalysis getFunctionPreAnalysis(Function f) {
+		return functionPreAnalyses.get(f);
+	}
+
+	public void setFunctionPreAnalysis(Function f, WasmFunctionPreAnalysis analysis) {
+		functionPreAnalyses.put(f, analysis);
 	}
 
 	public WasmFuncType getType(int typeidx) {
@@ -91,8 +95,8 @@ public class WasmAnalysis implements AnalysisState {
 		return module.getTableSection().getTables().get(tableidx).getElementType();
 	}
 
-	public void findFunctionSignatures() {
-		functions = new ArrayList<>();
+	private static List<WasmFuncSignature> getFunctions(Program program, WasmModule module) {
+		List<WasmFuncSignature> functions = new ArrayList<>();
 		WasmImportSection importSection = module.getImportSection();
 		WasmTypeSection typeSection = module.getTypeSection();
 		if (importSection != null) {
@@ -138,5 +142,6 @@ public class WasmAnalysis implements AnalysisState {
 				functions.add(new WasmFuncSignature(params, returns, name, startAddress, endAddress, locals));
 			}
 		}
+		return functions;
 	}
 }

@@ -123,6 +123,9 @@ define register offset=0x3000000000 size=8 [
     o248 o249 o250 o251 o252 o253 o254 o255
 ];
 
+# Temporaries used during branches
+define register offset=0x4000000000 size=8 [ t0 ];
+
 # All context registers are set by the pre-analyzer
 define context contextreg
 	ctx_indent = (0, 15) noflow

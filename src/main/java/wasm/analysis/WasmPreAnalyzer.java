@@ -85,6 +85,7 @@ public class WasmPreAnalyzer extends AbstractAnalyzer {
 			WasmFunctionPreAnalysis preAnalysis = new WasmFunctionPreAnalysis(func);
 			try {
 				preAnalysis.analyzeFunction(program, codeReader, monitor);
+				state.setFunctionPreAnalysis(function, preAnalysis);
 			} catch (Exception e) {
 				Msg.error(this, "Failed to analyze function at index " + i + " (" + func.getName() + ")", e);
 			}
