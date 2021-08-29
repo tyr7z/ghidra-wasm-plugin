@@ -43,11 +43,13 @@ import ghidra.program.model.listing.Listing;
 import ghidra.program.model.listing.Program;
 import ghidra.program.model.mem.Memory;
 import ghidra.program.model.mem.MemoryBlock;
+import ghidra.program.model.symbol.RefType;
 import ghidra.program.model.symbol.SourceType;
 import ghidra.program.model.util.CodeUnitInsertionException;
 import ghidra.util.Msg;
 import ghidra.util.task.TaskMonitor;
 import wasm.format.WasmConstants;
+import wasm.format.WasmEnums.ValType;
 import wasm.format.WasmEnums.WasmExternalKind;
 import wasm.format.WasmHeader;
 import wasm.format.WasmModule;
@@ -361,6 +363,14 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 		}
 	}
 
+	private long bytesToLong(byte[] bytes, int offset) {
+		long res = 0;
+		for (int i = 0; i < 8; i++) {
+			res |= ((long) (bytes[i + offset] & 0xff)) << (i * 8);
+		}
+		return res;
+	}
+
 	private void loadGlobalSection(Program program, FileBytes fileBytes, WasmModule module, WasmGlobalSection globalSection, TaskMonitor monitor) throws Exception {
 		if (globalSection == null)
 			return;
@@ -377,6 +387,13 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 				block = program.getMemory().createUninitializedBlock("global" + i, dataStart, dataType.getLength(), false);
 			} else {
 				block = program.getMemory().createInitializedBlock("global" + i, dataStart, dataType.getLength(), (byte) 0xff, monitor, false);
+				if (entry.getType() == ValType.funcref) {
+					long val = bytesToLong(initBytes, 0);
+					if (val != 0) {
+						Address address = getProgramAddress(program, val);
+						program.getReferenceManager().addMemoryReference(dataStart, address, RefType.DATA, SourceType.IMPORTED, 0);
+					}
+				}
 				program.getMemory().setBytes(dataStart, initBytes);
 			}
 			block.setRead(true);
@@ -412,8 +429,8 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 			return;
 
 		List<WasmElementSegment> entries = elementSection.getSegments();
-		for (int i = 0; i < entries.size(); i++) {
-			WasmElementSegment entry = entries.get(i);
+		for (int entryIdx = 0; entryIdx < entries.size(); entryIdx++) {
+			WasmElementSegment entry = entries.get(entryIdx);
 
 			long offset = entry.getOffset();
 			if (offset == -1)
@@ -428,7 +445,14 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 			try {
 				program.getMemory().setBytes(dataStart, initBytes);
 			} catch (Exception e) {
-				Msg.error(this, "Failed to process element segment " + i, e);
+				Msg.error(this, "Failed to process element segment " + entryIdx, e);
+			}
+			for (int i = 0; i < initBytes.length; i += 8) {
+				long val = bytesToLong(initBytes, i);
+				if (val != 0) {
+					Address address = getProgramAddress(program, val);
+					program.getReferenceManager().addMemoryReference(dataStart.add(i), address, RefType.DATA, SourceType.IMPORTED, 0);
+				}
 			}
 		}
 	}
