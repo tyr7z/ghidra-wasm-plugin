@@ -251,7 +251,7 @@ case_indent: "  "^case_indent is case_indent & ctx_is_case=1 [ ctx_indent = ctx_
 	push32(res);
 }
 :""^indent^"ref.func" funcidx is opc=0xd2; funcidx; br_target; indent {
-	val:8 = zext(br_target:4);
+	val:8 = &br_target;
 	push64(val);
 }
 

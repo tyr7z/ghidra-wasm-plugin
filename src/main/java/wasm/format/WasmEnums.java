@@ -5,7 +5,6 @@ import java.util.HashMap;
 import ghidra.program.model.data.DataType;
 import ghidra.program.model.data.DoubleDataType;
 import ghidra.program.model.data.FloatDataType;
-import ghidra.program.model.data.LongDataType;
 import ghidra.program.model.data.Pointer64DataType;
 import ghidra.program.model.data.Undefined4DataType;
 import ghidra.program.model.data.Undefined8DataType;
@@ -53,7 +52,7 @@ public class WasmEnums {
 			case funcref:
 				return Pointer64DataType.dataType;
 			case externref:
-				return LongDataType.dataType;
+				return Undefined8DataType.dataType;
 			}
 			return null;
 		}

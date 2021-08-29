@@ -100,16 +100,11 @@ public class WasmElementSegment implements StructConverter {
 		return tableidx.getValue();
 	}
 
-	public long getOffset() {
+	public Long getOffset() {
 		if (offset == null) {
-			return -1;
+			return null;
 		}
-
-		Long result = offset.getValueI32();
-		if (result == null) {
-			return -1;
-		}
-		return result;
+		return offset.asI32();
 	}
 
 	public ValType getElementType() {
@@ -121,6 +116,27 @@ public class WasmElementSegment implements StructConverter {
 		} else {
 			return elemtype;
 		}
+	}
+
+	public Long[] getAddresses(WasmModule module) {
+		int count = (int) this.count.getValue();
+		Long[] result = new Long[count];
+
+		if (funcidxs != null) {
+			for (int i = 0; i < count; i++) {
+				long funcidx = funcidxs.get(i).getValue();
+				result[i] = WasmLoader.getFunctionAddress(module, (int) funcidx);
+			}
+			return result;
+		}
+
+		if (exprs != null) {
+			for (int i = 0; i < count; i++) {
+				result[i] = exprs.get(i).asReference(module);
+			}
+			return result;
+		}
+		return null;
 	}
 
 	public byte[] getInitData(WasmModule module) {
@@ -140,7 +156,7 @@ public class WasmElementSegment implements StructConverter {
 
 		if (exprs != null) {
 			for (int i = 0; i < count; i++) {
-				byte[] v = exprs.get(i).getInitBytes(module);
+				byte[] v = exprs.get(i).asBytes(module);
 				if (v != null)
 					System.arraycopy(v, 0, result, i * 8, 8);
 			}

@@ -33,8 +33,12 @@ public class WasmGlobalEntry implements StructConverter {
 		return type.getType().asDataType();
 	}
 
-	public byte[] getInitData(WasmModule module) {
-		return expr.getInitBytes(module);
+	public byte[] asBytes(WasmModule module) {
+		return expr.asBytes(module);
+	}
+
+	public Long asReference(WasmModule module) {
+		return expr.asReference(module);
 	}
 
 	@Override

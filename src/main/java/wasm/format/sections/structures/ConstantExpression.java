@@ -115,7 +115,7 @@ public final class ConstantExpression implements StructConverter {
 	 * be determined (e.g. global) This needs a reference to the module so that
 	 * function references can be resolved to their static addresses.
 	 */
-	public byte[] getInitBytes(WasmModule module) {
+	public byte[] asBytes(WasmModule module) {
 		switch (type) {
 		case I32_CONST:
 			return intToBytes((int) ((Leb128) value).getValue());
@@ -136,7 +136,14 @@ public final class ConstantExpression implements StructConverter {
 		}
 	}
 
-	public Long getValueI32() {
+	public Long asReference(WasmModule module) {
+		if (type == ConstantInstruction.REF_FUNC) {
+			return WasmLoader.getFunctionAddress(module, (int) ((Leb128) value).getValue());
+		}
+		return null;
+	}
+
+	public Long asI32() {
 		if (type == ConstantInstruction.I32_CONST) {
 			return ((Leb128) value).getValue();
 		}
