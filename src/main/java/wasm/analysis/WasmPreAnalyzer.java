@@ -88,6 +88,7 @@ public class WasmPreAnalyzer extends AbstractAnalyzer {
 				state.setFunctionPreAnalysis(function, preAnalysis);
 			} catch (Exception e) {
 				Msg.error(this, "Failed to analyze function at index " + i + " (" + func.getName() + ")", e);
+				function.setComment("WARNING: Wasm pre-analysis failed, output may be incorrect: " + e);
 			}
 		}
 		return true;
