@@ -24,7 +24,7 @@ define token I32 (32)
 ;
 
 define token I64 (64)
-    f64 = (0,63)
+	f64 = (0,63)
 ;
 
 ################################################################
@@ -184,7 +184,7 @@ case_indent: "  "^case_indent is case_indent & ctx_is_case=1 [ ctx_indent = ctx_
 :""^indent^"loop" "blocktype="^ULeb128 is opc=0x03; ULeb128; indent {
 }
 :""^indent^"if" "blocktype="^ULeb128 is opc=0x04; ULeb128; ctx_sp_adjust; br_target; indent {
-	val:4 = 0;
+	local val:4;
 	pop32(val);
 	if(val != 0) goto inst_next;
 	doBranch(ctx_sp_adjust, br_target);
@@ -204,7 +204,7 @@ case_indent: "  "^case_indent is case_indent & ctx_is_case=1 [ ctx_indent = ctx_
 	doBranch(ctx_sp_adjust, br_target);
 }
 :""^indent^"br_if" br_target is opc=0x0d; ULeb128; ctx_sp_adjust; br_target; indent {
-	val:4 = 0;
+	local val:4;
 	pop32(val);
 	if(val == 0) goto inst_next;
 	doBranch(ctx_sp_adjust, br_target);
@@ -234,7 +234,7 @@ case_indent: "  "^case_indent is case_indent & ctx_is_case=1 [ ctx_indent = ctx_
 	pushCallOther(&o0);
 }
 :""^indent^"call_indirect" "type="^typeidx tableref is opc=0x11; typeidx; tableref; indent {
-	idx:4 = 0;
+	local idx:4;
 	pop32(idx);
 	addr:8 = &tableref + sext(idx) * 8;
 	val:8 = *[table] addr;
@@ -249,7 +249,7 @@ case_indent: "  "^case_indent is case_indent & ctx_is_case=1 [ ctx_indent = ctx_
 	push64(val);
 }
 :""^indent^"ref.is_null" is opc=0xd1; indent {
-	val:8 = 0;
+	local val:8;
 	pop64(val);
 	res:4 = zext(val == 0);
 	push32(res);
@@ -261,42 +261,36 @@ case_indent: "  "^case_indent is case_indent & ctx_is_case=1 [ ctx_indent = ctx_
 
 ## Parametric Instructions
 :""^indent^"drop" is opc=0x1a; indent {
-	val:8 = 0;
+	local val:8;
 	pop64(val);
 }
 
 macro select32() {
-	cond:4 = 0;
+	local cond:4;
 	pop32(cond);
-	val1:4 = 0;
-	val2:4 = 0;
+	local val1:4;
+	local val2:4;
 	pop32(val2);
 	pop32(val1);
-	res:4 = 0;
 	if (cond != 0) goto <true>;
-	res = val1;
-	goto <finish>;
+	push32(val2);
+	goto inst_next;
 <true>
-	res = val2;
-<finish>
-	push32(res);
+	push32(val1);
 }
 
 macro select64() {
-	cond:4 = 0;
+	local cond:4;
 	pop32(cond);
-	val1:8 = 0;
-	val2:8 = 0;
+	local val1:8;
+	local val2:8;
 	pop64(val2);
 	pop64(val1);
-	res:8 = 0;
 	if (cond != 0) goto <true>;
-	res = val1;
-	goto <finish>;
+	push64(val2);
+	goto inst_next;
 <true>
-	res = val2;
-<finish>
-	push64(res);
+	push64(val1);
 }
 
 :""^indent^"select" is opc=0x1b; indent; ctx_is_op64=0 {
@@ -361,7 +355,7 @@ macro select64() {
 
 ## Table Instructions
 :""^indent^"table.get" tableref is opc=0x25; tableref; indent {
-	idx:4 = 0;
+	local idx:4;
 	pop32(idx);
 	addr:8 = &tableref + sext(idx) * 8;
 	val:8 = *[table] addr;
@@ -369,20 +363,20 @@ macro select64() {
 }
 
 :""^indent^"table.set" tableref is opc=0x26; tableref; indent {
-	val:8 = 0;
+	local val:8;
 	pop64(val);
-	idx:4 = 0;
+	local idx:4;
 	pop32(idx);
 	addr:8 = &tableref + sext(idx) * 8;
 	*[table] addr = val;
 }
 
 :""^indent^"table.init" elemidx tableidx is opc=0xfc; opc2=0x0c; elemidx; tableidx; indent {
-	count:4 = 0;
+	local count:4;
 	pop32(count);
-	src:4 = 0;
+	local src:4;
 	pop32(src);
-	dst:4 = 0;
+	local dst:4;
 	pop32(dst);
 	table_init(elemidx:4, tableidx:4, count, src, dst);
 }
@@ -392,17 +386,17 @@ macro select64() {
 }
 
 :""^indent^"table.copy" tableidx tableidx2 is opc=0xfc; opc2=0x0e; tableidx; tableidx2; indent {
-	count:4 = 0;
+	local count:4;
 	pop32(count);
-	src:4 = 0;
+	local src:4;
 	pop32(src);
-	dst:4 = 0;
+	local dst:4;
 	pop32(dst);
 	table_copy(tableidx:4, tableidx2:4, count, src, dst);
 }
 
 :""^indent^"table.grow" tableidx is opc=0xfc; opc2=0x0f; tableidx; indent {
-	new_sz:4 = 0;
+	local new_sz:4;
 	pop32(new_sz);
 	val:4 = table_grow(tableidx:4, new_sz);
 	push32(val);
@@ -414,11 +408,11 @@ macro select64() {
 }
 
 :""^indent^"table.fill" tableidx is opc=0xfc; opc2=0x11; tableidx; indent {
-	count:4 = 0;
+	local count:4;
 	pop32(count);
-	val:8 = 0;
+	local val:8;
 	pop64(val);
-	dst:4 = 0;
+	local dst:4;
 	pop32(dst);
 	table_fill(tableidx:4, count, val, dst);
 }
@@ -431,18 +425,18 @@ macro select64() {
 }
 
 :""^indent^"memory.grow" memidx is opc=0x40; memidx; indent {
-	new_sz:4 = 0;
+	local new_sz:4;
 	pop32(new_sz);
 	val:4 = memory_grow(memidx:4, new_sz);
 	push32(val);
 }
 
 :""^indent^"memory.init" dataidx memidx is opc=0xfc; opc2=0x08; dataidx; memidx; indent {
-	count:4 = 0;
+	local count:4;
 	pop32(count);
-	src:4 = 0;
+	local src:4;
 	pop32(src);
-	dst:4 = 0;
+	local dst:4;
 	pop32(dst);
 	memory_init(dataidx, memidx:4, count, src, dst);
 }
@@ -452,21 +446,21 @@ macro select64() {
 }
 
 :""^indent^"memory.copy" memidx memidx2 is opc=0xfc; opc2=0x0a; memidx; memidx2; indent {
-	count:4 = 0;
+	local count:4;
 	pop32(count);
-	src:4 = 0;
+	local src:4;
 	pop32(src);
-	dst:4 = 0;
+	local dst:4;
 	pop32(dst);
 	memory_copy(memidx:4, memidx2:4, count, src, dst);
 }
 
 :""^indent^"memory.fill" memidx is opc=0xfc; opc2=0x0b; memidx; indent {
-	count:4 = 0;
+	local count:4;
 	pop32(count);
-	val:4 = 0;
+	local val:4;
 	pop32(val);
-	dst:4 = 0;
+	local dst:4;
 	pop32(dst);
 	memory_fill(memidx:4, count, val, dst);
 }
