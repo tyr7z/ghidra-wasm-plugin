@@ -11,8 +11,10 @@ import wasm.analysis.WasmFunctionPreAnalysis.StackEffect;
 import wasm.format.WasmEnums.ValType;
 
 /**
- * The "uponentry" injection for a Wasm function. We inject code to copy from
- * the artificial "inputs" registers into the real "locals" registers.
+ * Handle variable-length pops from the stack to registers.
+ * We use this to handle branches (popping block arguments to temporary registers),
+ * function calls (popping function arguments to input registers),
+ * and function return (popping return values to output registers).
  */
 public class InjectPayloadWasmPop extends InjectPayloadCallother {
 
