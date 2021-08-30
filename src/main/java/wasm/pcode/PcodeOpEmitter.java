@@ -56,16 +56,20 @@ public class PcodeOpEmitter {
 	}
 
 	public void emitCopy(Address fromAddr, Address toAddr, int size) {
+		/* toAddr = fromAddr */
 		PcodeOp op = newOp(PcodeOp.COPY);
 		op.setInput(new Varnode(fromAddr, size), 0);
 		op.setOutput(new Varnode(toAddr, size));
 	}
 
 	public void emitPop(Address toAddr, int size) {
+		/* toAddr = *SP */
 		PcodeOp loadOp = newOp(PcodeOp.LOAD);
 		loadOp.setInput(defSpaceId, 0);
 		loadOp.setInput(spVarnode, 1);
 		loadOp.setOutput(new Varnode(toAddr, size));
+
+		/* SP = SP + 8 */
 		PcodeOp addOp = newOp(PcodeOp.INT_ADD);
 		addOp.setInput(spVarnode, 0);
 		addOp.setInput(getConstant(8, spVarnode.getSize()), 1);
@@ -73,10 +77,13 @@ public class PcodeOpEmitter {
 	}
 
 	public void emitPush(Address fromAddr, int size) {
+		/* SP = SP - 8 */
 		PcodeOp addOp = newOp(PcodeOp.INT_SUB);
 		addOp.setInput(spVarnode, 0);
 		addOp.setInput(getConstant(8, spVarnode.getSize()), 1);
 		addOp.setOutput(spVarnode);
+
+		/* *SP = fromAddr */
 		PcodeOp storeOp = newOp(PcodeOp.STORE);
 		storeOp.setInput(defSpaceId, 0);
 		storeOp.setInput(spVarnode, 1);
