@@ -198,236 +198,270 @@ memoffset: "offset="^ULeb128 is ULeb128 {
 :""^indent^"i32.eqz"  is opc=0x45; indent {
 	local x0:4;
 	pop32(x0);
-	push32(x0 == 0);
+	res:4 = zext(x0 == 0);
+	push32(res);
 }
 :""^indent^"i32.eq"  is opc=0x46; indent {
 	local x0:4;
 	local x1:4;
 	pop32(x1);
 	pop32(x0);
-	push32(x0 == x1);
+	res:4 = zext(x0 == x1);
+	push32(res);
 }
 :""^indent^"i32.ne"  is opc=0x47; indent {
 	local x0:4;
 	local x1:4;
 	pop32(x1);
 	pop32(x0);
-	push32(x0 != x1);
+	res:4 = zext(x0 != x1);
+	push32(res);
 }
 :""^indent^"i32.lt_s"  is opc=0x48; indent {
 	local x0:4;
 	local x1:4;
 	pop32(x1);
 	pop32(x0);
-	push32(x0 s< x1);
+	res:4 = zext(x0 s< x1);
+	push32(res);
 }
 :""^indent^"i32.lt_u"  is opc=0x49; indent {
 	local x0:4;
 	local x1:4;
 	pop32(x1);
 	pop32(x0);
-	push32(x0 < x1);
+	res:4 = zext(x0 < x1);
+	push32(res);
 }
 :""^indent^"i32.gt_s"  is opc=0x4A; indent {
 	local x0:4;
 	local x1:4;
 	pop32(x1);
 	pop32(x0);
-	push32(x0 s> x1);
+	res:4 = zext(x0 s> x1);
+	push32(res);
 }
 :""^indent^"i32.gt_u"  is opc=0x4B; indent {
 	local x0:4;
 	local x1:4;
 	pop32(x1);
 	pop32(x0);
-	push32(x0 > x1);
+	res:4 = zext(x0 > x1);
+	push32(res);
 }
 :""^indent^"i32.le_s"  is opc=0x4C; indent {
 	local x0:4;
 	local x1:4;
 	pop32(x1);
 	pop32(x0);
-	push32(x0 s<= x1);
+	res:4 = zext(x0 s<= x1);
+	push32(res);
 }
 :""^indent^"i32.le_u"  is opc=0x4D; indent {
 	local x0:4;
 	local x1:4;
 	pop32(x1);
 	pop32(x0);
-	push32(x0 <= x1);
+	res:4 = zext(x0 <= x1);
+	push32(res);
 }
 :""^indent^"i32.ge_s"  is opc=0x4E; indent {
 	local x0:4;
 	local x1:4;
 	pop32(x1);
 	pop32(x0);
-	push32(x0 s>= x1);
+	res:4 = zext(x0 s>= x1);
+	push32(res);
 }
 :""^indent^"i32.ge_u"  is opc=0x4F; indent {
 	local x0:4;
 	local x1:4;
 	pop32(x1);
 	pop32(x0);
-	push32(x0 >= x1);
+	res:4 = zext(x0 >= x1);
+	push32(res);
 }
 :""^indent^"i64.eqz"  is opc=0x50; indent {
 	local x0:8;
 	pop64(x0);
-	push32(x0 == 0);
+	res:4 = zext(x0 == 0);
+	push32(res);
 }
 :""^indent^"i64.eq"  is opc=0x51; indent {
 	local x0:8;
 	local x1:8;
 	pop64(x1);
 	pop64(x0);
-	push32(x0 == x1);
+	res:4 = zext(x0 == x1);
+	push32(res);
 }
 :""^indent^"i64.ne"  is opc=0x52; indent {
 	local x0:8;
 	local x1:8;
 	pop64(x1);
 	pop64(x0);
-	push32(x0 != x1);
+	res:4 = zext(x0 != x1);
+	push32(res);
 }
 :""^indent^"i64.lt_s"  is opc=0x53; indent {
 	local x0:8;
 	local x1:8;
 	pop64(x1);
 	pop64(x0);
-	push32(x0 s< x1);
+	res:4 = zext(x0 s< x1);
+	push32(res);
 }
 :""^indent^"i64.lt_u"  is opc=0x54; indent {
 	local x0:8;
 	local x1:8;
 	pop64(x1);
 	pop64(x0);
-	push32(x0 < x1);
+	res:4 = zext(x0 < x1);
+	push32(res);
 }
 :""^indent^"i64.gt_s"  is opc=0x55; indent {
 	local x0:8;
 	local x1:8;
 	pop64(x1);
 	pop64(x0);
-	push32(x0 s> x1);
+	res:4 = zext(x0 s> x1);
+	push32(res);
 }
 :""^indent^"i64.gt_u"  is opc=0x56; indent {
 	local x0:8;
 	local x1:8;
 	pop64(x1);
 	pop64(x0);
-	push32(x0 > x1);
+	res:4 = zext(x0 > x1);
+	push32(res);
 }
 :""^indent^"i64.le_s"  is opc=0x57; indent {
 	local x0:8;
 	local x1:8;
 	pop64(x1);
 	pop64(x0);
-	push32(x0 s<= x1);
+	res:4 = zext(x0 s<= x1);
+	push32(res);
 }
 :""^indent^"i64.le_u"  is opc=0x58; indent {
 	local x0:8;
 	local x1:8;
 	pop64(x1);
 	pop64(x0);
-	push32(x0 <= x1);
+	res:4 = zext(x0 <= x1);
+	push32(res);
 }
 :""^indent^"i64.ge_s"  is opc=0x59; indent {
 	local x0:8;
 	local x1:8;
 	pop64(x1);
 	pop64(x0);
-	push32(x0 s>= x1);
+	res:4 = zext(x0 s>= x1);
+	push32(res);
 }
 :""^indent^"i64.ge_u"  is opc=0x5A; indent {
 	local x0:8;
 	local x1:8;
 	pop64(x1);
 	pop64(x0);
-	push32(x0 >= x1);
+	res:4 = zext(x0 >= x1);
+	push32(res);
 }
 :""^indent^"f32.eq"  is opc=0x5B; indent {
 	local x0:4;
 	local x1:4;
 	pop32(x1);
 	pop32(x0);
-	push32(x0 f== x1);
+	res:4 = zext(x0 f== x1);
+	push32(res);
 }
 :""^indent^"f32.ne"  is opc=0x5C; indent {
 	local x0:4;
 	local x1:4;
 	pop32(x1);
 	pop32(x0);
-	push32(x0 f!= x1);
+	res:4 = zext(x0 f!= x1);
+	push32(res);
 }
 :""^indent^"f32.lt"  is opc=0x5D; indent {
 	local x0:4;
 	local x1:4;
 	pop32(x1);
 	pop32(x0);
-	push32(x0 f< x1);
+	res:4 = zext(x0 f< x1);
+	push32(res);
 }
 :""^indent^"f32.gt"  is opc=0x5E; indent {
 	local x0:4;
 	local x1:4;
 	pop32(x1);
 	pop32(x0);
-	push32(x0 f> x1);
+	res:4 = zext(x0 f> x1);
+	push32(res);
 }
 :""^indent^"f32.le"  is opc=0x5F; indent {
 	local x0:4;
 	local x1:4;
 	pop32(x1);
 	pop32(x0);
-	push32(x0 f<= x1);
+	res:4 = zext(x0 f<= x1);
+	push32(res);
 }
 :""^indent^"f32.ge"  is opc=0x60; indent {
 	local x0:4;
 	local x1:4;
 	pop32(x1);
 	pop32(x0);
-	push32(x0 f>= x1);
+	res:4 = zext(x0 f>= x1);
+	push32(res);
 }
 :""^indent^"f64.eq"  is opc=0x61; indent {
 	local x0:8;
 	local x1:8;
 	pop64(x1);
 	pop64(x0);
-	push32(x0 f== x1);
+	res:4 = zext(x0 f== x1);
+	push32(res);
 }
 :""^indent^"f64.ne"  is opc=0x62; indent {
 	local x0:8;
 	local x1:8;
 	pop64(x1);
 	pop64(x0);
-	push32(x0 f!= x1);
+	res:4 = zext(x0 f!= x1);
+	push32(res);
 }
 :""^indent^"f64.lt"  is opc=0x63; indent {
 	local x0:8;
 	local x1:8;
 	pop64(x1);
 	pop64(x0);
-	push32(x0 f< x1);
+	res:4 = zext(x0 f< x1);
+	push32(res);
 }
 :""^indent^"f64.gt"  is opc=0x64; indent {
 	local x0:8;
 	local x1:8;
 	pop64(x1);
 	pop64(x0);
-	push32(x0 f> x1);
+	res:4 = zext(x0 f> x1);
+	push32(res);
 }
 :""^indent^"f64.le"  is opc=0x65; indent {
 	local x0:8;
 	local x1:8;
 	pop64(x1);
 	pop64(x0);
-	push32(x0 f<= x1);
+	res:4 = zext(x0 f<= x1);
+	push32(res);
 }
 :""^indent^"f64.ge"  is opc=0x66; indent {
 	local x0:8;
 	local x1:8;
 	pop64(x1);
 	pop64(x0);
-	push32(x0 f>= x1);
+	res:4 = zext(x0 f>= x1);
+	push32(res);
 }
 :""^indent^"i32.clz"  is opc=0x67; indent {
 	local x0:4;
@@ -547,8 +581,7 @@ memoffset: "offset="^ULeb128 is ULeb128 {
 	pop32(x1);
 	pop32(x0);
 	cnt:4 = x1 & 31;
-	res:4 = (x0 << cnt) | (x0 >> (32 - cnt));
-	push32(res);
+	push32((x0 << cnt) | (x0 >> (32 - cnt)));
 }
 :""^indent^"i32.rotr"  is opc=0x78; indent {
 	local x0:4;
@@ -556,8 +589,7 @@ memoffset: "offset="^ULeb128 is ULeb128 {
 	pop32(x1);
 	pop32(x0);
 	cnt:4 = x1 & 31;
-	res:4 = (x0 >> cnt) | (x0 << (32 - cnt));
-	push32(res);
+	push32((x0 >> cnt) | (x0 << (32 - cnt)));
 }
 :""^indent^"i64.clz"  is opc=0x79; indent {
 	local x0:8;

@@ -55,8 +55,12 @@ public class WasmImportEntry implements StructConverter {
 		return (int) function_type.asLong();
 	}
 
+	public String getModule() {
+		return module.getValue();
+	}
+
 	public String getName() {
-		return module.getValue() + "::" + field.getValue();
+		return field.getValue();
 	}
 
 	@Override

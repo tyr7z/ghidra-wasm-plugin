@@ -43,6 +43,7 @@ public class WasmPreAnalyzer extends AbstractAnalyzer {
 	private static void setFunctionSignature(Program program, Function function, WasmFuncSignature sig) throws Exception {
 		Parameter returnVar;
 		if (sig.getReturns().length > 0) {
+			/* TODO handle multiple returns */
 			returnVar = new ReturnParameterImpl(sig.getReturns()[0].asDataType(), program);
 		} else {
 			returnVar = new ReturnParameterImpl(VoidDataType.dataType, program);

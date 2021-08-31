@@ -42,6 +42,7 @@ import ghidra.program.model.listing.Listing;
 import ghidra.program.model.listing.Program;
 import ghidra.program.model.mem.Memory;
 import ghidra.program.model.mem.MemoryBlock;
+import ghidra.program.model.symbol.Namespace;
 import ghidra.program.model.symbol.RefType;
 import ghidra.program.model.symbol.SourceType;
 import ghidra.program.model.util.CodeUnitInsertionException;
@@ -264,14 +265,14 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 		if (names != null) {
 			String name = names.getFunctionName(id);
 			if (name != null) {
-				return "wasm_" + name;
+				return name;
 			}
 		}
 
 		if (exports != null) {
 			WasmExportEntry entry = exports.findMethod(id);
 			if (entry != null) {
-				return "export_" + entry.getName();
+				return entry.getName();
 			}
 		}
 		return "unnamed_function_" + id;
@@ -287,6 +288,7 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 		WasmImportSection imports = module.getImportSection();
 		int importsOffset = imports == null ? 0 : imports.getCount();
 		WasmExportSection exports = module.getExportSection();
+		Namespace exportNamespace = program.getSymbolTable().getOrCreateNameSpace(program.getGlobalNamespace(), "export", SourceType.IMPORTED);
 
 		List<WasmFunctionBody> functions = codeSection.getFunctions();
 		for (int codeIdx = 0; codeIdx < functions.size(); ++codeIdx) {
@@ -301,10 +303,17 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 				Address methodAddress = getMethodAddress(program, methodOffset);
 				Address methodEnd = getMethodAddress(program, methodOffset + method.getInstructions().length);
 
+				Namespace namespace;
+				if (exports != null && exports.findMethod(codeIdx + importsOffset) != null) {
+					namespace = exportNamespace;
+				} else {
+					namespace = program.getGlobalNamespace();
+				}
+
 				program.getFunctionManager().createFunction(
-						methodName, methodAddress,
+						methodName, namespace, methodAddress,
 						new AddressSet(methodAddress, methodEnd), SourceType.IMPORTED);
-				program.getSymbolTable().createLabel(methodAddress, methodName, SourceType.IMPORTED);
+				program.getSymbolTable().createLabel(methodAddress, methodName, namespace, SourceType.IMPORTED);
 			} catch (Exception e) {
 				Msg.error(this, "Failed to load function " + methodName, e);
 			}
@@ -357,20 +366,21 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 
 		createImportStubBlock(program, importSection.getCount() * IMPORT_STUB_LEN);
 		int nextFuncIdx = 0;
+		Namespace importNamespace = program.getSymbolTable().getOrCreateNameSpace(program.getGlobalNamespace(), "import", SourceType.IMPORTED);
 		for (WasmImportEntry entry : importSection.getEntries()) {
 			if (entry.getKind() != WasmExternalKind.EXT_FUNCTION) {
 				continue;
 			}
 
-			String methodName = "import__" + entry.getName();
+			String methodName = entry.getName();
 			Address methodAddress = getImportAddress(program, nextFuncIdx);
 			Address methodEnd = methodAddress.add(IMPORT_STUB_LEN - 1);
+			Namespace moduleNamespace = program.getSymbolTable().getOrCreateNameSpace(importNamespace, entry.getModule(), SourceType.IMPORTED);
 
 			program.getFunctionManager().createFunction(
-					methodName, methodAddress,
+					methodName, moduleNamespace, methodAddress,
 					new AddressSet(methodAddress, methodEnd), SourceType.IMPORTED);
-
-			program.getSymbolTable().createLabel(methodAddress, methodName, SourceType.IMPORTED);
+			program.getSymbolTable().createLabel(methodAddress, methodName, moduleNamespace, SourceType.IMPORTED);
 
 			nextFuncIdx++;
 		}
