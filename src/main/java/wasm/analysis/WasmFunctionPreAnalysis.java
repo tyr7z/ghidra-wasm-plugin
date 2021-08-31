@@ -623,12 +623,12 @@ public class WasmFunctionPreAnalysis {
 		}
 
 		case 0x41: /* i32.const i32 */ {
-			readLeb128(reader); /* value */
+			readSignedLeb128(reader); /* value */
 			pushValue(instAddress, ValType.i32);
 			break;
 		}
 		case 0x42: /* i64.const i64 */ {
-			readLeb128(reader); /* value */
+			readSignedLeb128(reader); /* value */
 			pushValue(instAddress, ValType.i64);
 			break;
 		}

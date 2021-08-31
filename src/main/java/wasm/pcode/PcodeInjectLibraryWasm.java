@@ -6,10 +6,6 @@ import ghidra.program.model.lang.PcodeInjectLibrary;
 
 public class PcodeInjectLibraryWasm extends PcodeInjectLibrary {
 
-	public final static long REG_OFF_LOCALS = 0x1000000000L;
-	public final static long REG_OFF_INPUTS = 0x2000000000L;
-	public final static long REG_OFF_OUTPUTS = 0x3000000000L;
-
 	public PcodeInjectLibraryWasm(SleighLanguage l) {
 		super(l);
 	}

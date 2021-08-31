@@ -32,25 +32,23 @@ define token I64 (64)
 ################################################################
 
 macro push32(val) {
-	val32:4 = zext(val);
 	SP = SP - 8;
-	*:4 SP = val32;
+	*:4 SP = val;
 }
 
 macro pop32(ret32) {
 	ret32 = *:4 SP;
-	SP = SP + 8; 
+	SP = SP + 8;
 }
 
 macro push64(val) {
-	val64:8 = zext(val);
 	SP = SP - 8;
-	*:8 SP = val64; 
+	*:8 SP = val;
 }
 
 macro pop64(ret64) {
 	ret64 = *:8 SP;
-	SP = SP + 8; 
+	SP = SP + 8;
 }
 
 ################################################################
@@ -142,8 +140,7 @@ memidx2: ULeb128 is ULeb128 {
 }
 
 reftype: "reftype="^bytev is bytev {
-	val:1 = bytev;
-	export val;
+	export *[const]:1 bytev;
 }
 
 macro trap() {
@@ -299,9 +296,9 @@ macro select64() {
 :""^indent^"select" is opc=0x1b; indent; ctx_is_op64=1 {
 	select64();
 }
+
 # In the current version of WASM, only one type index is permitted in select t*.
 # This is functionally identical to regular select.
-
 :""^indent^"select" is opc=0x1c; opc2=0x01; valtype; indent {
 	# i64, f64, funcref, externref
 	select64();
@@ -467,22 +464,20 @@ macro select64() {
 
 ## Numeric Instructions: const
 :""^indent^"i32.const" SLeb128 is opc=0x41; SLeb128; indent {
-	val:4 = SLeb128:4;
-	push32(val);
+	push32(SLeb128:4);
 }
 
 :""^indent^"i64.const" SLeb128 is opc=0x42; SLeb128; indent {
-	val:8 = SLeb128:8;
-	push64(val);
+	push64(SLeb128:8);
 }
 
 :""^indent^"f32.const" f32 is opc=0x43; f32; indent {
-	val:4 = f32:4;
+	local val:4 = float2float(f32:4);
 	push32(val);
 }
 
 :""^indent^"f64.const" f64 is opc=0x44; f64; indent {
-	val:8 = f64:8;
+	local val:8 = float2float(f64:8);
 	push64(val);
 }
 
