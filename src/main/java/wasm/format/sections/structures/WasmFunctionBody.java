@@ -12,6 +12,7 @@ import ghidra.program.model.data.DataType;
 import ghidra.program.model.data.Structure;
 import ghidra.util.exception.DuplicateNameException;
 import wasm.format.StructureUtils;
+import wasm.format.WasmEnums.ValType;
 
 public class WasmFunctionBody implements StructConverter {
 
@@ -40,15 +41,15 @@ public class WasmFunctionBody implements StructConverter {
 		return instructions;
 	}
 
-	public byte[] getLocals() {
+	public ValType[] getLocals() {
 		int localCount = 0;
 		for (WasmLocalEntry local : locals) {
 			localCount += local.getCount();
 		}
-		byte[] result = new byte[localCount];
+		ValType[] result = new ValType[localCount];
 		int pos = 0;
 		for (WasmLocalEntry local : locals) {
-			Arrays.fill(result, pos, pos + local.getCount(), (byte) local.getType());
+			Arrays.fill(result, pos, pos + local.getCount(), ValType.fromByte(local.getType()));
 			pos += local.getCount();
 		}
 		return result;

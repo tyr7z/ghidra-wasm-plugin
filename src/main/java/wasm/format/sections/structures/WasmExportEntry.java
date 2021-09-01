@@ -31,7 +31,7 @@ public class WasmExportEntry implements StructConverter {
 		return (int) index.asLong();
 	}
 
-	public WasmExternalKind getType() {
+	public WasmExternalKind getKind() {
 		return kind;
 	}
 

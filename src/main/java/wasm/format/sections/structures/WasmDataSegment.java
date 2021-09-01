@@ -50,7 +50,7 @@ public class WasmDataSegment implements StructConverter {
 		return fileOffset;
 	}
 
-	public Long getOffset() {
+	public Long getMemoryOffset() {
 		if (offsetExpr != null) {
 			return offsetExpr.asI32();
 		}
@@ -68,8 +68,8 @@ public class WasmDataSegment implements StructConverter {
 	@Override
 	public DataType toDataType() throws DuplicateNameException, IOException {
 		String structName = "data_segment_" + getIndex();
-		if (getOffset() != null) {
-			structName += "_" + getOffset();
+		if (getMemoryOffset() != null) {
+			structName += "_" + getMemoryOffset();
 		}
 		Structure structure = StructureUtils.createStructure(structName);
 

@@ -8,8 +8,33 @@ import java.util.List;
 import java.util.Map;
 
 import ghidra.app.util.bin.BinaryReader;
-import wasm.format.sections.*;
+import wasm.format.WasmEnums.ValType;
+import wasm.format.WasmEnums.WasmExternalKind;
+import wasm.format.sections.WasmCodeSection;
+import wasm.format.sections.WasmCustomSection;
+import wasm.format.sections.WasmDataSection;
+import wasm.format.sections.WasmElementSection;
+import wasm.format.sections.WasmExportSection;
+import wasm.format.sections.WasmFunctionSection;
+import wasm.format.sections.WasmGlobalSection;
+import wasm.format.sections.WasmImportSection;
+import wasm.format.sections.WasmLinearMemorySection;
+import wasm.format.sections.WasmNameSection;
+import wasm.format.sections.WasmSection;
 import wasm.format.sections.WasmSection.WasmSectionId;
+import wasm.format.sections.WasmStartSection;
+import wasm.format.sections.WasmTableSection;
+import wasm.format.sections.WasmTypeSection;
+import wasm.format.sections.structures.WasmDataSegment;
+import wasm.format.sections.structures.WasmElementSegment;
+import wasm.format.sections.structures.WasmExportEntry;
+import wasm.format.sections.structures.WasmFuncType;
+import wasm.format.sections.structures.WasmFunctionBody;
+import wasm.format.sections.structures.WasmGlobalEntry;
+import wasm.format.sections.structures.WasmGlobalType;
+import wasm.format.sections.structures.WasmImportEntry;
+import wasm.format.sections.structures.WasmResizableLimits;
+import wasm.format.sections.structures.WasmTableType;
 
 public class WasmModule {
 
@@ -35,6 +60,15 @@ public class WasmModule {
 		}
 	}
 
+	public WasmHeader getHeader() {
+		return header;
+	}
+
+	public List<WasmSection> getSections() {
+		return sections;
+	}
+
+	// #region Sections which do not represent vectors of entries
 	public List<WasmCustomSection> getCustomSections() {
 		return Collections.unmodifiableList(customSections);
 	}
@@ -48,55 +82,181 @@ public class WasmModule {
 		return null;
 	}
 
-	public WasmTypeSection getTypeSection() {
-		return (WasmTypeSection) sectionMap.get(WasmSectionId.SEC_TYPE);
-	}
-
-	public WasmImportSection getImportSection() {
-		return (WasmImportSection) sectionMap.get(WasmSectionId.SEC_IMPORT);
-	}
-
-	public WasmFunctionSection getFunctionSection() {
-		return (WasmFunctionSection) sectionMap.get(WasmSectionId.SEC_FUNCTION);
-	}
-
-	public WasmTableSection getTableSection() {
-		return (WasmTableSection) sectionMap.get(WasmSectionId.SEC_TABLE);
-	}
-
-	public WasmLinearMemorySection getLinearMemorySection() {
-		return (WasmLinearMemorySection) sectionMap.get(WasmSectionId.SEC_LINEARMEMORY);
-	}
-
-	public WasmGlobalSection getGlobalSection() {
-		return (WasmGlobalSection) sectionMap.get(WasmSectionId.SEC_GLOBAL);
-	}
-
-	public WasmExportSection getExportSection() {
-		return (WasmExportSection) sectionMap.get(WasmSectionId.SEC_EXPORT);
-	}
-
 	public WasmStartSection getStartSection() {
 		return (WasmStartSection) sectionMap.get(WasmSectionId.SEC_START);
 	}
+	// #endregion
 
-	public WasmElementSection getElementSection() {
+	// #region Sections which represent vectors of entries
+	private WasmTypeSection getTypeSection() {
+		return (WasmTypeSection) sectionMap.get(WasmSectionId.SEC_TYPE);
+	}
+
+	private WasmImportSection getImportSection() {
+		return (WasmImportSection) sectionMap.get(WasmSectionId.SEC_IMPORT);
+	}
+
+	private WasmFunctionSection getFunctionSection() {
+		return (WasmFunctionSection) sectionMap.get(WasmSectionId.SEC_FUNCTION);
+	}
+
+	private WasmTableSection getTableSection() {
+		return (WasmTableSection) sectionMap.get(WasmSectionId.SEC_TABLE);
+	}
+
+	private WasmLinearMemorySection getLinearMemorySection() {
+		return (WasmLinearMemorySection) sectionMap.get(WasmSectionId.SEC_LINEARMEMORY);
+	}
+
+	private WasmGlobalSection getGlobalSection() {
+		return (WasmGlobalSection) sectionMap.get(WasmSectionId.SEC_GLOBAL);
+	}
+
+	private WasmExportSection getExportSection() {
+		return (WasmExportSection) sectionMap.get(WasmSectionId.SEC_EXPORT);
+	}
+
+	private WasmElementSection getElementSection() {
 		return (WasmElementSection) sectionMap.get(WasmSectionId.SEC_ELEMENT);
 	}
 
-	public WasmCodeSection getCodeSection() {
+	private WasmCodeSection getCodeSection() {
 		return (WasmCodeSection) sectionMap.get(WasmSectionId.SEC_CODE);
 	}
 
-	public WasmDataSection getDataSection() {
+	private WasmDataSection getDataSection() {
 		return (WasmDataSection) sectionMap.get(WasmSectionId.SEC_DATA);
 	}
 
-	public WasmHeader getHeader() {
-		return header;
+	public WasmFuncType getType(int typeidx) {
+		WasmTypeSection typeSection = getTypeSection();
+		if (typeSection == null) {
+			throw new IndexOutOfBoundsException(typeidx);
+		}
+		return typeSection.getType(typeidx);
 	}
 
-	public List<WasmSection> getSections() {
-		return sections;
+	public List<WasmImportEntry> getImports(WasmExternalKind kind) {
+		WasmImportSection importSection = getImportSection();
+		if (importSection == null) {
+			return Collections.emptyList();
+		}
+		return importSection.getImports(kind);
 	}
+
+	public List<WasmFuncType> getNonImportedFunctions() {
+		WasmFunctionSection functionSection = getFunctionSection();
+		if (functionSection == null) {
+			return Collections.emptyList();
+		}
+		int count = functionSection.getTypeCount();
+		List<WasmFuncType> result = new ArrayList<>(count);
+		for (int i = 0; i < count; i++) {
+			result.add(getType(functionSection.getTypeIdx(i)));
+		}
+		return result;
+	}
+
+	public List<WasmTableType> getNonImportedTables() {
+		WasmTableSection tableSection = getTableSection();
+		if (tableSection == null) {
+			return Collections.emptyList();
+		}
+		return tableSection.getTables();
+	}
+
+	public List<WasmResizableLimits> getNonImportedMemories() {
+		WasmLinearMemorySection memorySection = getLinearMemorySection();
+		if (memorySection == null) {
+			return Collections.emptyList();
+		}
+		return memorySection.getMemories();
+	}
+
+	public List<WasmGlobalEntry> getNonImportedGlobals() {
+		WasmGlobalSection globalSection = getGlobalSection();
+		if (globalSection == null) {
+			return Collections.emptyList();
+		}
+		return globalSection.getEntries();
+	}
+
+	public List<WasmExportEntry> getExports(WasmExternalKind kind) {
+		WasmExportSection exportSection = getExportSection();
+		if (exportSection == null) {
+			return Collections.emptyList();
+		}
+		return exportSection.getExports(kind);
+	}
+
+	public List<WasmElementSegment> getElementSegments() {
+		WasmElementSection elementSection = getElementSection();
+		if (elementSection == null) {
+			return Collections.emptyList();
+		}
+		return elementSection.getSegments();
+	}
+
+	public List<WasmFunctionBody> getNonImportedFunctionBodies() {
+		WasmCodeSection codeSection = getCodeSection();
+		if (codeSection == null) {
+			return Collections.emptyList();
+		}
+		return codeSection.getFunctions();
+	}
+
+	public List<WasmDataSegment> getDataSegments() {
+		WasmDataSection dataSection = getDataSection();
+		if (dataSection == null) {
+			return Collections.emptyList();
+		}
+		return dataSection.getSegments();
+	}
+	// #endregion
+
+	// #region Convenience functions
+	public int getFunctionCount() {
+		return getImports(WasmExternalKind.EXT_FUNCTION).size() + getNonImportedFunctions().size();
+	}
+
+	public WasmFuncType getFunctionType(int funcidx) {
+		List<WasmImportEntry> imports = getImports(WasmExternalKind.EXT_FUNCTION);
+		if (funcidx < imports.size()) {
+			return getType(imports.get(funcidx).getFunctionType());
+		}
+		return getNonImportedFunctions().get(funcidx - imports.size());
+	}
+
+	public ValType[] getFunctionLocals(int funcidx) {
+		List<WasmImportEntry> imports = getImports(WasmExternalKind.EXT_FUNCTION);
+		if (funcidx < imports.size()) {
+			return null;
+		}
+		return getNonImportedFunctionBodies().get(funcidx - imports.size()).getLocals();
+	}
+
+	public WasmGlobalType getGlobalType(int globalidx) {
+		List<WasmImportEntry> imports = getImports(WasmExternalKind.EXT_GLOBAL);
+		if (globalidx < imports.size()) {
+			return imports.get(globalidx).getGlobalType();
+		}
+		return getNonImportedGlobals().get(globalidx - imports.size()).getGlobalType();
+	}
+
+	public WasmTableType getTableType(int tableidx) {
+		List<WasmImportEntry> imports = getImports(WasmExternalKind.EXT_TABLE);
+		if (tableidx < imports.size()) {
+			return imports.get(tableidx).getTableType();
+		}
+		return getNonImportedTables().get(tableidx - imports.size());
+	}
+
+	public WasmExportEntry findExport(WasmExternalKind kind, int idx) {
+		WasmExportSection exportSection = getExportSection();
+		if (exportSection == null) {
+			return null;
+		}
+		return exportSection.findEntry(kind, idx);
+	}
+	// #endregion
 }

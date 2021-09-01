@@ -8,7 +8,6 @@ import ghidra.program.model.data.DataType;
 import ghidra.program.model.data.Structure;
 import ghidra.util.exception.DuplicateNameException;
 import wasm.format.StructureUtils;
-import wasm.format.WasmEnums.ValType;
 import wasm.format.WasmModule;
 
 public class WasmGlobalEntry implements StructConverter {
@@ -21,16 +20,8 @@ public class WasmGlobalEntry implements StructConverter {
 		expr = new ConstantExpression(reader);
 	}
 
-	public ValType getType() {
-		return type.getType();
-	}
-
-	public boolean isMutable() {
-		return (type.getMutability() & 1) != 0;
-	}
-
-	public DataType getDataType() {
-		return type.getType().asDataType();
+	public WasmGlobalType getGlobalType() {
+		return type;
 	}
 
 	public byte[] asBytes(WasmModule module) {

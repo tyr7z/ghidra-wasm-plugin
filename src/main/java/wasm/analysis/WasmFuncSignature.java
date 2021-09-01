@@ -39,17 +39,17 @@ public class WasmFuncSignature {
 		return locals == null;
 	}
 
-	public WasmFuncSignature(byte[] paramTypes, byte[] returnTypes, String name, Address addr) {
+	public WasmFuncSignature(ValType[] paramTypes, ValType[] returnTypes, String name, Address addr) {
 		this.name = name;
 		this.startAddr = addr;
-		this.params = ValType.fromBytes(paramTypes);
-		this.returns = ValType.fromBytes(returnTypes);
+		this.params = paramTypes;
+		this.returns = returnTypes;
 	}
 
-	public WasmFuncSignature(byte[] paramTypes, byte[] returnTypes, String name, Address startAddr, Address endAddr, byte[] locals) {
+	public WasmFuncSignature(ValType[] paramTypes, ValType[] returnTypes, String name, Address startAddr, Address endAddr, ValType[] locals) {
 		this(paramTypes, returnTypes, name, startAddr);
 		this.endAddr = endAddr;
-		this.locals = ValType.fromBytes(locals);
+		this.locals = locals;
 	}
 
 	@Override

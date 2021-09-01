@@ -20,15 +20,8 @@ import ghidra.program.model.symbol.Symbol;
 import ghidra.util.Msg;
 import wasm.WasmLoader;
 import wasm.format.WasmEnums.ValType;
-import wasm.format.WasmEnums.WasmExternalKind;
 import wasm.format.WasmModule;
-import wasm.format.sections.WasmCodeSection;
-import wasm.format.sections.WasmFunctionSection;
-import wasm.format.sections.WasmImportSection;
-import wasm.format.sections.WasmTypeSection;
 import wasm.format.sections.structures.WasmFuncType;
-import wasm.format.sections.structures.WasmFunctionBody;
-import wasm.format.sections.structures.WasmImportEntry;
 
 public class WasmAnalysis implements AnalysisState {
 	/**
@@ -84,58 +77,39 @@ public class WasmAnalysis implements AnalysisState {
 	}
 
 	public WasmFuncType getType(int typeidx) {
-		return module.getTypeSection().getType(typeidx);
+		return module.getType(typeidx);
 	}
 
 	public ValType getGlobalType(int globalidx) {
-		return module.getGlobalSection().getEntries().get(globalidx).getType();
+		return module.getGlobalType(globalidx).getType();
 	}
 
 	public ValType getTableType(int tableidx) {
-		return module.getTableSection().getTables().get(tableidx).getElementType();
+		return module.getTableType(tableidx).getElementType();
 	}
 
 	private static List<WasmFuncSignature> getFunctions(Program program, WasmModule module) {
-		List<WasmFuncSignature> functions = new ArrayList<>();
-		WasmImportSection importSection = module.getImportSection();
-		WasmTypeSection typeSection = module.getTypeSection();
-		if (importSection != null) {
-			List<WasmImportEntry> imports = importSection.getEntries();
-			int funcIdx = 0;
-			for (WasmImportEntry entry : imports) {
-				if (entry.getKind() != WasmExternalKind.EXT_FUNCTION)
-					continue;
-				int typeIdx = entry.getFunctionType();
-				WasmFuncType funcType = typeSection.getType(typeIdx);
-				Address addr = WasmLoader.getImportAddress(program, funcIdx);
+		int numFunctions = module.getFunctionCount();
+		List<WasmFuncSignature> functions = new ArrayList<>(numFunctions);
+		for (int funcidx = 0; funcidx < numFunctions; funcidx++) {
+			WasmFuncType funcType = module.getFunctionType(funcidx);
+			Address startAddress = WasmLoader.getFunctionAddress(program, module, funcidx);
+			Address endAddress = startAddress.add(WasmLoader.getFunctionSize(program, module, funcidx));
 
-				functions.add(new WasmFuncSignature(funcType.getParamTypes(), funcType.getReturnTypes(), entry.getName(), addr));
-				funcIdx++;
+			String name = null;
+			Symbol[] labels = program.getSymbolTable().getSymbols(startAddress);
+			if (labels.length > 0) {
+				name = labels[0].getName();
 			}
-		}
 
-		WasmFunctionSection functionSection = module.getFunctionSection();
-		WasmCodeSection codeSection = module.getCodeSection();
-		if (functionSection != null && codeSection != null) {
-			List<WasmFunctionBody> methods = codeSection.getFunctions();
-			for (int i = 0; i < methods.size(); ++i) {
-				int typeidx = functionSection.getTypeIdx(i);
-				WasmFuncType funcType = typeSection.getType(typeidx);
-				WasmFunctionBody method = methods.get(i);
-
-				Address startAddress = WasmLoader.getMethodAddress(program, method.getOffset());
-				Address endAddress = WasmLoader.getMethodAddress(program, method.getOffset() + method.getInstructions().length);
-
-				String name = null;
-				Symbol[] labels = program.getSymbolTable().getSymbols(startAddress);
-				if (labels.length > 0) {
-					name = labels[0].getName();
-				}
-
-				byte[] params = funcType.getParamTypes();
-				byte[] returns = funcType.getReturnTypes();
-				byte[] nonparam_locals = method.getLocals();
-				byte[] locals = new byte[params.length + nonparam_locals.length];
+			ValType[] params = funcType.getParamTypes();
+			ValType[] returns = funcType.getReturnTypes();
+			ValType[] nonparam_locals = module.getFunctionLocals(funcidx);
+			if (nonparam_locals == null) {
+				/* import */
+				functions.add(new WasmFuncSignature(params, returns, name, startAddress));
+			} else {
+				ValType[] locals = new ValType[params.length + nonparam_locals.length];
 
 				System.arraycopy(params, 0, locals, 0, params.length);
 				System.arraycopy(nonparam_locals, 0, locals, params.length, nonparam_locals.length);

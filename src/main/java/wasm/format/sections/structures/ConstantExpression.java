@@ -122,7 +122,7 @@ public final class ConstantExpression implements StructConverter {
 		case I64_CONST:
 			return longToBytes(((LEB128) value).asLong());
 		case REF_FUNC:
-			return longToBytes(WasmLoader.getFunctionAddress(module, (int) ((LEB128) value).asLong()));
+			return longToBytes(WasmLoader.getFunctionAddressOffset(module, (int) ((LEB128) value).asLong()));
 		case F32_CONST:
 		case F64_CONST:
 			return (byte[]) value;
@@ -138,7 +138,7 @@ public final class ConstantExpression implements StructConverter {
 
 	public Long asReference(WasmModule module) {
 		if (type == ConstantInstruction.REF_FUNC) {
-			return WasmLoader.getFunctionAddress(module, (int) ((LEB128) value).asLong());
+			return WasmLoader.getFunctionAddressOffset(module, (int) ((LEB128) value).asLong());
 		}
 		return null;
 	}

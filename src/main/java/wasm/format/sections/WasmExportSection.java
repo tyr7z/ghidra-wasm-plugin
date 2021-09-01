@@ -2,7 +2,10 @@ package wasm.format.sections;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.EnumMap;
 import java.util.List;
+import java.util.Map;
 
 import ghidra.app.util.bin.BinaryReader;
 import ghidra.app.util.bin.format.dwarf4.LEB128;
@@ -15,19 +18,30 @@ import wasm.format.sections.structures.WasmExportEntry;
 public class WasmExportSection extends WasmSection {
 
 	private LEB128 count;
-	private List<WasmExportEntry> exports = new ArrayList<WasmExportEntry>();
+	private List<WasmExportEntry> exportList = new ArrayList<>();
+	private Map<WasmExternalKind, List<WasmExportEntry>> exports = new EnumMap<>(WasmExternalKind.class);
 
 	public WasmExportSection(BinaryReader reader) throws IOException {
 		super(reader);
 		count = LEB128.readUnsignedValue(reader);
 		for (int i = 0; i < count.asLong(); ++i) {
-			exports.add(new WasmExportEntry(reader));
+			WasmExportEntry entry = new WasmExportEntry(reader);
+			WasmExternalKind kind = entry.getKind();
+			if (!exports.containsKey(kind)) {
+				exports.put(kind, new ArrayList<WasmExportEntry>());
+			}
+			exports.get(kind).add(entry);
+			exportList.add(entry);
 		}
 	}
 
-	public WasmExportEntry findMethod(int id) {
-		for (WasmExportEntry entry : exports) {
-			if (entry.getType() == WasmExternalKind.EXT_FUNCTION && entry.getIndex() == id) {
+	public List<WasmExportEntry> getExports(WasmExternalKind kind) {
+		return exports.getOrDefault(kind, Collections.emptyList());
+	}
+
+	public WasmExportEntry findEntry(WasmExternalKind kind, int id) {
+		for (WasmExportEntry entry : getExports(kind)) {
+			if (entry.getIndex() == id) {
 				return entry;
 			}
 		}
@@ -37,8 +51,8 @@ public class WasmExportSection extends WasmSection {
 	@Override
 	protected void addToStructure(Structure structure) throws IllegalArgumentException, DuplicateNameException, IOException {
 		StructureUtils.addField(structure, count, "count");
-		for (int i = 0; i < exports.size(); i++) {
-			StructureUtils.addField(structure, exports.get(i), "export_" + i);
+		for (int i = 0; i < exportList.size(); i++) {
+			StructureUtils.addField(structure, exportList.get(i), "export_" + i);
 		}
 	}
 

@@ -125,7 +125,7 @@ public class WasmElementSegment implements StructConverter {
 		if (funcidxs != null) {
 			for (int i = 0; i < count; i++) {
 				long funcidx = funcidxs.get(i).asLong();
-				result[i] = WasmLoader.getFunctionAddress(module, (int) funcidx);
+				result[i] = WasmLoader.getFunctionAddressOffset(module, (int) funcidx);
 			}
 			return result;
 		}
@@ -147,7 +147,7 @@ public class WasmElementSegment implements StructConverter {
 		if (funcidxs != null) {
 			for (int i = 0; i < count; i++) {
 				long funcidx = funcidxs.get(i).asLong();
-				long funcaddr = WasmLoader.getFunctionAddress(module, (int) funcidx);
+				long funcaddr = WasmLoader.getFunctionAddressOffset(module, (int) funcidx);
 				byte[] v = ConstantExpression.longToBytes(funcaddr);
 				System.arraycopy(v, 0, result, i * 8, 8);
 			}

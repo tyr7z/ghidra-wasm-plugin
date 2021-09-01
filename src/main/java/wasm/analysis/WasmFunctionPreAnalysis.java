@@ -118,8 +118,8 @@ public class WasmFunctionPreAnalysis {
 				returns = new ValType[] { ValType.fromByte((int) blocktype + 0x80) };
 			} else {
 				WasmFuncType type = analysis.getType((int) blocktype);
-				params = ValType.fromBytes(type.getParamTypes());
-				returns = ValType.fromBytes(type.getReturnTypes());
+				params = type.getParamTypes();
+				returns = type.getReturnTypes();
 			}
 		}
 	}
@@ -476,8 +476,8 @@ public class WasmFunctionPreAnalysis {
 			WasmFuncType type = analysis.getType((int) typeidx);
 
 			popValue(instAddress, ValType.i32);
-			ValType[] params = ValType.fromBytes(type.getParamTypes());
-			ValType[] returns = ValType.fromBytes(type.getReturnTypes());
+			ValType[] params = type.getParamTypes();
+			ValType[] returns = type.getReturnTypes();
 			popValues(instAddress, params);
 			ProgramContext.setStackEffect(program, instAddress, params, returns);
 			pushValues(instAddress, returns);

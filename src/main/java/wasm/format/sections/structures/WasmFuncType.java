@@ -9,35 +9,49 @@ import ghidra.program.model.data.DataType;
 import ghidra.program.model.data.Structure;
 import ghidra.util.exception.DuplicateNameException;
 import wasm.format.StructureUtils;
+import wasm.format.WasmEnums.ValType;
 
 public class WasmFuncType implements StructConverter {
 
 	@SuppressWarnings("unused")
 	private int form; /* always 0 in this version */
 	private LEB128 paramCount;
-	private byte[] paramTypes;
+	private ValType[] paramTypes;
 	private LEB128 returnCount;
-	private byte[] returnTypes;
+	private ValType[] returnTypes;
 
 	public WasmFuncType(BinaryReader reader) throws IOException {
 		form = reader.readNextUnsignedByte();
 		paramCount = LEB128.readUnsignedValue(reader);
-		paramTypes = reader.readNextByteArray((int) paramCount.asLong());
+		paramTypes = ValType.fromBytes(reader.readNextByteArray((int) paramCount.asLong()));
 		returnCount = LEB128.readUnsignedValue(reader);
-		returnTypes = reader.readNextByteArray((int) returnCount.asLong());
+		returnTypes = ValType.fromBytes(reader.readNextByteArray((int) returnCount.asLong()));
 	}
 
-	public byte[] getParamTypes() {
+	public ValType[] getParamTypes() {
 		return paramTypes;
 	}
 
-	public byte[] getReturnTypes() {
+	public ValType[] getReturnTypes() {
 		return returnTypes;
+	}
+
+	private static String typeTupleToString(ValType[] types) {
+		StringBuilder result = new StringBuilder();
+		result.append("(");
+		for (int i = 0; i < types.length; i++) {
+			if (i != 0) {
+				result.append(",");
+			}
+			result.append(types[i]);
+		}
+		result.append(")");
+		return result.toString();
 	}
 
 	@Override
 	public String toString() {
-		return paramTypes.length + "T -> " + returnTypes.length + "T";
+		return typeTupleToString(paramTypes) + "->" + typeTupleToString(returnTypes);
 	}
 
 	@Override
