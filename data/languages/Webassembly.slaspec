@@ -20,281 +20,281 @@ define register offset=0x1000 size=16   contextreg;
 
 # Stack slots within a function
 define register offset=0x5000000000 size=8 [
-      s0   s1   s2   s3   s4   s5   s6   s7
-      s8   s9  s10  s11  s12  s13  s14  s15
-     s16  s17  s18  s19  s20  s21  s22  s23
-     s24  s25  s26  s27  s28  s29  s30  s31
-     s32  s33  s34  s35  s36  s37  s38  s39
-     s40  s41  s42  s43  s44  s45  s46  s47
-     s48  s49  s50  s51  s52  s53  s54  s55
-     s56  s57  s58  s59  s60  s61  s62  s63
-     s64  s65  s66  s67  s68  s69  s70  s71
-     s72  s73  s74  s75  s76  s77  s78  s79
-     s80  s81  s82  s83  s84  s85  s86  s87
-     s88  s89  s90  s91  s92  s93  s94  s95
-     s96  s97  s98  s99 s100 s101 s102 s103
-    s104 s105 s106 s107 s108 s109 s110 s111
-    s112 s113 s114 s115 s116 s117 s118 s119
-    s120 s121 s122 s123 s124 s125 s126 s127
-    s128 s129 s130 s131 s132 s133 s134 s135
-    s136 s137 s138 s139 s140 s141 s142 s143
-    s144 s145 s146 s147 s148 s149 s150 s151
-    s152 s153 s154 s155 s156 s157 s158 s159
-    s160 s161 s162 s163 s164 s165 s166 s167
-    s168 s169 s170 s171 s172 s173 s174 s175
-    s176 s177 s178 s179 s180 s181 s182 s183
-    s184 s185 s186 s187 s188 s189 s190 s191
-    s192 s193 s194 s195 s196 s197 s198 s199
-    s200 s201 s202 s203 s204 s205 s206 s207
-    s208 s209 s210 s211 s212 s213 s214 s215
-    s216 s217 s218 s219 s220 s221 s222 s223
-    s224 s225 s226 s227 s228 s229 s230 s231
-    s232 s233 s234 s235 s236 s237 s238 s239
-    s240 s241 s242 s243 s244 s245 s246 s247
-    s248 s249 s250 s251 s252 s253 s254 s255
+      s0q   s1q   s2q   s3q   s4q   s5q   s6q   s7q
+      s8q   s9q  s10q  s11q  s12q  s13q  s14q  s15q
+     s16q  s17q  s18q  s19q  s20q  s21q  s22q  s23q
+     s24q  s25q  s26q  s27q  s28q  s29q  s30q  s31q
+     s32q  s33q  s34q  s35q  s36q  s37q  s38q  s39q
+     s40q  s41q  s42q  s43q  s44q  s45q  s46q  s47q
+     s48q  s49q  s50q  s51q  s52q  s53q  s54q  s55q
+     s56q  s57q  s58q  s59q  s60q  s61q  s62q  s63q
+     s64q  s65q  s66q  s67q  s68q  s69q  s70q  s71q
+     s72q  s73q  s74q  s75q  s76q  s77q  s78q  s79q
+     s80q  s81q  s82q  s83q  s84q  s85q  s86q  s87q
+     s88q  s89q  s90q  s91q  s92q  s93q  s94q  s95q
+     s96q  s97q  s98q  s99q s100q s101q s102q s103q
+    s104q s105q s106q s107q s108q s109q s110q s111q
+    s112q s113q s114q s115q s116q s117q s118q s119q
+    s120q s121q s122q s123q s124q s125q s126q s127q
+    s128q s129q s130q s131q s132q s133q s134q s135q
+    s136q s137q s138q s139q s140q s141q s142q s143q
+    s144q s145q s146q s147q s148q s149q s150q s151q
+    s152q s153q s154q s155q s156q s157q s158q s159q
+    s160q s161q s162q s163q s164q s165q s166q s167q
+    s168q s169q s170q s171q s172q s173q s174q s175q
+    s176q s177q s178q s179q s180q s181q s182q s183q
+    s184q s185q s186q s187q s188q s189q s190q s191q
+    s192q s193q s194q s195q s196q s197q s198q s199q
+    s200q s201q s202q s203q s204q s205q s206q s207q
+    s208q s209q s210q s211q s212q s213q s214q s215q
+    s216q s217q s218q s219q s220q s221q s222q s223q
+    s224q s225q s226q s227q s228q s229q s230q s231q
+    s232q s233q s234q s235q s236q s237q s238q s239q
+    s240q s241q s242q s243q s244q s245q s246q s247q
+    s248q s249q s250q s251q s252q s253q s254q s255q
 ];
 define register offset=0x5000000000 size=4 [
-      s0d _   s1d _   s2d _   s3d _   s4d _   s5d _   s6d _   s7d _
-      s8d _   s9d _  s10d _  s11d _  s12d _  s13d _  s14d _  s15d _
-     s16d _  s17d _  s18d _  s19d _  s20d _  s21d _  s22d _  s23d _
-     s24d _  s25d _  s26d _  s27d _  s28d _  s29d _  s30d _  s31d _
-     s32d _  s33d _  s34d _  s35d _  s36d _  s37d _  s38d _  s39d _
-     s40d _  s41d _  s42d _  s43d _  s44d _  s45d _  s46d _  s47d _
-     s48d _  s49d _  s50d _  s51d _  s52d _  s53d _  s54d _  s55d _
-     s56d _  s57d _  s58d _  s59d _  s60d _  s61d _  s62d _  s63d _
-     s64d _  s65d _  s66d _  s67d _  s68d _  s69d _  s70d _  s71d _
-     s72d _  s73d _  s74d _  s75d _  s76d _  s77d _  s78d _  s79d _
-     s80d _  s81d _  s82d _  s83d _  s84d _  s85d _  s86d _  s87d _
-     s88d _  s89d _  s90d _  s91d _  s92d _  s93d _  s94d _  s95d _
-     s96d _  s97d _  s98d _  s99d _ s100d _ s101d _ s102d _ s103d _
-    s104d _ s105d _ s106d _ s107d _ s108d _ s109d _ s110d _ s111d _
-    s112d _ s113d _ s114d _ s115d _ s116d _ s117d _ s118d _ s119d _
-    s120d _ s121d _ s122d _ s123d _ s124d _ s125d _ s126d _ s127d _
-    s128d _ s129d _ s130d _ s131d _ s132d _ s133d _ s134d _ s135d _
-    s136d _ s137d _ s138d _ s139d _ s140d _ s141d _ s142d _ s143d _
-    s144d _ s145d _ s146d _ s147d _ s148d _ s149d _ s150d _ s151d _
-    s152d _ s153d _ s154d _ s155d _ s156d _ s157d _ s158d _ s159d _
-    s160d _ s161d _ s162d _ s163d _ s164d _ s165d _ s166d _ s167d _
-    s168d _ s169d _ s170d _ s171d _ s172d _ s173d _ s174d _ s175d _
-    s176d _ s177d _ s178d _ s179d _ s180d _ s181d _ s182d _ s183d _
-    s184d _ s185d _ s186d _ s187d _ s188d _ s189d _ s190d _ s191d _
-    s192d _ s193d _ s194d _ s195d _ s196d _ s197d _ s198d _ s199d _
-    s200d _ s201d _ s202d _ s203d _ s204d _ s205d _ s206d _ s207d _
-    s208d _ s209d _ s210d _ s211d _ s212d _ s213d _ s214d _ s215d _
-    s216d _ s217d _ s218d _ s219d _ s220d _ s221d _ s222d _ s223d _
-    s224d _ s225d _ s226d _ s227d _ s228d _ s229d _ s230d _ s231d _
-    s232d _ s233d _ s234d _ s235d _ s236d _ s237d _ s238d _ s239d _
-    s240d _ s241d _ s242d _ s243d _ s244d _ s245d _ s246d _ s247d _
-    s248d _ s249d _ s250d _ s251d _ s252d _ s253d _ s254d _ s255d _
+      s0 _   s1 _   s2 _   s3 _   s4 _   s5 _   s6 _   s7 _
+      s8 _   s9 _  s10 _  s11 _  s12 _  s13 _  s14 _  s15 _
+     s16 _  s17 _  s18 _  s19 _  s20 _  s21 _  s22 _  s23 _
+     s24 _  s25 _  s26 _  s27 _  s28 _  s29 _  s30 _  s31 _
+     s32 _  s33 _  s34 _  s35 _  s36 _  s37 _  s38 _  s39 _
+     s40 _  s41 _  s42 _  s43 _  s44 _  s45 _  s46 _  s47 _
+     s48 _  s49 _  s50 _  s51 _  s52 _  s53 _  s54 _  s55 _
+     s56 _  s57 _  s58 _  s59 _  s60 _  s61 _  s62 _  s63 _
+     s64 _  s65 _  s66 _  s67 _  s68 _  s69 _  s70 _  s71 _
+     s72 _  s73 _  s74 _  s75 _  s76 _  s77 _  s78 _  s79 _
+     s80 _  s81 _  s82 _  s83 _  s84 _  s85 _  s86 _  s87 _
+     s88 _  s89 _  s90 _  s91 _  s92 _  s93 _  s94 _  s95 _
+     s96 _  s97 _  s98 _  s99 _ s100 _ s101 _ s102 _ s103 _
+    s104 _ s105 _ s106 _ s107 _ s108 _ s109 _ s110 _ s111 _
+    s112 _ s113 _ s114 _ s115 _ s116 _ s117 _ s118 _ s119 _
+    s120 _ s121 _ s122 _ s123 _ s124 _ s125 _ s126 _ s127 _
+    s128 _ s129 _ s130 _ s131 _ s132 _ s133 _ s134 _ s135 _
+    s136 _ s137 _ s138 _ s139 _ s140 _ s141 _ s142 _ s143 _
+    s144 _ s145 _ s146 _ s147 _ s148 _ s149 _ s150 _ s151 _
+    s152 _ s153 _ s154 _ s155 _ s156 _ s157 _ s158 _ s159 _
+    s160 _ s161 _ s162 _ s163 _ s164 _ s165 _ s166 _ s167 _
+    s168 _ s169 _ s170 _ s171 _ s172 _ s173 _ s174 _ s175 _
+    s176 _ s177 _ s178 _ s179 _ s180 _ s181 _ s182 _ s183 _
+    s184 _ s185 _ s186 _ s187 _ s188 _ s189 _ s190 _ s191 _
+    s192 _ s193 _ s194 _ s195 _ s196 _ s197 _ s198 _ s199 _
+    s200 _ s201 _ s202 _ s203 _ s204 _ s205 _ s206 _ s207 _
+    s208 _ s209 _ s210 _ s211 _ s212 _ s213 _ s214 _ s215 _
+    s216 _ s217 _ s218 _ s219 _ s220 _ s221 _ s222 _ s223 _
+    s224 _ s225 _ s226 _ s227 _ s228 _ s229 _ s230 _ s231 _
+    s232 _ s233 _ s234 _ s235 _ s236 _ s237 _ s238 _ s239 _
+    s240 _ s241 _ s242 _ s243 _ s244 _ s245 _ s246 _ s247 _
+    s248 _ s249 _ s250 _ s251 _ s252 _ s253 _ s254 _ s255 _
 ];
 
 define register offset=0x1000000000 size=8 [
-      l0   l1   l2   l3   l4   l5   l6   l7
-      l8   l9  l10  l11  l12  l13  l14  l15
-     l16  l17  l18  l19  l20  l21  l22  l23
-     l24  l25  l26  l27  l28  l29  l30  l31
-     l32  l33  l34  l35  l36  l37  l38  l39
-     l40  l41  l42  l43  l44  l45  l46  l47
-     l48  l49  l50  l51  l52  l53  l54  l55
-     l56  l57  l58  l59  l60  l61  l62  l63
-     l64  l65  l66  l67  l68  l69  l70  l71
-     l72  l73  l74  l75  l76  l77  l78  l79
-     l80  l81  l82  l83  l84  l85  l86  l87
-     l88  l89  l90  l91  l92  l93  l94  l95
-     l96  l97  l98  l99 l100 l101 l102 l103
-    l104 l105 l106 l107 l108 l109 l110 l111
-    l112 l113 l114 l115 l116 l117 l118 l119
-    l120 l121 l122 l123 l124 l125 l126 l127
-    l128 l129 l130 l131 l132 l133 l134 l135
-    l136 l137 l138 l139 l140 l141 l142 l143
-    l144 l145 l146 l147 l148 l149 l150 l151
-    l152 l153 l154 l155 l156 l157 l158 l159
-    l160 l161 l162 l163 l164 l165 l166 l167
-    l168 l169 l170 l171 l172 l173 l174 l175
-    l176 l177 l178 l179 l180 l181 l182 l183
-    l184 l185 l186 l187 l188 l189 l190 l191
-    l192 l193 l194 l195 l196 l197 l198 l199
-    l200 l201 l202 l203 l204 l205 l206 l207
-    l208 l209 l210 l211 l212 l213 l214 l215
-    l216 l217 l218 l219 l220 l221 l222 l223
-    l224 l225 l226 l227 l228 l229 l230 l231
-    l232 l233 l234 l235 l236 l237 l238 l239
-    l240 l241 l242 l243 l244 l245 l246 l247
-    l248 l249 l250 l251 l252 l253 l254 l255
+      l0q   l1q   l2q   l3q   l4q   l5q   l6q   l7q
+      l8q   l9q  l10q  l11q  l12q  l13q  l14q  l15q
+     l16q  l17q  l18q  l19q  l20q  l21q  l22q  l23q
+     l24q  l25q  l26q  l27q  l28q  l29q  l30q  l31q
+     l32q  l33q  l34q  l35q  l36q  l37q  l38q  l39q
+     l40q  l41q  l42q  l43q  l44q  l45q  l46q  l47q
+     l48q  l49q  l50q  l51q  l52q  l53q  l54q  l55q
+     l56q  l57q  l58q  l59q  l60q  l61q  l62q  l63q
+     l64q  l65q  l66q  l67q  l68q  l69q  l70q  l71q
+     l72q  l73q  l74q  l75q  l76q  l77q  l78q  l79q
+     l80q  l81q  l82q  l83q  l84q  l85q  l86q  l87q
+     l88q  l89q  l90q  l91q  l92q  l93q  l94q  l95q
+     l96q  l97q  l98q  l99q l100q l101q l102q l103q
+    l104q l105q l106q l107q l108q l109q l110q l111q
+    l112q l113q l114q l115q l116q l117q l118q l119q
+    l120q l121q l122q l123q l124q l125q l126q l127q
+    l128q l129q l130q l131q l132q l133q l134q l135q
+    l136q l137q l138q l139q l140q l141q l142q l143q
+    l144q l145q l146q l147q l148q l149q l150q l151q
+    l152q l153q l154q l155q l156q l157q l158q l159q
+    l160q l161q l162q l163q l164q l165q l166q l167q
+    l168q l169q l170q l171q l172q l173q l174q l175q
+    l176q l177q l178q l179q l180q l181q l182q l183q
+    l184q l185q l186q l187q l188q l189q l190q l191q
+    l192q l193q l194q l195q l196q l197q l198q l199q
+    l200q l201q l202q l203q l204q l205q l206q l207q
+    l208q l209q l210q l211q l212q l213q l214q l215q
+    l216q l217q l218q l219q l220q l221q l222q l223q
+    l224q l225q l226q l227q l228q l229q l230q l231q
+    l232q l233q l234q l235q l236q l237q l238q l239q
+    l240q l241q l242q l243q l244q l245q l246q l247q
+    l248q l249q l250q l251q l252q l253q l254q l255q
 ];
 define register offset=0x1000000000 size=4 [
-      l0d _   l1d _   l2d _   l3d _   l4d _   l5d _   l6d _   l7d _
-      l8d _   l9d _  l10d _  l11d _  l12d _  l13d _  l14d _  l15d _
-     l16d _  l17d _  l18d _  l19d _  l20d _  l21d _  l22d _  l23d _
-     l24d _  l25d _  l26d _  l27d _  l28d _  l29d _  l30d _  l31d _
-     l32d _  l33d _  l34d _  l35d _  l36d _  l37d _  l38d _  l39d _
-     l40d _  l41d _  l42d _  l43d _  l44d _  l45d _  l46d _  l47d _
-     l48d _  l49d _  l50d _  l51d _  l52d _  l53d _  l54d _  l55d _
-     l56d _  l57d _  l58d _  l59d _  l60d _  l61d _  l62d _  l63d _
-     l64d _  l65d _  l66d _  l67d _  l68d _  l69d _  l70d _  l71d _
-     l72d _  l73d _  l74d _  l75d _  l76d _  l77d _  l78d _  l79d _
-     l80d _  l81d _  l82d _  l83d _  l84d _  l85d _  l86d _  l87d _
-     l88d _  l89d _  l90d _  l91d _  l92d _  l93d _  l94d _  l95d _
-     l96d _  l97d _  l98d _  l99d _ l100d _ l101d _ l102d _ l103d _
-    l104d _ l105d _ l106d _ l107d _ l108d _ l109d _ l110d _ l111d _
-    l112d _ l113d _ l114d _ l115d _ l116d _ l117d _ l118d _ l119d _
-    l120d _ l121d _ l122d _ l123d _ l124d _ l125d _ l126d _ l127d _
-    l128d _ l129d _ l130d _ l131d _ l132d _ l133d _ l134d _ l135d _
-    l136d _ l137d _ l138d _ l139d _ l140d _ l141d _ l142d _ l143d _
-    l144d _ l145d _ l146d _ l147d _ l148d _ l149d _ l150d _ l151d _
-    l152d _ l153d _ l154d _ l155d _ l156d _ l157d _ l158d _ l159d _
-    l160d _ l161d _ l162d _ l163d _ l164d _ l165d _ l166d _ l167d _
-    l168d _ l169d _ l170d _ l171d _ l172d _ l173d _ l174d _ l175d _
-    l176d _ l177d _ l178d _ l179d _ l180d _ l181d _ l182d _ l183d _
-    l184d _ l185d _ l186d _ l187d _ l188d _ l189d _ l190d _ l191d _
-    l192d _ l193d _ l194d _ l195d _ l196d _ l197d _ l198d _ l199d _
-    l200d _ l201d _ l202d _ l203d _ l204d _ l205d _ l206d _ l207d _
-    l208d _ l209d _ l210d _ l211d _ l212d _ l213d _ l214d _ l215d _
-    l216d _ l217d _ l218d _ l219d _ l220d _ l221d _ l222d _ l223d _
-    l224d _ l225d _ l226d _ l227d _ l228d _ l229d _ l230d _ l231d _
-    l232d _ l233d _ l234d _ l235d _ l236d _ l237d _ l238d _ l239d _
-    l240d _ l241d _ l242d _ l243d _ l244d _ l245d _ l246d _ l247d _
-    l248d _ l249d _ l250d _ l251d _ l252d _ l253d _ l254d _ l255d _
+      l0 _   l1 _   l2 _   l3 _   l4 _   l5 _   l6 _   l7 _
+      l8 _   l9 _  l10 _  l11 _  l12 _  l13 _  l14 _  l15 _
+     l16 _  l17 _  l18 _  l19 _  l20 _  l21 _  l22 _  l23 _
+     l24 _  l25 _  l26 _  l27 _  l28 _  l29 _  l30 _  l31 _
+     l32 _  l33 _  l34 _  l35 _  l36 _  l37 _  l38 _  l39 _
+     l40 _  l41 _  l42 _  l43 _  l44 _  l45 _  l46 _  l47 _
+     l48 _  l49 _  l50 _  l51 _  l52 _  l53 _  l54 _  l55 _
+     l56 _  l57 _  l58 _  l59 _  l60 _  l61 _  l62 _  l63 _
+     l64 _  l65 _  l66 _  l67 _  l68 _  l69 _  l70 _  l71 _
+     l72 _  l73 _  l74 _  l75 _  l76 _  l77 _  l78 _  l79 _
+     l80 _  l81 _  l82 _  l83 _  l84 _  l85 _  l86 _  l87 _
+     l88 _  l89 _  l90 _  l91 _  l92 _  l93 _  l94 _  l95 _
+     l96 _  l97 _  l98 _  l99 _ l100 _ l101 _ l102 _ l103 _
+    l104 _ l105 _ l106 _ l107 _ l108 _ l109 _ l110 _ l111 _
+    l112 _ l113 _ l114 _ l115 _ l116 _ l117 _ l118 _ l119 _
+    l120 _ l121 _ l122 _ l123 _ l124 _ l125 _ l126 _ l127 _
+    l128 _ l129 _ l130 _ l131 _ l132 _ l133 _ l134 _ l135 _
+    l136 _ l137 _ l138 _ l139 _ l140 _ l141 _ l142 _ l143 _
+    l144 _ l145 _ l146 _ l147 _ l148 _ l149 _ l150 _ l151 _
+    l152 _ l153 _ l154 _ l155 _ l156 _ l157 _ l158 _ l159 _
+    l160 _ l161 _ l162 _ l163 _ l164 _ l165 _ l166 _ l167 _
+    l168 _ l169 _ l170 _ l171 _ l172 _ l173 _ l174 _ l175 _
+    l176 _ l177 _ l178 _ l179 _ l180 _ l181 _ l182 _ l183 _
+    l184 _ l185 _ l186 _ l187 _ l188 _ l189 _ l190 _ l191 _
+    l192 _ l193 _ l194 _ l195 _ l196 _ l197 _ l198 _ l199 _
+    l200 _ l201 _ l202 _ l203 _ l204 _ l205 _ l206 _ l207 _
+    l208 _ l209 _ l210 _ l211 _ l212 _ l213 _ l214 _ l215 _
+    l216 _ l217 _ l218 _ l219 _ l220 _ l221 _ l222 _ l223 _
+    l224 _ l225 _ l226 _ l227 _ l228 _ l229 _ l230 _ l231 _
+    l232 _ l233 _ l234 _ l235 _ l236 _ l237 _ l238 _ l239 _
+    l240 _ l241 _ l242 _ l243 _ l244 _ l245 _ l246 _ l247 _
+    l248 _ l249 _ l250 _ l251 _ l252 _ l253 _ l254 _ l255 _
 ];
 
 # Artificial registers used to hold function inputs
 define register offset=0x2000000000 size=8 [
-      i0   i1   i2   i3   i4   i5   i6   i7
-      i8   i9  i10  i11  i12  i13  i14  i15
-     i16  i17  i18  i19  i20  i21  i22  i23
-     i24  i25  i26  i27  i28  i29  i30  i31
-     i32  i33  i34  i35  i36  i37  i38  i39
-     i40  i41  i42  i43  i44  i45  i46  i47
-     i48  i49  i50  i51  i52  i53  i54  i55
-     i56  i57  i58  i59  i60  i61  i62  i63
-     i64  i65  i66  i67  i68  i69  i70  i71
-     i72  i73  i74  i75  i76  i77  i78  i79
-     i80  i81  i82  i83  i84  i85  i86  i87
-     i88  i89  i90  i91  i92  i93  i94  i95
-     i96  i97  i98  i99 i100 i101 i102 i103
-    i104 i105 i106 i107 i108 i109 i110 i111
-    i112 i113 i114 i115 i116 i117 i118 i119
-    i120 i121 i122 i123 i124 i125 i126 i127
-    i128 i129 i130 i131 i132 i133 i134 i135
-    i136 i137 i138 i139 i140 i141 i142 i143
-    i144 i145 i146 i147 i148 i149 i150 i151
-    i152 i153 i154 i155 i156 i157 i158 i159
-    i160 i161 i162 i163 i164 i165 i166 i167
-    i168 i169 i170 i171 i172 i173 i174 i175
-    i176 i177 i178 i179 i180 i181 i182 i183
-    i184 i185 i186 i187 i188 i189 i190 i191
-    i192 i193 i194 i195 i196 i197 i198 i199
-    i200 i201 i202 i203 i204 i205 i206 i207
-    i208 i209 i210 i211 i212 i213 i214 i215
-    i216 i217 i218 i219 i220 i221 i222 i223
-    i224 i225 i226 i227 i228 i229 i230 i231
-    i232 i233 i234 i235 i236 i237 i238 i239
-    i240 i241 i242 i243 i244 i245 i246 i247
-    i248 i249 i250 i251 i252 i253 i254 i255
+      i0q   i1q   i2q   i3q   i4q   i5q   i6q   i7q
+      i8q   i9q  i10q  i11q  i12q  i13q  i14q  i15q
+     i16q  i17q  i18q  i19q  i20q  i21q  i22q  i23q
+     i24q  i25q  i26q  i27q  i28q  i29q  i30q  i31q
+     i32q  i33q  i34q  i35q  i36q  i37q  i38q  i39q
+     i40q  i41q  i42q  i43q  i44q  i45q  i46q  i47q
+     i48q  i49q  i50q  i51q  i52q  i53q  i54q  i55q
+     i56q  i57q  i58q  i59q  i60q  i61q  i62q  i63q
+     i64q  i65q  i66q  i67q  i68q  i69q  i70q  i71q
+     i72q  i73q  i74q  i75q  i76q  i77q  i78q  i79q
+     i80q  i81q  i82q  i83q  i84q  i85q  i86q  i87q
+     i88q  i89q  i90q  i91q  i92q  i93q  i94q  i95q
+     i96q  i97q  i98q  i99q i100q i101q i102q i103q
+    i104q i105q i106q i107q i108q i109q i110q i111q
+    i112q i113q i114q i115q i116q i117q i118q i119q
+    i120q i121q i122q i123q i124q i125q i126q i127q
+    i128q i129q i130q i131q i132q i133q i134q i135q
+    i136q i137q i138q i139q i140q i141q i142q i143q
+    i144q i145q i146q i147q i148q i149q i150q i151q
+    i152q i153q i154q i155q i156q i157q i158q i159q
+    i160q i161q i162q i163q i164q i165q i166q i167q
+    i168q i169q i170q i171q i172q i173q i174q i175q
+    i176q i177q i178q i179q i180q i181q i182q i183q
+    i184q i185q i186q i187q i188q i189q i190q i191q
+    i192q i193q i194q i195q i196q i197q i198q i199q
+    i200q i201q i202q i203q i204q i205q i206q i207q
+    i208q i209q i210q i211q i212q i213q i214q i215q
+    i216q i217q i218q i219q i220q i221q i222q i223q
+    i224q i225q i226q i227q i228q i229q i230q i231q
+    i232q i233q i234q i235q i236q i237q i238q i239q
+    i240q i241q i242q i243q i244q i245q i246q i247q
+    i248q i249q i250q i251q i252q i253q i254q i255q
 ];
 define register offset=0x2000000000 size=4 [
-      i0d _   i1d _   i2d _   i3d _   i4d _   i5d _   i6d _   i7d _
-      i8d _   i9d _  i10d _  i11d _  i12d _  i13d _  i14d _  i15d _
-     i16d _  i17d _  i18d _  i19d _  i20d _  i21d _  i22d _  i23d _
-     i24d _  i25d _  i26d _  i27d _  i28d _  i29d _  i30d _  i31d _
-     i32d _  i33d _  i34d _  i35d _  i36d _  i37d _  i38d _  i39d _
-     i40d _  i41d _  i42d _  i43d _  i44d _  i45d _  i46d _  i47d _
-     i48d _  i49d _  i50d _  i51d _  i52d _  i53d _  i54d _  i55d _
-     i56d _  i57d _  i58d _  i59d _  i60d _  i61d _  i62d _  i63d _
-     i64d _  i65d _  i66d _  i67d _  i68d _  i69d _  i70d _  i71d _
-     i72d _  i73d _  i74d _  i75d _  i76d _  i77d _  i78d _  i79d _
-     i80d _  i81d _  i82d _  i83d _  i84d _  i85d _  i86d _  i87d _
-     i88d _  i89d _  i90d _  i91d _  i92d _  i93d _  i94d _  i95d _
-     i96d _  i97d _  i98d _  i99d _ i100d _ i101d _ i102d _ i103d _
-    i104d _ i105d _ i106d _ i107d _ i108d _ i109d _ i110d _ i111d _
-    i112d _ i113d _ i114d _ i115d _ i116d _ i117d _ i118d _ i119d _
-    i120d _ i121d _ i122d _ i123d _ i124d _ i125d _ i126d _ i127d _
-    i128d _ i129d _ i130d _ i131d _ i132d _ i133d _ i134d _ i135d _
-    i136d _ i137d _ i138d _ i139d _ i140d _ i141d _ i142d _ i143d _
-    i144d _ i145d _ i146d _ i147d _ i148d _ i149d _ i150d _ i151d _
-    i152d _ i153d _ i154d _ i155d _ i156d _ i157d _ i158d _ i159d _
-    i160d _ i161d _ i162d _ i163d _ i164d _ i165d _ i166d _ i167d _
-    i168d _ i169d _ i170d _ i171d _ i172d _ i173d _ i174d _ i175d _
-    i176d _ i177d _ i178d _ i179d _ i180d _ i181d _ i182d _ i183d _
-    i184d _ i185d _ i186d _ i187d _ i188d _ i189d _ i190d _ i191d _
-    i192d _ i193d _ i194d _ i195d _ i196d _ i197d _ i198d _ i199d _
-    i200d _ i201d _ i202d _ i203d _ i204d _ i205d _ i206d _ i207d _
-    i208d _ i209d _ i210d _ i211d _ i212d _ i213d _ i214d _ i215d _
-    i216d _ i217d _ i218d _ i219d _ i220d _ i221d _ i222d _ i223d _
-    i224d _ i225d _ i226d _ i227d _ i228d _ i229d _ i230d _ i231d _
-    i232d _ i233d _ i234d _ i235d _ i236d _ i237d _ i238d _ i239d _
-    i240d _ i241d _ i242d _ i243d _ i244d _ i245d _ i246d _ i247d _
-    i248d _ i249d _ i250d _ i251d _ i252d _ i253d _ i254d _ i255d _
+      i0 _   i1 _   i2 _   i3 _   i4 _   i5 _   i6 _   i7 _
+      i8 _   i9 _  i10 _  i11 _  i12 _  i13 _  i14 _  i15 _
+     i16 _  i17 _  i18 _  i19 _  i20 _  i21 _  i22 _  i23 _
+     i24 _  i25 _  i26 _  i27 _  i28 _  i29 _  i30 _  i31 _
+     i32 _  i33 _  i34 _  i35 _  i36 _  i37 _  i38 _  i39 _
+     i40 _  i41 _  i42 _  i43 _  i44 _  i45 _  i46 _  i47 _
+     i48 _  i49 _  i50 _  i51 _  i52 _  i53 _  i54 _  i55 _
+     i56 _  i57 _  i58 _  i59 _  i60 _  i61 _  i62 _  i63 _
+     i64 _  i65 _  i66 _  i67 _  i68 _  i69 _  i70 _  i71 _
+     i72 _  i73 _  i74 _  i75 _  i76 _  i77 _  i78 _  i79 _
+     i80 _  i81 _  i82 _  i83 _  i84 _  i85 _  i86 _  i87 _
+     i88 _  i89 _  i90 _  i91 _  i92 _  i93 _  i94 _  i95 _
+     i96 _  i97 _  i98 _  i99 _ i100 _ i101 _ i102 _ i103 _
+    i104 _ i105 _ i106 _ i107 _ i108 _ i109 _ i110 _ i111 _
+    i112 _ i113 _ i114 _ i115 _ i116 _ i117 _ i118 _ i119 _
+    i120 _ i121 _ i122 _ i123 _ i124 _ i125 _ i126 _ i127 _
+    i128 _ i129 _ i130 _ i131 _ i132 _ i133 _ i134 _ i135 _
+    i136 _ i137 _ i138 _ i139 _ i140 _ i141 _ i142 _ i143 _
+    i144 _ i145 _ i146 _ i147 _ i148 _ i149 _ i150 _ i151 _
+    i152 _ i153 _ i154 _ i155 _ i156 _ i157 _ i158 _ i159 _
+    i160 _ i161 _ i162 _ i163 _ i164 _ i165 _ i166 _ i167 _
+    i168 _ i169 _ i170 _ i171 _ i172 _ i173 _ i174 _ i175 _
+    i176 _ i177 _ i178 _ i179 _ i180 _ i181 _ i182 _ i183 _
+    i184 _ i185 _ i186 _ i187 _ i188 _ i189 _ i190 _ i191 _
+    i192 _ i193 _ i194 _ i195 _ i196 _ i197 _ i198 _ i199 _
+    i200 _ i201 _ i202 _ i203 _ i204 _ i205 _ i206 _ i207 _
+    i208 _ i209 _ i210 _ i211 _ i212 _ i213 _ i214 _ i215 _
+    i216 _ i217 _ i218 _ i219 _ i220 _ i221 _ i222 _ i223 _
+    i224 _ i225 _ i226 _ i227 _ i228 _ i229 _ i230 _ i231 _
+    i232 _ i233 _ i234 _ i235 _ i236 _ i237 _ i238 _ i239 _
+    i240 _ i241 _ i242 _ i243 _ i244 _ i245 _ i246 _ i247 _
+    i248 _ i249 _ i250 _ i251 _ i252 _ i253 _ i254 _ i255 _
 ];
 
 # Artificial registers used to hold function outputs
 define register offset=0x3000000000 size=8 [
-      o0   o1   o2   o3   o4   o5   o6   o7
-      o8   o9  o10  o11  o12  o13  o14  o15
-     o16  o17  o18  o19  o20  o21  o22  o23
-     o24  o25  o26  o27  o28  o29  o30  o31
-     o32  o33  o34  o35  o36  o37  o38  o39
-     o40  o41  o42  o43  o44  o45  o46  o47
-     o48  o49  o50  o51  o52  o53  o54  o55
-     o56  o57  o58  o59  o60  o61  o62  o63
-     o64  o65  o66  o67  o68  o69  o70  o71
-     o72  o73  o74  o75  o76  o77  o78  o79
-     o80  o81  o82  o83  o84  o85  o86  o87
-     o88  o89  o90  o91  o92  o93  o94  o95
-     o96  o97  o98  o99 o100 o101 o102 o103
-    o104 o105 o106 o107 o108 o109 o110 o111
-    o112 o113 o114 o115 o116 o117 o118 o119
-    o120 o121 o122 o123 o124 o125 o126 o127
-    o128 o129 o130 o131 o132 o133 o134 o135
-    o136 o137 o138 o139 o140 o141 o142 o143
-    o144 o145 o146 o147 o148 o149 o150 o151
-    o152 o153 o154 o155 o156 o157 o158 o159
-    o160 o161 o162 o163 o164 o165 o166 o167
-    o168 o169 o170 o171 o172 o173 o174 o175
-    o176 o177 o178 o179 o180 o181 o182 o183
-    o184 o185 o186 o187 o188 o189 o190 o191
-    o192 o193 o194 o195 o196 o197 o198 o199
-    o200 o201 o202 o203 o204 o205 o206 o207
-    o208 o209 o210 o211 o212 o213 o214 o215
-    o216 o217 o218 o219 o220 o221 o222 o223
-    o224 o225 o226 o227 o228 o229 o230 o231
-    o232 o233 o234 o235 o236 o237 o238 o239
-    o240 o241 o242 o243 o244 o245 o246 o247
-    o248 o249 o250 o251 o252 o253 o254 o255
+      o0q   o1q   o2q   o3q   o4q   o5q   o6q   o7q
+      o8q   o9q  o10q  o11q  o12q  o13q  o14q  o15q
+     o16q  o17q  o18q  o19q  o20q  o21q  o22q  o23q
+     o24q  o25q  o26q  o27q  o28q  o29q  o30q  o31q
+     o32q  o33q  o34q  o35q  o36q  o37q  o38q  o39q
+     o40q  o41q  o42q  o43q  o44q  o45q  o46q  o47q
+     o48q  o49q  o50q  o51q  o52q  o53q  o54q  o55q
+     o56q  o57q  o58q  o59q  o60q  o61q  o62q  o63q
+     o64q  o65q  o66q  o67q  o68q  o69q  o70q  o71q
+     o72q  o73q  o74q  o75q  o76q  o77q  o78q  o79q
+     o80q  o81q  o82q  o83q  o84q  o85q  o86q  o87q
+     o88q  o89q  o90q  o91q  o92q  o93q  o94q  o95q
+     o96q  o97q  o98q  o99q o100q o101q o102q o103q
+    o104q o105q o106q o107q o108q o109q o110q o111q
+    o112q o113q o114q o115q o116q o117q o118q o119q
+    o120q o121q o122q o123q o124q o125q o126q o127q
+    o128q o129q o130q o131q o132q o133q o134q o135q
+    o136q o137q o138q o139q o140q o141q o142q o143q
+    o144q o145q o146q o147q o148q o149q o150q o151q
+    o152q o153q o154q o155q o156q o157q o158q o159q
+    o160q o161q o162q o163q o164q o165q o166q o167q
+    o168q o169q o170q o171q o172q o173q o174q o175q
+    o176q o177q o178q o179q o180q o181q o182q o183q
+    o184q o185q o186q o187q o188q o189q o190q o191q
+    o192q o193q o194q o195q o196q o197q o198q o199q
+    o200q o201q o202q o203q o204q o205q o206q o207q
+    o208q o209q o210q o211q o212q o213q o214q o215q
+    o216q o217q o218q o219q o220q o221q o222q o223q
+    o224q o225q o226q o227q o228q o229q o230q o231q
+    o232q o233q o234q o235q o236q o237q o238q o239q
+    o240q o241q o242q o243q o244q o245q o246q o247q
+    o248q o249q o250q o251q o252q o253q o254q o255q
 ];
 define register offset=0x3000000000 size=4 [
-      o0d _   o1d _   o2d _   o3d _   o4d _   o5d _   o6d _   o7d _
-      o8d _   o9d _  o10d _  o11d _  o12d _  o13d _  o14d _  o15d _
-     o16d _  o17d _  o18d _  o19d _  o20d _  o21d _  o22d _  o23d _
-     o24d _  o25d _  o26d _  o27d _  o28d _  o29d _  o30d _  o31d _
-     o32d _  o33d _  o34d _  o35d _  o36d _  o37d _  o38d _  o39d _
-     o40d _  o41d _  o42d _  o43d _  o44d _  o45d _  o46d _  o47d _
-     o48d _  o49d _  o50d _  o51d _  o52d _  o53d _  o54d _  o55d _
-     o56d _  o57d _  o58d _  o59d _  o60d _  o61d _  o62d _  o63d _
-     o64d _  o65d _  o66d _  o67d _  o68d _  o69d _  o70d _  o71d _
-     o72d _  o73d _  o74d _  o75d _  o76d _  o77d _  o78d _  o79d _
-     o80d _  o81d _  o82d _  o83d _  o84d _  o85d _  o86d _  o87d _
-     o88d _  o89d _  o90d _  o91d _  o92d _  o93d _  o94d _  o95d _
-     o96d _  o97d _  o98d _  o99d _ o100d _ o101d _ o102d _ o103d _
-    o104d _ o105d _ o106d _ o107d _ o108d _ o109d _ o110d _ o111d _
-    o112d _ o113d _ o114d _ o115d _ o116d _ o117d _ o118d _ o119d _
-    o120d _ o121d _ o122d _ o123d _ o124d _ o125d _ o126d _ o127d _
-    o128d _ o129d _ o130d _ o131d _ o132d _ o133d _ o134d _ o135d _
-    o136d _ o137d _ o138d _ o139d _ o140d _ o141d _ o142d _ o143d _
-    o144d _ o145d _ o146d _ o147d _ o148d _ o149d _ o150d _ o151d _
-    o152d _ o153d _ o154d _ o155d _ o156d _ o157d _ o158d _ o159d _
-    o160d _ o161d _ o162d _ o163d _ o164d _ o165d _ o166d _ o167d _
-    o168d _ o169d _ o170d _ o171d _ o172d _ o173d _ o174d _ o175d _
-    o176d _ o177d _ o178d _ o179d _ o180d _ o181d _ o182d _ o183d _
-    o184d _ o185d _ o186d _ o187d _ o188d _ o189d _ o190d _ o191d _
-    o192d _ o193d _ o194d _ o195d _ o196d _ o197d _ o198d _ o199d _
-    o200d _ o201d _ o202d _ o203d _ o204d _ o205d _ o206d _ o207d _
-    o208d _ o209d _ o210d _ o211d _ o212d _ o213d _ o214d _ o215d _
-    o216d _ o217d _ o218d _ o219d _ o220d _ o221d _ o222d _ o223d _
-    o224d _ o225d _ o226d _ o227d _ o228d _ o229d _ o230d _ o231d _
-    o232d _ o233d _ o234d _ o235d _ o236d _ o237d _ o238d _ o239d _
-    o240d _ o241d _ o242d _ o243d _ o244d _ o245d _ o246d _ o247d _
-    o248d _ o249d _ o250d _ o251d _ o252d _ o253d _ o254d _ o255d _
+      o0 _   o1 _   o2 _   o3 _   o4 _   o5 _   o6 _   o7 _
+      o8 _   o9 _  o10 _  o11 _  o12 _  o13 _  o14 _  o15 _
+     o16 _  o17 _  o18 _  o19 _  o20 _  o21 _  o22 _  o23 _
+     o24 _  o25 _  o26 _  o27 _  o28 _  o29 _  o30 _  o31 _
+     o32 _  o33 _  o34 _  o35 _  o36 _  o37 _  o38 _  o39 _
+     o40 _  o41 _  o42 _  o43 _  o44 _  o45 _  o46 _  o47 _
+     o48 _  o49 _  o50 _  o51 _  o52 _  o53 _  o54 _  o55 _
+     o56 _  o57 _  o58 _  o59 _  o60 _  o61 _  o62 _  o63 _
+     o64 _  o65 _  o66 _  o67 _  o68 _  o69 _  o70 _  o71 _
+     o72 _  o73 _  o74 _  o75 _  o76 _  o77 _  o78 _  o79 _
+     o80 _  o81 _  o82 _  o83 _  o84 _  o85 _  o86 _  o87 _
+     o88 _  o89 _  o90 _  o91 _  o92 _  o93 _  o94 _  o95 _
+     o96 _  o97 _  o98 _  o99 _ o100 _ o101 _ o102 _ o103 _
+    o104 _ o105 _ o106 _ o107 _ o108 _ o109 _ o110 _ o111 _
+    o112 _ o113 _ o114 _ o115 _ o116 _ o117 _ o118 _ o119 _
+    o120 _ o121 _ o122 _ o123 _ o124 _ o125 _ o126 _ o127 _
+    o128 _ o129 _ o130 _ o131 _ o132 _ o133 _ o134 _ o135 _
+    o136 _ o137 _ o138 _ o139 _ o140 _ o141 _ o142 _ o143 _
+    o144 _ o145 _ o146 _ o147 _ o148 _ o149 _ o150 _ o151 _
+    o152 _ o153 _ o154 _ o155 _ o156 _ o157 _ o158 _ o159 _
+    o160 _ o161 _ o162 _ o163 _ o164 _ o165 _ o166 _ o167 _
+    o168 _ o169 _ o170 _ o171 _ o172 _ o173 _ o174 _ o175 _
+    o176 _ o177 _ o178 _ o179 _ o180 _ o181 _ o182 _ o183 _
+    o184 _ o185 _ o186 _ o187 _ o188 _ o189 _ o190 _ o191 _
+    o192 _ o193 _ o194 _ o195 _ o196 _ o197 _ o198 _ o199 _
+    o200 _ o201 _ o202 _ o203 _ o204 _ o205 _ o206 _ o207 _
+    o208 _ o209 _ o210 _ o211 _ o212 _ o213 _ o214 _ o215 _
+    o216 _ o217 _ o218 _ o219 _ o220 _ o221 _ o222 _ o223 _
+    o224 _ o225 _ o226 _ o227 _ o228 _ o229 _ o230 _ o231 _
+    o232 _ o233 _ o234 _ o235 _ o236 _ o237 _ o238 _ o239 _
+    o240 _ o241 _ o242 _ o243 _ o244 _ o245 _ o246 _ o247 _
+    o248 _ o249 _ o250 _ o251 _ o252 _ o253 _ o254 _ o255 _
 ];
 
 # Artificial temporary registers used to hold block arguments during branches
