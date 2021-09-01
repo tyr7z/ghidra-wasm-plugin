@@ -41,9 +41,11 @@ public class InjectPayloadWasmPop extends InjectPayloadCallother {
 			return ops.getPcodeOps();
 		}
 
+		long stackHeight = stackEffect.getPopHeight();
 		ValType[] todo = stackEffect.getToPop();
-		for (int i = todo.length - 1; i >= 0; i--) {
-			ops.emitPop(baseAddress.add(8 * i), todo[i].getSize());
+		Address stackAddress = program.getRegister("s0").getAddress().add(stackHeight * 8);
+		for (int i = 0; i < todo.length; i++) {
+			ops.emitCopy(stackAddress.add(i * 8L), baseAddress.add(i * 8L), todo[i].getSize());
 		}
 
 		return ops.getPcodeOps();

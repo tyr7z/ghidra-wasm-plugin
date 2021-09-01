@@ -40,7 +40,7 @@ public class WasmFunctionPreAnalysis {
 		/* These labels must be synced with WebAssembly.slaspec */
 		private static final String REG_INDENT = "ctx_indent";
 		private static final String REG_ISOP64 = "ctx_is_op64";
-		private static final String REG_SPADJ = "ctx_sp_adjust";
+		private static final String REG_SP = "ctx_sp";
 		private static final String REG_BRTARGET = "ctx_br_target";
 		private static final String REG_IS_CASE = "ctx_is_case";
 		private static final String REG_IS_DEFAULT = "ctx_is_default";
@@ -80,12 +80,12 @@ public class WasmFunctionPreAnalysis {
 			setRegister(program, address, REG_BRTARGET, target.getOffset());
 		}
 
-		public static void setStackAdjust(Program program, Address address, long value) {
-			setRegister(program, address, REG_SPADJ, value);
+		public static void setStackPointer(Program program, Address address, long value) {
+			setRegister(program, address, REG_SP, value);
 		}
 
-		public static void setStackEffect(Program program, Address address, ValType[] toPop, ValType[] toPush) {
-			stackEffects.put(address, new StackEffect(toPop, toPush));
+		public static void setStackEffect(Program program, Address address, int popHeight, ValType[] toPop, int pushHeight, ValType[] toPush) {
+			stackEffects.put(address, new StackEffect(popHeight, toPop, pushHeight, toPush));
 		}
 
 		public static void setBrTableCase(Program program, Address address, int index) {
@@ -173,8 +173,7 @@ public class WasmFunctionPreAnalysis {
 		 * @param address
 		 *            Address of the branch instruction
 		 */
-		public void addBranch(Program program, List<ValType> stack, Address address) {
-			ProgramContext.setStackAdjust(program, address, stack.size() - initialStack.size());
+		public void addBranch(Program program, Address address) {
 			branchAddresses.add(address);
 		}
 
@@ -183,7 +182,6 @@ public class WasmFunctionPreAnalysis {
 			if (blockKind != BlockKind.IF) {
 				throw new ValidationException(address, "else without corresponding if");
 			}
-			ProgramContext.setStackAdjust(program, address, 0);
 			ProgramContext.setBranchTarget(program, startAddress, address.add(1));
 		}
 
@@ -211,12 +209,20 @@ public class WasmFunctionPreAnalysis {
 
 	// #region Exported pre-analysis results
 	public static class StackEffect {
+		private int popHeight; // Height of the stack *after* the pops
 		private ValType[] toPop;
+		private int pushHeight; // Height of the stack *before* the pushes
 		private ValType[] toPush;
 
-		public StackEffect(ValType[] toPop, ValType[] toPush) {
+		public StackEffect(int popHeight, ValType[] toPop, int pushHeight, ValType[] toPush) {
+			this.popHeight = popHeight;
 			this.toPop = toPop;
+			this.pushHeight = pushHeight;
 			this.toPush = toPush;
+		}
+
+		public int getPopHeight() {
+			return popHeight;
 		}
 
 		public ValType[] getToPop() {
@@ -224,6 +230,10 @@ public class WasmFunctionPreAnalysis {
 				return new ValType[0];
 			}
 			return toPop;
+		}
+
+		public int getPushHeight() {
+			return pushHeight;
 		}
 
 		public ValType[] getToPush() {
@@ -335,8 +345,8 @@ public class WasmFunctionPreAnalysis {
 		ControlFrame block = getBlock(instAddress, labelidx);
 		ValType[] arguments = block.getBranchArguments();
 		popValues(instAddress, arguments);
-		ProgramContext.setStackEffect(program, instAddress, arguments, arguments);
-		block.addBranch(program, valueStack, instAddress);
+		ProgramContext.setStackEffect(program, instAddress, valueStack.size(), arguments, block.initialStack.size(), arguments);
+		block.addBranch(program, instAddress);
 		pushValues(instAddress, arguments);
 	}
 
@@ -369,6 +379,7 @@ public class WasmFunctionPreAnalysis {
 
 	private void analyzeOpcode(Program program, Address instAddress, BinaryReader reader) throws IOException {
 		ProgramContext.setIndent(program, instAddress, controlStack.size() - 1);
+		ProgramContext.setStackPointer(program, instAddress, 8 * valueStack.size());
 		int opcode = reader.readNextUnsignedByte();
 		switch (opcode) {
 		case 0x00: /* unreachable */
@@ -406,7 +417,7 @@ public class WasmFunctionPreAnalysis {
 			 * The else instruction itself serves as a branch to the end of the block. The
 			 * branch from the if instruction will go to the instruction after the else.
 			 */
-			block.addBranch(program, valueStack, instAddress);
+			block.addBranch(program, instAddress);
 			block.setElse(program, instAddress);
 
 			block.unreachable = false;
@@ -416,7 +427,7 @@ public class WasmFunctionPreAnalysis {
 		case 0x0B: /* end */ {
 			ControlFrame block = popBlock(instAddress);
 			// this stack effect will only be used by the final end
-			ProgramContext.setStackEffect(program, instAddress, block.blockType.returns, block.blockType.returns);
+			ProgramContext.setStackEffect(program, instAddress, valueStack.size(), block.blockType.returns, 0, null);
 			pushValues(instAddress, block.blockType.returns);
 			block.setEnd(program, instAddress);
 			break;
@@ -449,8 +460,7 @@ public class WasmFunctionPreAnalysis {
 		}
 		case 0x0F: /* return */ {
 			popValues(instAddress, func.getReturns());
-			ProgramContext.setStackEffect(program, instAddress, func.getReturns(), null);
-			ProgramContext.setStackAdjust(program, instAddress, valueStack.size());
+			ProgramContext.setStackEffect(program, instAddress, valueStack.size(), func.getReturns(), 0, null);
 			markUnreachable(instAddress);
 			break;
 		}
@@ -461,7 +471,7 @@ public class WasmFunctionPreAnalysis {
 			ValType[] params = targetFunc.getParams();
 			ValType[] returns = targetFunc.getReturns();
 			popValues(instAddress, params);
-			ProgramContext.setStackEffect(program, instAddress, params, returns);
+			ProgramContext.setStackEffect(program, instAddress, valueStack.size(), params, valueStack.size(), returns);
 			ProgramContext.setBranchTarget(program, instAddress, targetFunc.getStartAddr());
 			pushValues(instAddress, returns);
 			break;
@@ -479,7 +489,7 @@ public class WasmFunctionPreAnalysis {
 			ValType[] params = type.getParamTypes();
 			ValType[] returns = type.getReturnTypes();
 			popValues(instAddress, params);
-			ProgramContext.setStackEffect(program, instAddress, params, returns);
+			ProgramContext.setStackEffect(program, instAddress, valueStack.size(), params, valueStack.size(), returns);
 			pushValues(instAddress, returns);
 			break;
 		}

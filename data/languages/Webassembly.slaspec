@@ -18,6 +18,76 @@ define register offset=0 size=4 [ _  PC SP LR BRTableInput];
 # Define context bits (if defined, size must be multiple of 4-bytes)
 define register offset=0x1000 size=16   contextreg;
 
+# Stack slots within a function
+define register offset=0x5000000000 size=8 [
+      s0   s1   s2   s3   s4   s5   s6   s7
+      s8   s9  s10  s11  s12  s13  s14  s15
+     s16  s17  s18  s19  s20  s21  s22  s23
+     s24  s25  s26  s27  s28  s29  s30  s31
+     s32  s33  s34  s35  s36  s37  s38  s39
+     s40  s41  s42  s43  s44  s45  s46  s47
+     s48  s49  s50  s51  s52  s53  s54  s55
+     s56  s57  s58  s59  s60  s61  s62  s63
+     s64  s65  s66  s67  s68  s69  s70  s71
+     s72  s73  s74  s75  s76  s77  s78  s79
+     s80  s81  s82  s83  s84  s85  s86  s87
+     s88  s89  s90  s91  s92  s93  s94  s95
+     s96  s97  s98  s99 s100 s101 s102 s103
+    s104 s105 s106 s107 s108 s109 s110 s111
+    s112 s113 s114 s115 s116 s117 s118 s119
+    s120 s121 s122 s123 s124 s125 s126 s127
+    s128 s129 s130 s131 s132 s133 s134 s135
+    s136 s137 s138 s139 s140 s141 s142 s143
+    s144 s145 s146 s147 s148 s149 s150 s151
+    s152 s153 s154 s155 s156 s157 s158 s159
+    s160 s161 s162 s163 s164 s165 s166 s167
+    s168 s169 s170 s171 s172 s173 s174 s175
+    s176 s177 s178 s179 s180 s181 s182 s183
+    s184 s185 s186 s187 s188 s189 s190 s191
+    s192 s193 s194 s195 s196 s197 s198 s199
+    s200 s201 s202 s203 s204 s205 s206 s207
+    s208 s209 s210 s211 s212 s213 s214 s215
+    s216 s217 s218 s219 s220 s221 s222 s223
+    s224 s225 s226 s227 s228 s229 s230 s231
+    s232 s233 s234 s235 s236 s237 s238 s239
+    s240 s241 s242 s243 s244 s245 s246 s247
+    s248 s249 s250 s251 s252 s253 s254 s255
+];
+define register offset=0x5000000000 size=4 [
+      s0d _   s1d _   s2d _   s3d _   s4d _   s5d _   s6d _   s7d _
+      s8d _   s9d _  s10d _  s11d _  s12d _  s13d _  s14d _  s15d _
+     s16d _  s17d _  s18d _  s19d _  s20d _  s21d _  s22d _  s23d _
+     s24d _  s25d _  s26d _  s27d _  s28d _  s29d _  s30d _  s31d _
+     s32d _  s33d _  s34d _  s35d _  s36d _  s37d _  s38d _  s39d _
+     s40d _  s41d _  s42d _  s43d _  s44d _  s45d _  s46d _  s47d _
+     s48d _  s49d _  s50d _  s51d _  s52d _  s53d _  s54d _  s55d _
+     s56d _  s57d _  s58d _  s59d _  s60d _  s61d _  s62d _  s63d _
+     s64d _  s65d _  s66d _  s67d _  s68d _  s69d _  s70d _  s71d _
+     s72d _  s73d _  s74d _  s75d _  s76d _  s77d _  s78d _  s79d _
+     s80d _  s81d _  s82d _  s83d _  s84d _  s85d _  s86d _  s87d _
+     s88d _  s89d _  s90d _  s91d _  s92d _  s93d _  s94d _  s95d _
+     s96d _  s97d _  s98d _  s99d _ s100d _ s101d _ s102d _ s103d _
+    s104d _ s105d _ s106d _ s107d _ s108d _ s109d _ s110d _ s111d _
+    s112d _ s113d _ s114d _ s115d _ s116d _ s117d _ s118d _ s119d _
+    s120d _ s121d _ s122d _ s123d _ s124d _ s125d _ s126d _ s127d _
+    s128d _ s129d _ s130d _ s131d _ s132d _ s133d _ s134d _ s135d _
+    s136d _ s137d _ s138d _ s139d _ s140d _ s141d _ s142d _ s143d _
+    s144d _ s145d _ s146d _ s147d _ s148d _ s149d _ s150d _ s151d _
+    s152d _ s153d _ s154d _ s155d _ s156d _ s157d _ s158d _ s159d _
+    s160d _ s161d _ s162d _ s163d _ s164d _ s165d _ s166d _ s167d _
+    s168d _ s169d _ s170d _ s171d _ s172d _ s173d _ s174d _ s175d _
+    s176d _ s177d _ s178d _ s179d _ s180d _ s181d _ s182d _ s183d _
+    s184d _ s185d _ s186d _ s187d _ s188d _ s189d _ s190d _ s191d _
+    s192d _ s193d _ s194d _ s195d _ s196d _ s197d _ s198d _ s199d _
+    s200d _ s201d _ s202d _ s203d _ s204d _ s205d _ s206d _ s207d _
+    s208d _ s209d _ s210d _ s211d _ s212d _ s213d _ s214d _ s215d _
+    s216d _ s217d _ s218d _ s219d _ s220d _ s221d _ s222d _ s223d _
+    s224d _ s225d _ s226d _ s227d _ s228d _ s229d _ s230d _ s231d _
+    s232d _ s233d _ s234d _ s235d _ s236d _ s237d _ s238d _ s239d _
+    s240d _ s241d _ s242d _ s243d _ s244d _ s245d _ s246d _ s247d _
+    s248d _ s249d _ s250d _ s251d _ s252d _ s253d _ s254d _ s255d _
+];
+
 define register offset=0x1000000000 size=8 [
       l0   l1   l2   l3   l4   l5   l6   l7
       l8   l9  l10  l11  l12  l13  l14  l15
@@ -51,6 +121,40 @@ define register offset=0x1000000000 size=8 [
     l232 l233 l234 l235 l236 l237 l238 l239
     l240 l241 l242 l243 l244 l245 l246 l247
     l248 l249 l250 l251 l252 l253 l254 l255
+];
+define register offset=0x1000000000 size=4 [
+      l0d _   l1d _   l2d _   l3d _   l4d _   l5d _   l6d _   l7d _
+      l8d _   l9d _  l10d _  l11d _  l12d _  l13d _  l14d _  l15d _
+     l16d _  l17d _  l18d _  l19d _  l20d _  l21d _  l22d _  l23d _
+     l24d _  l25d _  l26d _  l27d _  l28d _  l29d _  l30d _  l31d _
+     l32d _  l33d _  l34d _  l35d _  l36d _  l37d _  l38d _  l39d _
+     l40d _  l41d _  l42d _  l43d _  l44d _  l45d _  l46d _  l47d _
+     l48d _  l49d _  l50d _  l51d _  l52d _  l53d _  l54d _  l55d _
+     l56d _  l57d _  l58d _  l59d _  l60d _  l61d _  l62d _  l63d _
+     l64d _  l65d _  l66d _  l67d _  l68d _  l69d _  l70d _  l71d _
+     l72d _  l73d _  l74d _  l75d _  l76d _  l77d _  l78d _  l79d _
+     l80d _  l81d _  l82d _  l83d _  l84d _  l85d _  l86d _  l87d _
+     l88d _  l89d _  l90d _  l91d _  l92d _  l93d _  l94d _  l95d _
+     l96d _  l97d _  l98d _  l99d _ l100d _ l101d _ l102d _ l103d _
+    l104d _ l105d _ l106d _ l107d _ l108d _ l109d _ l110d _ l111d _
+    l112d _ l113d _ l114d _ l115d _ l116d _ l117d _ l118d _ l119d _
+    l120d _ l121d _ l122d _ l123d _ l124d _ l125d _ l126d _ l127d _
+    l128d _ l129d _ l130d _ l131d _ l132d _ l133d _ l134d _ l135d _
+    l136d _ l137d _ l138d _ l139d _ l140d _ l141d _ l142d _ l143d _
+    l144d _ l145d _ l146d _ l147d _ l148d _ l149d _ l150d _ l151d _
+    l152d _ l153d _ l154d _ l155d _ l156d _ l157d _ l158d _ l159d _
+    l160d _ l161d _ l162d _ l163d _ l164d _ l165d _ l166d _ l167d _
+    l168d _ l169d _ l170d _ l171d _ l172d _ l173d _ l174d _ l175d _
+    l176d _ l177d _ l178d _ l179d _ l180d _ l181d _ l182d _ l183d _
+    l184d _ l185d _ l186d _ l187d _ l188d _ l189d _ l190d _ l191d _
+    l192d _ l193d _ l194d _ l195d _ l196d _ l197d _ l198d _ l199d _
+    l200d _ l201d _ l202d _ l203d _ l204d _ l205d _ l206d _ l207d _
+    l208d _ l209d _ l210d _ l211d _ l212d _ l213d _ l214d _ l215d _
+    l216d _ l217d _ l218d _ l219d _ l220d _ l221d _ l222d _ l223d _
+    l224d _ l225d _ l226d _ l227d _ l228d _ l229d _ l230d _ l231d _
+    l232d _ l233d _ l234d _ l235d _ l236d _ l237d _ l238d _ l239d _
+    l240d _ l241d _ l242d _ l243d _ l244d _ l245d _ l246d _ l247d _
+    l248d _ l249d _ l250d _ l251d _ l252d _ l253d _ l254d _ l255d _
 ];
 
 # Artificial registers used to hold function inputs
@@ -88,6 +192,40 @@ define register offset=0x2000000000 size=8 [
     i240 i241 i242 i243 i244 i245 i246 i247
     i248 i249 i250 i251 i252 i253 i254 i255
 ];
+define register offset=0x2000000000 size=4 [
+      i0d _   i1d _   i2d _   i3d _   i4d _   i5d _   i6d _   i7d _
+      i8d _   i9d _  i10d _  i11d _  i12d _  i13d _  i14d _  i15d _
+     i16d _  i17d _  i18d _  i19d _  i20d _  i21d _  i22d _  i23d _
+     i24d _  i25d _  i26d _  i27d _  i28d _  i29d _  i30d _  i31d _
+     i32d _  i33d _  i34d _  i35d _  i36d _  i37d _  i38d _  i39d _
+     i40d _  i41d _  i42d _  i43d _  i44d _  i45d _  i46d _  i47d _
+     i48d _  i49d _  i50d _  i51d _  i52d _  i53d _  i54d _  i55d _
+     i56d _  i57d _  i58d _  i59d _  i60d _  i61d _  i62d _  i63d _
+     i64d _  i65d _  i66d _  i67d _  i68d _  i69d _  i70d _  i71d _
+     i72d _  i73d _  i74d _  i75d _  i76d _  i77d _  i78d _  i79d _
+     i80d _  i81d _  i82d _  i83d _  i84d _  i85d _  i86d _  i87d _
+     i88d _  i89d _  i90d _  i91d _  i92d _  i93d _  i94d _  i95d _
+     i96d _  i97d _  i98d _  i99d _ i100d _ i101d _ i102d _ i103d _
+    i104d _ i105d _ i106d _ i107d _ i108d _ i109d _ i110d _ i111d _
+    i112d _ i113d _ i114d _ i115d _ i116d _ i117d _ i118d _ i119d _
+    i120d _ i121d _ i122d _ i123d _ i124d _ i125d _ i126d _ i127d _
+    i128d _ i129d _ i130d _ i131d _ i132d _ i133d _ i134d _ i135d _
+    i136d _ i137d _ i138d _ i139d _ i140d _ i141d _ i142d _ i143d _
+    i144d _ i145d _ i146d _ i147d _ i148d _ i149d _ i150d _ i151d _
+    i152d _ i153d _ i154d _ i155d _ i156d _ i157d _ i158d _ i159d _
+    i160d _ i161d _ i162d _ i163d _ i164d _ i165d _ i166d _ i167d _
+    i168d _ i169d _ i170d _ i171d _ i172d _ i173d _ i174d _ i175d _
+    i176d _ i177d _ i178d _ i179d _ i180d _ i181d _ i182d _ i183d _
+    i184d _ i185d _ i186d _ i187d _ i188d _ i189d _ i190d _ i191d _
+    i192d _ i193d _ i194d _ i195d _ i196d _ i197d _ i198d _ i199d _
+    i200d _ i201d _ i202d _ i203d _ i204d _ i205d _ i206d _ i207d _
+    i208d _ i209d _ i210d _ i211d _ i212d _ i213d _ i214d _ i215d _
+    i216d _ i217d _ i218d _ i219d _ i220d _ i221d _ i222d _ i223d _
+    i224d _ i225d _ i226d _ i227d _ i228d _ i229d _ i230d _ i231d _
+    i232d _ i233d _ i234d _ i235d _ i236d _ i237d _ i238d _ i239d _
+    i240d _ i241d _ i242d _ i243d _ i244d _ i245d _ i246d _ i247d _
+    i248d _ i249d _ i250d _ i251d _ i252d _ i253d _ i254d _ i255d _
+];
 
 # Artificial registers used to hold function outputs
 define register offset=0x3000000000 size=8 [
@@ -124,77 +262,43 @@ define register offset=0x3000000000 size=8 [
     o240 o241 o242 o243 o244 o245 o246 o247
     o248 o249 o250 o251 o252 o253 o254 o255
 ];
+define register offset=0x3000000000 size=4 [
+      o0d _   o1d _   o2d _   o3d _   o4d _   o5d _   o6d _   o7d _
+      o8d _   o9d _  o10d _  o11d _  o12d _  o13d _  o14d _  o15d _
+     o16d _  o17d _  o18d _  o19d _  o20d _  o21d _  o22d _  o23d _
+     o24d _  o25d _  o26d _  o27d _  o28d _  o29d _  o30d _  o31d _
+     o32d _  o33d _  o34d _  o35d _  o36d _  o37d _  o38d _  o39d _
+     o40d _  o41d _  o42d _  o43d _  o44d _  o45d _  o46d _  o47d _
+     o48d _  o49d _  o50d _  o51d _  o52d _  o53d _  o54d _  o55d _
+     o56d _  o57d _  o58d _  o59d _  o60d _  o61d _  o62d _  o63d _
+     o64d _  o65d _  o66d _  o67d _  o68d _  o69d _  o70d _  o71d _
+     o72d _  o73d _  o74d _  o75d _  o76d _  o77d _  o78d _  o79d _
+     o80d _  o81d _  o82d _  o83d _  o84d _  o85d _  o86d _  o87d _
+     o88d _  o89d _  o90d _  o91d _  o92d _  o93d _  o94d _  o95d _
+     o96d _  o97d _  o98d _  o99d _ o100d _ o101d _ o102d _ o103d _
+    o104d _ o105d _ o106d _ o107d _ o108d _ o109d _ o110d _ o111d _
+    o112d _ o113d _ o114d _ o115d _ o116d _ o117d _ o118d _ o119d _
+    o120d _ o121d _ o122d _ o123d _ o124d _ o125d _ o126d _ o127d _
+    o128d _ o129d _ o130d _ o131d _ o132d _ o133d _ o134d _ o135d _
+    o136d _ o137d _ o138d _ o139d _ o140d _ o141d _ o142d _ o143d _
+    o144d _ o145d _ o146d _ o147d _ o148d _ o149d _ o150d _ o151d _
+    o152d _ o153d _ o154d _ o155d _ o156d _ o157d _ o158d _ o159d _
+    o160d _ o161d _ o162d _ o163d _ o164d _ o165d _ o166d _ o167d _
+    o168d _ o169d _ o170d _ o171d _ o172d _ o173d _ o174d _ o175d _
+    o176d _ o177d _ o178d _ o179d _ o180d _ o181d _ o182d _ o183d _
+    o184d _ o185d _ o186d _ o187d _ o188d _ o189d _ o190d _ o191d _
+    o192d _ o193d _ o194d _ o195d _ o196d _ o197d _ o198d _ o199d _
+    o200d _ o201d _ o202d _ o203d _ o204d _ o205d _ o206d _ o207d _
+    o208d _ o209d _ o210d _ o211d _ o212d _ o213d _ o214d _ o215d _
+    o216d _ o217d _ o218d _ o219d _ o220d _ o221d _ o222d _ o223d _
+    o224d _ o225d _ o226d _ o227d _ o228d _ o229d _ o230d _ o231d _
+    o232d _ o233d _ o234d _ o235d _ o236d _ o237d _ o238d _ o239d _
+    o240d _ o241d _ o242d _ o243d _ o244d _ o245d _ o246d _ o247d _
+    o248d _ o249d _ o250d _ o251d _ o252d _ o253d _ o254d _ o255d _
+];
 
 # Artificial temporary registers used to hold block arguments during branches
-define register offset=0x4000000000 size=8 [
-      t0   t1   t2   t3   t4   t5   t6   t7
-      t8   t9  t10  t11  t12  t13  t14  t15
-     t16  t17  t18  t19  t20  t21  t22  t23
-     t24  t25  t26  t27  t28  t29  t30  t31
-     t32  t33  t34  t35  t36  t37  t38  t39
-     t40  t41  t42  t43  t44  t45  t46  t47
-     t48  t49  t50  t51  t52  t53  t54  t55
-     t56  t57  t58  t59  t60  t61  t62  t63
-     t64  t65  t66  t67  t68  t69  t70  t71
-     t72  t73  t74  t75  t76  t77  t78  t79
-     t80  t81  t82  t83  t84  t85  t86  t87
-     t88  t89  t90  t91  t92  t93  t94  t95
-     t96  t97  t98  t99 t100 t101 t102 t103
-    t104 t105 t106 t107 t108 t109 t110 t111
-    t112 t113 t114 t115 t116 t117 t118 t119
-    t120 t121 t122 t123 t124 t125 t126 t127
-    t128 t129 t130 t131 t132 t133 t134 t135
-    t136 t137 t138 t139 t140 t141 t142 t143
-    t144 t145 t146 t147 t148 t149 t150 t151
-    t152 t153 t154 t155 t156 t157 t158 t159
-    t160 t161 t162 t163 t164 t165 t166 t167
-    t168 t169 t170 t171 t172 t173 t174 t175
-    t176 t177 t178 t179 t180 t181 t182 t183
-    t184 t185 t186 t187 t188 t189 t190 t191
-    t192 t193 t194 t195 t196 t197 t198 t199
-    t200 t201 t202 t203 t204 t205 t206 t207
-    t208 t209 t210 t211 t212 t213 t214 t215
-    t216 t217 t218 t219 t220 t221 t222 t223
-    t224 t225 t226 t227 t228 t229 t230 t231
-    t232 t233 t234 t235 t236 t237 t238 t239
-    t240 t241 t242 t243 t244 t245 t246 t247
-    t248 t249 t250 t251 t252 t253 t254 t255
-];
-
-define global offset=0 size=8 [
-      g0   g1   g2   g3   g4   g5   g6   g7
-      g8   g9  g10  g11  g12  g13  g14  g15
-     g16  g17  g18  g19  g20  g21  g22  g23
-     g24  g25  g26  g27  g28  g29  g30  g31
-     g32  g33  g34  g35  g36  g37  g38  g39
-     g40  g41  g42  g43  g44  g45  g46  g47
-     g48  g49  g50  g51  g52  g53  g54  g55
-     g56  g57  g58  g59  g60  g61  g62  g63
-     g64  g65  g66  g67  g68  g69  g70  g71
-     g72  g73  g74  g75  g76  g77  g78  g79
-     g80  g81  g82  g83  g84  g85  g86  g87
-     g88  g89  g90  g91  g92  g93  g94  g95
-     g96  g97  g98  g99 g100 g101 g102 g103
-    g104 g105 g106 g107 g108 g109 g110 g111
-    g112 g113 g114 g115 g116 g117 g118 g119
-    g120 g121 g122 g123 g124 g125 g126 g127
-    g128 g129 g130 g131 g132 g133 g134 g135
-    g136 g137 g138 g139 g140 g141 g142 g143
-    g144 g145 g146 g147 g148 g149 g150 g151
-    g152 g153 g154 g155 g156 g157 g158 g159
-    g160 g161 g162 g163 g164 g165 g166 g167
-    g168 g169 g170 g171 g172 g173 g174 g175
-    g176 g177 g178 g179 g180 g181 g182 g183
-    g184 g185 g186 g187 g188 g189 g190 g191
-    g192 g193 g194 g195 g196 g197 g198 g199
-    g200 g201 g202 g203 g204 g205 g206 g207
-    g208 g209 g210 g211 g212 g213 g214 g215
-    g216 g217 g218 g219 g220 g221 g222 g223
-    g224 g225 g226 g227 g228 g229 g230 g231
-    g232 g233 g234 g235 g236 g237 g238 g239
-    g240 g241 g242 g243 g244 g245 g246 g247
-    g248 g249 g250 g251 g252 g253 g254 g255
-];
+define register offset=0x4000000000 size=8 [ t0 ];
 
 # All context registers are set by the pre-analyzer
 define context contextreg
@@ -204,7 +308,7 @@ define context contextreg
 	ctx_is_case = (33, 33) noflow
 	ctx_is_default = (34, 34) noflow
 	ctx_br_target = (64, 95) noflow
-	ctx_sp_adjust = (96, 127) noflow
+	ctx_sp = (96, 127) noflow
 ;
 
 # Include contents of Webassembly.sinc file

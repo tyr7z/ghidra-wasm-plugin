@@ -28,30 +28,6 @@ define token I64 (64)
 ;
 
 ################################################################
-# Macros
-################################################################
-
-macro push32(val) {
-	SP = SP - 8;
-	*:4 SP = val;
-}
-
-macro pop32(ret32) {
-	ret32 = *:4 SP;
-	SP = SP + 8;
-}
-
-macro push64(val) {
-	SP = SP - 8;
-	*:8 SP = val;
-}
-
-macro pop64(ret64) {
-	ret64 = *:8 SP;
-	SP = SP + 8;
-}
-
-################################################################
 
 define pcodeop popCallOther;
 define pcodeop pushCallOther;
@@ -103,6 +79,38 @@ define pcodeop memory_fill;
 @define EXPORT_EXPR "export *[table]:8 dest;"
 @include "Leb128_u32.sinc"
 
+sp0_32: tmp_sp is ctx_sp [tmp_sp = 0x5000000000 + ctx_sp - 0;] {
+	export *[register]:4 tmp_sp;
+}
+
+sp0_64: tmp_sp is ctx_sp [tmp_sp = 0x5000000000 + ctx_sp - 0;] {
+	export *[register]:8 tmp_sp;
+}
+
+sp1_32: tmp_sp is ctx_sp [tmp_sp = 0x5000000000 + ctx_sp - 8;] {
+	export *[register]:4 tmp_sp;
+}
+
+sp1_64: tmp_sp is ctx_sp [tmp_sp = 0x5000000000 + ctx_sp - 8;] {
+	export *[register]:8 tmp_sp;
+}
+
+sp2_32: tmp_sp is ctx_sp [tmp_sp = 0x5000000000 + ctx_sp - 16;] {
+	export *[register]:4 tmp_sp;
+}
+
+sp2_64: tmp_sp is ctx_sp [tmp_sp = 0x5000000000 + ctx_sp - 16;] {
+	export *[register]:8 tmp_sp;
+}
+
+sp3_32: tmp_sp is ctx_sp [tmp_sp = 0x5000000000 + ctx_sp - 24;] {
+	export *[register]:4 tmp_sp;
+}
+
+sp3_64: tmp_sp is ctx_sp [tmp_sp = 0x5000000000 + ctx_sp - 24;] {
+	export *[register]:8 tmp_sp;
+}
+
 br_target: ctx_br_target is ctx_br_target {
 	export *[ram]:4 ctx_br_target;
 }
@@ -149,9 +157,8 @@ macro trap() {
 	goto <trap_loop>;
 }
 
-macro doBranch(ctx_sp_adjust, br_target) {
+macro doBranch(br_target) {
 	popCallOther(&t0);
-	SP = SP + ctx_sp_adjust * 8;
 	pushCallOther(&t0);
 	goto br_target;
 }
@@ -180,14 +187,12 @@ case_indent: "  "^case_indent is case_indent & ctx_is_case=1 [ ctx_indent = ctx_
 }
 :""^indent^"loop" "blocktype="^ULeb128 is opc=0x03; ULeb128; indent {
 }
-:""^indent^"if" "blocktype="^ULeb128 is opc=0x04; ULeb128; ctx_sp_adjust; br_target; indent {
-	local val:4;
-	pop32(val);
-	if(val != 0) goto inst_next;
-	doBranch(ctx_sp_adjust, br_target);
+:""^indent^"if" "blocktype="^ULeb128 is opc=0x04; ULeb128; br_target; sp1_32; indent {
+	if(sp1_32 != 0) goto inst_next;
+	doBranch(br_target);
 }
-:""^indent^"else" is opc=0x05; ctx_sp_adjust; br_target; indent {
-	doBranch(ctx_sp_adjust, br_target);
+:""^indent^"else" is opc=0x05; br_target; indent {
+	doBranch(br_target);
 }
 
 :end is opc=0x0b; ctx_indent=0; indent {
@@ -197,32 +202,29 @@ case_indent: "  "^case_indent is case_indent & ctx_is_case=1 [ ctx_indent = ctx_
 :""^dec_indent^"end" is opc=0x0b; dec_indent {
 }
 
-:""^indent^"br" br_target is opc=0x0c; ULeb128; ctx_sp_adjust; br_target; indent {
-	doBranch(ctx_sp_adjust, br_target);
+:""^indent^"br" br_target is opc=0x0c; ULeb128; br_target; indent {
+	doBranch(br_target);
 }
-:""^indent^"br_if" br_target is opc=0x0d; ULeb128; ctx_sp_adjust; br_target; indent {
-	local val:4;
-	pop32(val);
-	if(val == 0) goto inst_next;
-	doBranch(ctx_sp_adjust, br_target);
+:""^indent^"br_if" br_target is opc=0x0d; ULeb128; br_target; sp1_32; indent {
+	if(sp1_32 == 0) goto inst_next;
+	doBranch(br_target);
 }
 
-:""^case_indent^".case" ctx_case_index br_target is ULeb128; ctx_sp_adjust; br_target; ctx_case_index; ctx_is_default=0; case_indent {
+:""^case_indent^".case" ctx_case_index br_target is ULeb128; br_target; ctx_case_index; ctx_is_default=0; case_indent {
 	if(BRTableInput != ctx_case_index) goto inst_next;
-	doBranch(ctx_sp_adjust, br_target);
+	doBranch(br_target);
 }
 
-:""^case_indent^".default" br_target is ULeb128; ctx_sp_adjust; br_target; ctx_is_default=1; case_indent {
-	doBranch(ctx_sp_adjust, br_target);
+:""^case_indent^".default" br_target is ULeb128; br_target; ctx_is_default=1; case_indent {
+	doBranch(br_target);
 }
 
-:""^indent^"br_table" is opc=0x0e; ULeb128; indent {
-	pop32(BRTableInput);
+:""^indent^"br_table" is opc=0x0e; ULeb128; sp1_32; indent {
+	BRTableInput = sp1_32;
 }
 
-:""^indent^"return" is opc=0x0f; ctx_sp_adjust; indent {
+:""^indent^"return" is opc=0x0f; indent {
 	popCallOther(&o0);
-	SP = SP + ctx_sp_adjust * 8;
 	return [LR];
 }
 :""^indent^"call" br_target is opc=0x10; ULeb128; br_target; indent {
@@ -230,10 +232,8 @@ case_indent: "  "^case_indent is case_indent & ctx_is_case=1 [ ctx_indent = ctx_
 	call br_target;
 	pushCallOther(&o0);
 }
-:""^indent^"call_indirect" "type="^typeidx tableref is opc=0x11; typeidx; tableref; indent {
-	local idx:4;
-	pop32(idx);
-	addr:8 = &tableref + sext(idx) * 8;
+:""^indent^"call_indirect" "type="^typeidx tableref is opc=0x11; typeidx; tableref; sp1_32; indent {
+	addr:8 = &tableref + sext(sp1_32) * 8;
 	val:8 = *[table] addr;
 	popCallOther(&i0);
 	call [val];
@@ -241,244 +241,166 @@ case_indent: "  "^case_indent is case_indent & ctx_is_case=1 [ ctx_indent = ctx_
 }
 
 ## Reference Instructions
-:""^indent^"ref.null" reftype is opc=0xd0; reftype; indent {
-	val:8 = 0;
-	push64(val);
+:""^indent^"ref.null" reftype is opc=0xd0; reftype; sp0_64; indent {
+	sp0_64 = 0;
 }
-:""^indent^"ref.is_null" is opc=0xd1; indent {
-	local val:8;
-	pop64(val);
-	res:4 = zext(val == 0);
-	push32(res);
+:""^indent^"ref.is_null" is opc=0xd1; sp1_32; sp1_64; indent {
+	res:4 = zext(sp1_64 == 0);
+	sp1_32 = res;
 }
-:""^indent^"ref.func" funcidx is opc=0xd2; funcidx; br_target; indent {
-	val:8 = &br_target;
-	push64(val);
+:""^indent^"ref.func" funcidx is opc=0xd2; funcidx; br_target; sp0_64; indent {
+	sp0_64 = &br_target;
 }
 
 ## Parametric Instructions
 :""^indent^"drop" is opc=0x1a; indent {
-	local val:8;
-	pop64(val);
+	# stack adjustment is handled by preanalyzer
 }
 
-macro select32() {
-	local cond:4;
-	pop32(cond);
-	local val1:4;
-	local val2:4;
-	pop32(val2);
-	pop32(val1);
-	if (cond != 0) goto <true>;
-	push32(val2);
-	goto inst_next;
-<true>
-	push32(val1);
+macro select32(sp1_32, sp2_32, sp3_32) {
+	if (sp1_32 != 0) goto inst_next;
+	sp3_32 = sp2_32;
 }
 
-macro select64() {
-	local cond:4;
-	pop32(cond);
-	local val1:8;
-	local val2:8;
-	pop64(val2);
-	pop64(val1);
-	if (cond != 0) goto <true>;
-	push64(val2);
-	goto inst_next;
-<true>
-	push64(val1);
+macro select64(sp1_32, sp2_64, sp3_64) {
+	if (sp1_32 != 0) goto inst_next;
+	sp3_64 = sp2_64;
 }
 
-:""^indent^"select" is opc=0x1b; indent; ctx_is_op64=0 {
-	select32();
+:""^indent^"select" is opc=0x1b; sp1_32; sp2_32; sp3_32; indent; ctx_is_op64=0 {
+	select32(sp1_32, sp2_32, sp3_32);
 }
-:""^indent^"select" is opc=0x1b; indent; ctx_is_op64=1 {
-	select64();
+:""^indent^"select" is opc=0x1b; sp1_32; sp2_64; sp3_64; indent; ctx_is_op64=1 {
+	select64(sp1_32, sp2_64, sp3_64);
 }
 
 # In the current version of WASM, only one type index is permitted in select t*.
 # This is functionally identical to regular select.
-:""^indent^"select" is opc=0x1c; opc2=0x01; valtype; indent {
+:""^indent^"select" is opc=0x1c; opc2=0x01; valtype; sp1_32; sp2_64; sp3_64; indent {
 	# i64, f64, funcref, externref
-	select64();
+	select64(sp1_32, sp2_64, sp3_64);
 }
-:""^indent^"select" 0x7f is opc=0x1c; opc2=0x01; valtype=0x7f; indent {
+:""^indent^"select" 0x7f is opc=0x1c; opc2=0x01; valtype=0x7f; sp1_32; sp2_32; sp3_32; indent {
 	# i32
-	select32();
+	select32(sp1_32, sp2_32, sp3_32);
 }
-:""^indent^"select" 0x7d is opc=0x1c; opc2=0x01; valtype=0x7d; indent {
+:""^indent^"select" 0x7d is opc=0x1c; opc2=0x01; valtype=0x7d; sp1_32; sp2_32; sp3_32; indent {
 	# f32
-	select32();
+	select32(sp1_32, sp2_32, sp3_32);
 }
 
 ## Variable Instructions
-:""^indent^"local.get" local4 is opc=0x20; local4; indent; ctx_is_op64=0 {
-	push32(local4);
+:""^indent^"local.get" local4 is opc=0x20; local4; sp0_32; indent; ctx_is_op64=0 {
+	sp0_32 = local4;
 }
-:""^indent^"local.get" local8 is opc=0x20; local8; indent; ctx_is_op64=1 {
-	push64(local8);
-}
-
-:""^indent^"local.set" local4 is opc=0x21; local4; indent; ctx_is_op64=0 {
-	pop32(local4);
-}
-:""^indent^"local.set" local8 is opc=0x21; local8; indent; ctx_is_op64=1 {
-	pop64(local8);
+:""^indent^"local.get" local8 is opc=0x20; local8; sp0_64; indent; ctx_is_op64=1 {
+	sp0_64 = local8;
 }
 
-:""^indent^"local.tee" local4 is opc=0x22; local4; indent; ctx_is_op64=0 {
-	pop32(local4);
-	push32(local4);
+:""^indent^"local.set" local4 is opc=0x21; local4; sp1_32; indent; ctx_is_op64=0 {
+	local4 = sp1_32;
 }
-:""^indent^"local.tee" local8 is opc=0x22; local8; indent; ctx_is_op64=1 {
-	pop64(local8);
-	push64(local8);
+:""^indent^"local.set" local8 is opc=0x21; local8; sp1_64; indent; ctx_is_op64=1 {
+	local8 = sp1_64;
 }
 
-:""^indent^"global.get" global4 is opc=0x23; global4; indent; ctx_is_op64=0 {
-	push32(global4);
+:""^indent^"local.tee" local4 is opc=0x22; local4; sp1_32; indent; ctx_is_op64=0 {
+	local4 = sp1_32;
 }
-:""^indent^"global.get" global8 is opc=0x23; global8; indent; ctx_is_op64=1 {
-	push64(global8);
+:""^indent^"local.tee" local8 is opc=0x22; local8; sp1_64; indent; ctx_is_op64=1 {
+	local8 = sp1_64;
 }
 
-:""^indent^"global.set" global4 is opc=0x24; global4; indent; ctx_is_op64=0 {
-	pop32(global4);
+:""^indent^"global.get" global4 is opc=0x23; global4; sp0_32; indent; ctx_is_op64=0 {
+	sp0_32 = global4;
 }
-:""^indent^"global.set" global8 is opc=0x24; global8; indent; ctx_is_op64=1 {
-	pop64(global8);
+:""^indent^"global.get" global8 is opc=0x23; global8; sp0_64; indent; ctx_is_op64=1 {
+	sp0_64 = global8;
+}
+
+:""^indent^"global.set" global4 is opc=0x24; global4; sp1_32; indent; ctx_is_op64=0 {
+	global4 = sp1_32;
+}
+:""^indent^"global.set" global8 is opc=0x24; global8; sp1_64; indent; ctx_is_op64=1 {
+	global8 = sp1_64;
 }
 
 ## Table Instructions
-:""^indent^"table.get" tableref is opc=0x25; tableref; indent {
-	local idx:4;
-	pop32(idx);
-	addr:8 = &tableref + sext(idx) * 8;
-	val:8 = *[table] addr;
-	push64(val);
+:""^indent^"table.get" tableref is opc=0x25; tableref; sp1_32; sp1_64; indent {
+	addr:8 = &tableref + sext(sp1_32) * 8;
+	sp1_64 = *[table] addr;
 }
 
-:""^indent^"table.set" tableref is opc=0x26; tableref; indent {
-	local val:8;
-	pop64(val);
-	local idx:4;
-	pop32(idx);
-	addr:8 = &tableref + sext(idx) * 8;
-	*[table] addr = val;
+:""^indent^"table.set" tableref is opc=0x26; tableref; sp1_64; sp2_32; indent {
+	addr:8 = &tableref + sext(sp2_32) * 8;
+	*[table] addr = sp1_64;
 }
 
-:""^indent^"table.init" elemidx tableidx is opc=0xfc; opc2=0x0c; elemidx; tableidx; indent {
-	local count:4;
-	pop32(count);
-	local src:4;
-	pop32(src);
-	local dst:4;
-	pop32(dst);
-	table_init(elemidx:4, tableidx:4, count, src, dst);
+:""^indent^"table.init" elemidx tableidx is opc=0xfc; opc2=0x0c; elemidx; tableidx; sp1_32; sp2_32; sp3_32; indent {
+	table_init(elemidx:4, tableidx:4, sp1_32, sp2_32, sp3_32);
 }
 
 :""^indent^"elem.drop" elemidx is opc=0xfc; opc2=0x0d; elemidx; indent {
 	elem_drop(elemidx:4);
 }
 
-:""^indent^"table.copy" tableidx tableidx2 is opc=0xfc; opc2=0x0e; tableidx; tableidx2; indent {
-	local count:4;
-	pop32(count);
-	local src:4;
-	pop32(src);
-	local dst:4;
-	pop32(dst);
-	table_copy(tableidx:4, tableidx2:4, count, src, dst);
+:""^indent^"table.copy" tableidx tableidx2 is opc=0xfc; opc2=0x0e; tableidx; tableidx2; sp1_32; sp2_32; sp3_32; indent {
+	table_copy(tableidx:4, tableidx2:4, sp1_32, sp2_32, sp3_32);
 }
 
-:""^indent^"table.grow" tableidx is opc=0xfc; opc2=0x0f; tableidx; indent {
-	local new_sz:4;
-	pop32(new_sz);
-	val:4 = table_grow(tableidx:4, new_sz);
-	push32(val);
+:""^indent^"table.grow" tableidx is opc=0xfc; opc2=0x0f; tableidx; sp1_32; indent {
+	sp1_32 = table_grow(tableidx:4, sp1_32);
 }
 
-:""^indent^"table.size" tableidx is opc=0xfc; opc2=0x10; tableidx; indent {
-	val:4 = table_size(tableidx:4);
-	push32(val);
+:""^indent^"table.size" tableidx is opc=0xfc; opc2=0x10; tableidx; sp0_32; indent {
+	sp0_32 = table_size(tableidx:4);
 }
 
-:""^indent^"table.fill" tableidx is opc=0xfc; opc2=0x11; tableidx; indent {
-	local count:4;
-	pop32(count);
-	local val:8;
-	pop64(val);
-	local dst:4;
-	pop32(dst);
-	table_fill(tableidx:4, count, val, dst);
+:""^indent^"table.fill" tableidx is opc=0xfc; opc2=0x11; tableidx; sp1_32; sp2_64; sp3_32; indent {
+	table_fill(tableidx:4, sp1_32, sp2_64, sp3_32);
 }
 
 
 ## Memory Instructions
-:""^indent^"memory.size" memidx is opc=0x3f; memidx; indent {
-	val:4 = memory_size(memidx:4);
-	push32(val);
+:""^indent^"memory.size" memidx is opc=0x3f; memidx; sp0_32; indent {
+	sp0_32 = memory_size(memidx:4);
 }
 
-:""^indent^"memory.grow" memidx is opc=0x40; memidx; indent {
-	local new_sz:4;
-	pop32(new_sz);
-	val:4 = memory_grow(memidx:4, new_sz);
-	push32(val);
+:""^indent^"memory.grow" memidx is opc=0x40; memidx; sp1_32; indent {
+	sp1_32 = memory_grow(memidx:4, sp1_32);
 }
 
-:""^indent^"memory.init" dataidx memidx is opc=0xfc; opc2=0x08; dataidx; memidx; indent {
-	local count:4;
-	pop32(count);
-	local src:4;
-	pop32(src);
-	local dst:4;
-	pop32(dst);
-	memory_init(dataidx, memidx:4, count, src, dst);
+:""^indent^"memory.init" dataidx memidx is opc=0xfc; opc2=0x08; dataidx; memidx; sp1_32; sp2_32; sp3_32; indent {
+	memory_init(dataidx, memidx:4, sp1_32, sp2_32, sp3_32);
 }
 
 :""^indent^"data.drop" dataidx is opc=0xfc; opc2=0x09; dataidx; indent {
 	data_drop(dataidx);
 }
 
-:""^indent^"memory.copy" memidx memidx2 is opc=0xfc; opc2=0x0a; memidx; memidx2; indent {
-	local count:4;
-	pop32(count);
-	local src:4;
-	pop32(src);
-	local dst:4;
-	pop32(dst);
-	memory_copy(memidx:4, memidx2:4, count, src, dst);
+:""^indent^"memory.copy" memidx memidx2 is opc=0xfc; opc2=0x0a; memidx; memidx2; sp1_32; sp2_32; sp3_32; indent {
+	memory_copy(memidx:4, memidx2:4, sp1_32, sp2_32, sp3_32);
 }
 
-:""^indent^"memory.fill" memidx is opc=0xfc; opc2=0x0b; memidx; indent {
-	local count:4;
-	pop32(count);
-	local val:4;
-	pop32(val);
-	local dst:4;
-	pop32(dst);
-	memory_fill(memidx:4, count, val, dst);
+:""^indent^"memory.fill" memidx is opc=0xfc; opc2=0x0b; memidx; sp1_32; sp2_32; sp3_32; indent {
+	memory_fill(memidx:4, sp1_32, sp2_32, sp3_32);
 }
 
 ## Numeric Instructions: const
-:""^indent^"i32.const" SLeb128 is opc=0x41; SLeb128; indent {
-	push32(SLeb128:4);
+:""^indent^"i32.const" SLeb128 is opc=0x41; SLeb128; sp0_32; indent {
+	sp0_32 = SLeb128:4;
 }
 
-:""^indent^"i64.const" SLeb128 is opc=0x42; SLeb128; indent {
-	push64(SLeb128:8);
+:""^indent^"i64.const" SLeb128 is opc=0x42; SLeb128; sp0_64; indent {
+	sp0_64 = SLeb128:8;
 }
 
-:""^indent^"f32.const" f32 is opc=0x43; f32; indent {
-	local val:4 = float2float(f32:4);
-	push32(val);
+:""^indent^"f32.const" f32 is opc=0x43; f32; sp0_32; indent {
+	sp0_32 = float2float(f32:4);
 }
 
-:""^indent^"f64.const" f64 is opc=0x44; f64; indent {
-	local val:8 = float2float(f64:8);
-	push64(val);
+:""^indent^"f64.const" f64 is opc=0x44; f64; sp0_64; indent {
+	sp0_64 = float2float(f64:8);
 }
 
 @include "BasicOps.sinc"

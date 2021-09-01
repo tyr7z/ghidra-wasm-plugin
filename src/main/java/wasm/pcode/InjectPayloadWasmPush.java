@@ -40,9 +40,11 @@ public class InjectPayloadWasmPush extends InjectPayloadCallother {
 			return ops.getPcodeOps();
 		}
 
+		long stackHeight = stackEffect.getPushHeight();
 		ValType[] todo = stackEffect.getToPush();
+		Address stackAddress = program.getRegister("s0").getAddress().add(stackHeight * 8);
 		for (int i = 0; i < todo.length; i++) {
-			ops.emitPush(baseAddress.add(8 * i), todo[i].getSize());
+			ops.emitCopy(baseAddress.add(i * 8L), stackAddress.add(i * 8L), todo[i].getSize());
 		}
 
 		return ops.getPcodeOps();
