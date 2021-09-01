@@ -28,12 +28,14 @@ public class WasmFunctionPreAnalysis {
 	private static Map<Address, StackEffect> stackEffects = new HashMap<>();
 
 	private WasmFuncSignature func;
+	private int cStackGlobal;
 	/* null in the value stack means Unknown */
 	private List<ValType> valueStack = new ArrayList<>();
 	private List<ControlFrame> controlStack = new ArrayList<>();
 
-	public WasmFunctionPreAnalysis(WasmFuncSignature func) {
+	public WasmFunctionPreAnalysis(WasmFuncSignature func, int cStackGlobal) {
 		this.func = func;
+		this.cStackGlobal = cStackGlobal;
 	}
 
 	private static class ProgramContext {
@@ -44,6 +46,7 @@ public class WasmFunctionPreAnalysis {
 		private static final String REG_BRTARGET = "ctx_br_target";
 		private static final String REG_IS_CASE = "ctx_is_case";
 		private static final String REG_IS_DEFAULT = "ctx_is_default";
+		private static final String REG_IS_GLOBAL_SP = "ctx_is_global_sp";
 		private static final String REG_CASE_INDEX = "ctx_case_index";
 
 		private static void setRegister(Program program, Address address, String name, long value) {
@@ -60,10 +63,18 @@ public class WasmFunctionPreAnalysis {
 			}
 		}
 
+		/**
+		 * Set the indentation level for this instruction. This is also necessary for
+		 * SLEIGH to detect the end of the function and stop disassembling.
+		 */
 		public static void setIndent(Program program, Address address, int value) {
 			setRegister(program, address, REG_INDENT, value);
 		}
 
+		/**
+		 * Set whether the instruction takes a 64-bit stack operand. This currently
+		 * affects local.*, global.* and select instructions.
+		 */
 		public static void setIsOp64(Program program, Address address, ValType type) {
 			int value;
 			if (type == null || type == ValType.i32 || type == ValType.f32) {
@@ -76,18 +87,38 @@ public class WasmFunctionPreAnalysis {
 			setRegister(program, address, REG_ISOP64, value);
 		}
 
+		/** Mark this global.* instruction as operating on the C stack pointer. */
+		public static void setIsGlobalSp(Program program, Address address) {
+			setRegister(program, address, REG_IS_GLOBAL_SP, 1);
+		}
+
+		/** Set the address that this instruction branches to. */
 		public static void setBranchTarget(Program program, Address address, Address target) {
 			setRegister(program, address, REG_BRTARGET, target.getOffset());
 		}
 
+		/**
+		 * Set the virtual stack pointer. Our SLEIGH converts stack operations into
+		 * register operations by using the stack pointer to index a register file.
+		 */
 		public static void setStackPointer(Program program, Address address, long value) {
 			setRegister(program, address, REG_SP, value);
 		}
 
+		/**
+		 * Set the stack effect of this instruction - which types it pushes and pops.
+		 * This is used to handle variable-argument instructions, which currently
+		 * includes branch, call and return instructions.
+		 */
 		public static void setStackEffect(Program program, Address address, int popHeight, ValType[] toPop, int pushHeight, ValType[] toPush) {
 			stackEffects.put(address, new StackEffect(popHeight, toPop, pushHeight, toPush));
 		}
 
+		/**
+		 * Disassemble this "instruction" as a case statement underneath a br_table. We
+		 * break out case statements individually in order to provide each one with a
+		 * unique branch target.
+		 */
 		public static void setBrTableCase(Program program, Address address, int index) {
 			setRegister(program, address, REG_IS_CASE, 1);
 			if (index == -1) {
@@ -549,6 +580,9 @@ public class WasmFunctionPreAnalysis {
 			long globalidx = readLeb128(reader);
 			ValType type = WasmAnalysis.getState(program).getGlobalType((int) globalidx);
 			ProgramContext.setIsOp64(program, instAddress, type);
+			if (globalidx == cStackGlobal) {
+				ProgramContext.setIsGlobalSp(program, instAddress);
+			}
 			pushValue(instAddress, type);
 			break;
 		}
@@ -556,6 +590,9 @@ public class WasmFunctionPreAnalysis {
 			long globalidx = readLeb128(reader);
 			ValType type = WasmAnalysis.getState(program).getGlobalType((int) globalidx);
 			ProgramContext.setIsOp64(program, instAddress, type);
+			if (globalidx == cStackGlobal) {
+				ProgramContext.setIsGlobalSp(program, instAddress);
+			}
 			popValue(instAddress, type);
 			break;
 		}

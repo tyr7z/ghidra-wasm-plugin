@@ -311,15 +311,21 @@ macro select64(sp1_32, sp2_64, sp3_64) {
 	local8 = sp1_64;
 }
 
-:""^indent^"global.get" global4 is opc=0x23; global4; sp0_32; indent; ctx_is_op64=0 {
+:""^indent^"global.get" global4 is opc=0x23; global4; sp0_32; indent; ctx_is_op64=0; ctx_is_global_sp=0 {
 	sp0_32 = global4;
+}
+:""^indent^"global.get" global4 is opc=0x23; global4; sp0_32; indent; ctx_is_op64=0; ctx_is_global_sp=1 {
+	sp0_32 = SP;
 }
 :""^indent^"global.get" global8 is opc=0x23; global8; sp0_64; indent; ctx_is_op64=1 {
 	sp0_64 = global8;
 }
 
-:""^indent^"global.set" global4 is opc=0x24; global4; sp1_32; indent; ctx_is_op64=0 {
+:""^indent^"global.set" global4 is opc=0x24; global4; sp1_32; indent; ctx_is_op64=0; ctx_is_global_sp=0 {
 	global4 = sp1_32;
+}
+:""^indent^"global.set" global4 is opc=0x24; global4; sp1_32; indent; ctx_is_op64=0; ctx_is_global_sp=1 {
+	SP = sp1_32;
 }
 :""^indent^"global.set" global8 is opc=0x24; global8; sp1_64; indent; ctx_is_op64=1 {
 	global8 = sp1_64;

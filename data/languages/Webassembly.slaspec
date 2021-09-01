@@ -306,6 +306,7 @@ define context contextreg
 	ctx_is_op64 = (32, 32) noflow
 	ctx_is_case = (33, 33) noflow
 	ctx_is_default = (34, 34) noflow
+	ctx_is_global_sp = (35, 35) noflow
 	ctx_br_target = (64, 95) noflow
 	ctx_sp = (96, 127) noflow
 ;
