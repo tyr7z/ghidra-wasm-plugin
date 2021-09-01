@@ -137,7 +137,7 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 	}
 
 	private static Address getProgramAddress(Program program, long offset) {
-		return program.getAddressFactory().getDefaultAddressSpace().getAddress(offset);
+		return program.getAddressFactory().getAddressSpace("program").getAddress(offset);
 	}
 	// #endregion
 

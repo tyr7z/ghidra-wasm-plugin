@@ -112,7 +112,7 @@ sp3_64: tmp_sp is ctx_sp [tmp_sp = 0x5000000000 + ctx_sp - 24;] {
 }
 
 br_target: ctx_br_target is ctx_br_target {
-	export *[ram]:4 ctx_br_target;
+	export *[program]:4 ctx_br_target;
 }
 
 funcidx: ULeb128 is ULeb128 {
