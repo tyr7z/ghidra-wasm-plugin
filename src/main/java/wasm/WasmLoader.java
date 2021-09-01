@@ -52,6 +52,7 @@ import wasm.format.WasmConstants;
 import wasm.format.WasmEnums.WasmExternalKind;
 import wasm.format.WasmHeader;
 import wasm.format.WasmModule;
+import wasm.format.sections.WasmNameSection;
 import wasm.format.sections.WasmSection;
 import wasm.format.sections.structures.WasmDataSegment;
 import wasm.format.sections.structures.WasmElementSegment;
@@ -165,6 +166,13 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 	}
 
 	public static String getFunctionName(WasmModule module, int funcidx) {
+		WasmNameSection nameSection = module.getNameSection();
+		if (nameSection != null) {
+			String name = nameSection.getFunctionName(funcidx);
+			if (name != null) {
+				return name;
+			}
+		}
 		List<WasmImportEntry> imports = module.getImports(WasmExternalKind.EXT_FUNCTION);
 		if (funcidx < imports.size()) {
 			return imports.get(funcidx).getName();
