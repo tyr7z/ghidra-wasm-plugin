@@ -59,8 +59,8 @@ public class WasmFunctionBody implements StructConverter {
 		Structure structure = StructureUtils.createStructure("function_body_" + instructionsOffset);
 		StructureUtils.addField(structure, bodySize, "body_size");
 		StructureUtils.addField(structure, localCount, "local_count");
-		if (localCount.asLong() > 0) {
-			StructureUtils.addArrayField(structure, locals.get(0).toDataType(), locals.size(), "locals");
+		for (int i = 0; i < localCount.asLong(); i++) {
+			StructureUtils.addField(structure, locals.get(i).toDataType(), "compressed_locals_" + i);
 		}
 		StructureUtils.addArrayField(structure, BYTE, instructions.length, "instructions");
 		return structure;
