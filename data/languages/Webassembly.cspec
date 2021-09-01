@@ -4,13 +4,13 @@
 
 <compiler_spec>
    <data_organization>
-    <char_type signed="false" />
+    <char_type signed="true" />
     <char_size value="1" />
     <short_size value="2" />
     <pointer_size value="4"/>
     <integer_size value = "4"/>
     <float_size value="4" />
-    <long_size value="8" />
+    <long_size value="4" />
     <double_size value="8" />
   </data_organization>
   <global>
