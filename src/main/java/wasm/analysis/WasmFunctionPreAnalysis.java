@@ -337,6 +337,7 @@ public class WasmFunctionPreAnalysis {
 		popValues(instAddress, arguments);
 		ProgramContext.setStackEffect(program, instAddress, arguments, arguments);
 		block.addBranch(program, valueStack, instAddress);
+		pushValues(instAddress, arguments);
 	}
 
 	private void memoryLoad(Program program, BinaryReader reader, Address instAddress, ValType destType) throws IOException {
@@ -431,9 +432,6 @@ public class WasmFunctionPreAnalysis {
 			long labelidx = readLeb128(reader);
 			popValue(instAddress, ValType.i32);
 			branchToBlock(program, instAddress, labelidx);
-			ControlFrame block = getBlock(instAddress, labelidx);
-			ValType[] arguments = block.getBranchArguments();
-			pushValues(instAddress, arguments);
 			break;
 		}
 		case 0x0E: /* br_table l* l */ {
