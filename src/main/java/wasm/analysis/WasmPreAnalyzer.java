@@ -69,6 +69,13 @@ public class WasmPreAnalyzer extends AbstractAnalyzer {
 			if (func.isImport()) {
 				continue;
 			}
+			/*
+			 * TODO: Support reanalyzing changed functions, to handle patches and
+			 * significant function changes.
+			 */
+			if (state.getFunctionPreAnalysis(function) != null) {
+				continue;
+			}
 
 			BinaryReader codeReader = new BinaryReader(new MemoryByteProvider(program.getMemory(), func.getStartAddr()), true);
 			WasmFunctionPreAnalysis preAnalysis = new WasmFunctionPreAnalysis(func, cStackGlobal);
