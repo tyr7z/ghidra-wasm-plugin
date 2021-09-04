@@ -22,7 +22,10 @@ public class WasmImportEntry implements StructConverter {
 	private WasmResizableLimits memory_type;
 	private WasmGlobalType global_type;
 
+	private long startOffset, endOffset;
+
 	public WasmImportEntry(BinaryReader reader) throws IOException {
+		startOffset = reader.getPointerIndex();
 		module = new WasmName(reader);
 		field = new WasmName(reader);
 		kind = WasmExternalKind.values()[reader.readNextByte()];
@@ -42,6 +45,7 @@ public class WasmImportEntry implements StructConverter {
 		default:
 			break;
 		}
+		endOffset = reader.getPointerIndex();
 	}
 
 	public WasmExternalKind getKind() {
@@ -82,6 +86,14 @@ public class WasmImportEntry implements StructConverter {
 
 	public String getName() {
 		return field.getValue();
+	}
+
+	public long getEntryOffset() {
+		return startOffset;
+	}
+
+	public long getEntrySize() {
+		return endOffset - startOffset;
 	}
 
 	@Override

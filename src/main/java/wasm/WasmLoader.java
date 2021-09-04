@@ -66,15 +66,7 @@ import wasm.format.sections.structures.WasmTableType;
 
 public class WasmLoader extends AbstractLibrarySupportLoader {
 
-	public final static long HEADER_BASE = 0x10000000;
-	public final static long METHOD_ADDRESS = 0x20000000;
-	public final static long MODULE_BASE = 0x30000000;
-	public final static long IMPORTS_BASE = 0x40000000;
-	// ^ this must be later than METHOD_ADDRESS since we assume that
-	// program.getFunctions(true) returns non-imported functions first
-	public final static long IMPORT_STUB_LEN = 16;
-	// Addresses for the raw data/element segments
-	public final static long DATA_BASE = 0x50000000;
+	public final static long CODE_BASE = 0x80000000;
 
 	@Override
 	public String getName() {
@@ -99,10 +91,10 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 	public static long getFunctionAddressOffset(WasmModule module, int funcidx) {
 		List<WasmImportEntry> imports = module.getImports(WasmExternalKind.EXT_FUNCTION);
 		if (funcidx < imports.size()) {
-			return IMPORTS_BASE + IMPORT_STUB_LEN * funcidx;
+			return CODE_BASE + imports.get(funcidx).getEntryOffset();
 		} else {
 			WasmFunctionBody functionBody = module.getNonImportedFunctionBodies().get(funcidx - imports.size());
-			return METHOD_ADDRESS + functionBody.getOffset();
+			return CODE_BASE + functionBody.getOffset();
 		}
 	}
 
@@ -113,7 +105,7 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 	public static long getFunctionSize(Program program, WasmModule module, int funcidx) {
 		List<WasmImportEntry> imports = module.getImports(WasmExternalKind.EXT_FUNCTION);
 		if (funcidx < imports.size()) {
-			return IMPORT_STUB_LEN;
+			return imports.get(funcidx).getEntrySize();
 		} else {
 			WasmFunctionBody functionBody = module.getNonImportedFunctionBodies().get(funcidx - imports.size());
 			return functionBody.getInstructions().length;
@@ -130,7 +122,7 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 			throw new IllegalArgumentException("non-zero memidx is not supported");
 		}
 
-		return program.getAddressFactory().getAddressSpace("mem0").getAddress(offset);
+		return program.getAddressFactory().getAddressSpace("ram").getAddress(offset);
 	}
 
 	public static Address getGlobalAddress(Program program, int globalidx) {
@@ -138,7 +130,7 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 	}
 
 	private static Address getProgramAddress(Program program, long offset) {
-		return program.getAddressFactory().getAddressSpace("program").getAddress(offset);
+		return program.getAddressFactory().getAddressSpace("ram").getAddress(offset);
 	}
 	// #endregion
 
@@ -214,8 +206,9 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 		return block;
 	}
 
-	private static void createFunctionBodyBlock(Program program, FileBytes fileBytes, int funcidx, long offset, long length) {
-		Address start = getProgramAddress(program, METHOD_ADDRESS + offset);
+	private static void createFunctionBodyBlock(Program program, FileBytes fileBytes, long offset, WasmModule module, int funcidx) {
+		Address start = getFunctionAddress(program, module, funcidx);
+		long length = getFunctionSize(program, module, funcidx);
 		String name = ".function" + funcidx;
 		try {
 			MemoryBlock block = program.getMemory().createInitializedBlock(name, start, fileBytes, offset, length, false);
@@ -241,10 +234,11 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 		}
 	}
 
-	private static void createImportStubBlock(Program program, long length) {
-		Address address = getProgramAddress(program, IMPORTS_BASE);
+	private static void createImportStubBlock(Program program, WasmModule module, int funcidx) {
+		Address start = getFunctionAddress(program, module, funcidx);
+		long length = getFunctionSize(program, module, funcidx);
 		try {
-			MemoryBlock block = program.getMemory().createUninitializedBlock(MemoryBlock.EXTERNAL_BLOCK_NAME, address, length, false);
+			MemoryBlock block = program.getMemory().createUninitializedBlock(".import.func" + funcidx, start, length, false);
 			block.setRead(true);
 			block.setWrite(false);
 			block.setExecute(true);
@@ -258,9 +252,6 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 	private void loadFunctions(Program program, FileBytes fileBytes, WasmModule module, TaskMonitor monitor) {
 		monitor.setMessage("Loading functions");
 		List<WasmImportEntry> imports = module.getImports(WasmExternalKind.EXT_FUNCTION);
-		if (imports.size() > 0) {
-			createImportStubBlock(program, imports.size() * IMPORT_STUB_LEN);
-		}
 		List<WasmFunctionBody> functionBodies = module.getNonImportedFunctionBodies();
 		int numFunctions = imports.size() + functionBodies.size();
 
@@ -276,9 +267,11 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 			String functionName = getFunctionName(module, funcidx);
 			Namespace functionNamespace = getFunctionNamespace(program, module, funcidx);
 
-			if (funcidx >= imports.size()) {
+			if (funcidx < imports.size()) {
+				createImportStubBlock(program, module, funcidx);
+			} else {
 				WasmFunctionBody body = functionBodies.get(funcidx - imports.size());
-				createFunctionBodyBlock(program, fileBytes, funcidx, body.getOffset(), body.getInstructions().length);
+				createFunctionBodyBlock(program, fileBytes, body.getOffset(), module, funcidx);
 			}
 
 			try {
@@ -446,7 +439,7 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 				continue;
 			}
 
-			Address dataStart = getProgramAddress(program, DATA_BASE + dataSegment.getFileOffset());
+			Address dataStart = getProgramAddress(program, CODE_BASE + dataSegment.getFileOffset());
 			try {
 				/* Create a block for the data itself, for both passive and active segments */
 				MemoryBlock block = program.getMemory().createInitializedBlock(".data" + dataidx, dataStart, fileBytes, dataSegment.getFileOffset(), dataSegment.getSize(), false);

@@ -14,12 +14,11 @@
     <double_size value="8" />
   </data_organization>
   <global>
-    <range space="program"/>
     <range space="global"/>
     <range space="table"/>
-    <range space="mem0"/>
+    <range space="ram"/>
   </global>
-  <stackpointer register="SP" space="mem0"/>
+  <stackpointer register="SP" space="ram"/>
   <default_proto>
     <prototype name="__wasm" extrapop="0" stackshift="0">
       <input>
