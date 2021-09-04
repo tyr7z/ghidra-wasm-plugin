@@ -126,6 +126,7 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 
 	public static Address getMemoryAddress(Program program, int memidx, long offset) {
 		if (memidx != 0) {
+			/* only handle memory 0 for now */
 			throw new IllegalArgumentException("non-zero memidx is not supported");
 		}
 
@@ -259,13 +260,14 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 		}
 	}
 
-	private static void createMemoryBlock(Program program, int memidx, long length) {
+	private static void createMemoryBlock(Program program, int memidx, long length, TaskMonitor monitor) {
 		Address dataStart = getMemoryAddress(program, memidx, 0);
 		try {
-			MemoryBlock block = program.getMemory().createUninitializedBlock(".mem" + memidx, dataStart, length, false);
+			MemoryBlock block = program.getMemory().createInitializedBlock(".mem" + memidx, dataStart, length, (byte) 0x00, monitor, false);
 			block.setRead(true);
 			block.setWrite(true);
 			block.setExecute(false);
+			block.setSourceName("Wasm Memory");
 		} catch (Exception e) {
 			Msg.error(WasmLoader.class, "Failed to create memory block mem" + memidx, e);
 		}
@@ -281,43 +283,6 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 			block.setComment("NOTE: This block is artificial and is used to represent imported functions");
 		} catch (Exception e) {
 			Msg.error(WasmLoader.class, "Failed to create import block", e);
-		}
-	}
-
-	/**
-	 * Delete any overlapping portions of an existing memory block. Assumes that
-	 * only one memory block overlaps the given range.
-	 * 
-	 * @param program
-	 * @param startAddress
-	 *            First address to clear, inclusive
-	 * @param endAddress
-	 *            Last address to clear, inclusive
-	 * @param monitor
-	 * @throws Exception
-	 */
-	private static void removeOverlappingMemory(Program program, Address startAddress, Address endAddress, TaskMonitor monitor) throws Exception {
-		Memory memory = program.getMemory();
-
-		/* Delete any overlapping portions of an existing block */
-		MemoryBlock b1 = memory.getBlock(startAddress);
-		if (b1 != null && !b1.getStart().equals(startAddress)) {
-			String b1name = b1.getName();
-			memory.split(b1, startAddress);
-			/* remove automatically-added ".split" suffix */
-			memory.getBlock(startAddress).setName(b1name);
-		}
-
-		MemoryBlock b2 = memory.getBlock(endAddress);
-		if (b2 != null && !b2.getEnd().equals(endAddress)) {
-			String b2name = b1.getName();
-			memory.split(b2, endAddress.add(1));
-			memory.getBlock(endAddress.add(1)).setName(b2name);
-		}
-
-		MemoryBlock toDelete = memory.getBlock(startAddress);
-		if (toDelete != null) {
-			memory.removeBlock(toDelete, monitor);
 		}
 	}
 	// #endregion
@@ -426,7 +391,7 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 			try {
 				loadElementsToTable(program, module, elemidx, tableidx, offset, monitor);
 			} catch (Exception e) {
-				Msg.error(this, "Failed to process element segment " + elemidx, e);
+				Msg.error(this, "Failed to initialize table " + tableidx + " with element segment " + elemidx + " at offset " + offset, e);
 			}
 		}
 	}
@@ -445,15 +410,8 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 	 */
 	public static void loadDataToMemory(Program program, WasmModule module, int dataidx, int memidx, long offset, TaskMonitor monitor) throws Exception {
 		WasmDataSegment dataSegment = module.getDataSegments().get(dataidx);
-		MemoryBlock dataBlock = program.getMemory().getBlock(".data" + dataidx);
-		FileBytes fileBytes = dataBlock.getSourceInfos().get(0).getFileBytes().get();
-
 		Address memStart = getMemoryAddress(program, memidx, offset);
-		removeOverlappingMemory(program, memStart, memStart.add(dataSegment.getSize() - 1), monitor);
-		MemoryBlock block = program.getMemory().createInitializedBlock(".mem" + memidx + ".data" + dataidx, memStart, fileBytes, dataSegment.getFileOffset(), dataSegment.getSize(), false);
-		block.setRead(true);
-		block.setWrite(true);
-		block.setExecute(false);
+		program.getMemory().setBytes(memStart, dataSegment.getData());
 	}
 
 	private void loadMemories(Program program, FileBytes fileBytes, WasmModule module, TaskMonitor monitor) {
@@ -462,7 +420,7 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 		int numMemories = imports.size() + memories.size();
 
 		for (int memidx = 0; memidx < numMemories; memidx++) {
-			if (memidx > 0) {
+			if (memidx != 0) {
 				/* only handle memory 0 for now */
 				continue;
 			}
@@ -472,7 +430,7 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 			} else {
 				mem = memories.get(memidx - imports.size());
 			}
-			createMemoryBlock(program, memidx, mem.getInitial() * 65536L);
+			createMemoryBlock(program, memidx, mem.getInitial() * 65536L, monitor);
 		}
 
 		/* Load data into memory */
@@ -480,8 +438,10 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 		for (int dataidx = 0; dataidx < dataSegments.size(); dataidx++) {
 			WasmDataSegment dataSegment = dataSegments.get(dataidx);
 			int memidx = (int) dataSegment.getIndex();
-			if (memidx != 0)
+			if (memidx != 0) {
+				/* only handle memory 0 for now */
 				continue;
+			}
 
 			Address dataStart = getProgramAddress(program, DATA_BASE + dataSegment.getFileOffset());
 			try {
@@ -503,7 +463,7 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 				loadDataToMemory(program, module, dataidx, memidx, offset, monitor);
 			} catch (Exception e) {
 				Address memStart = getMemoryAddress(program, memidx, offset);
-				Msg.error(this, "Failed to create data segment " + dataidx + " in memory " + memidx + " at " + memStart, e);
+				Msg.error(this, "Failed to initialize memory " + memidx + " with data segment " + dataidx + " at " + memStart, e);
 			}
 		}
 	}
