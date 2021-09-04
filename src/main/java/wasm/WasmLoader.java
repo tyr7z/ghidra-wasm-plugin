@@ -202,45 +202,76 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 		return block;
 	}
 
-	private static void createFunctionBodyBlock(Program program, FileBytes fileBytes, long offset, WasmModule module, int funcidx) {
-		Address start = getFunctionAddress(program, module, funcidx);
-		long length = getFunctionSize(program, module, funcidx);
-		String name = ".function" + funcidx;
+	private static void createImportStubBlock(Program program, Address startAddress, long length, int funcidx) {
 		try {
-			MemoryBlock block = program.getMemory().createInitializedBlock(name, start, fileBytes, offset, length, false);
+			MemoryBlock block = program.getMemory().createUninitializedBlock(".function" + funcidx, startAddress, length, false);
+			block.setRead(true);
+			block.setWrite(false);
+			block.setExecute(true);
+			block.setComment("NOTE: This block is artificial and is used to represent imported functions");
+		} catch (Exception e) {
+			Msg.error(WasmLoader.class, "Failed to create imported function block " + funcidx + " at " + startAddress, e);
+		}
+	}
+
+	private static void createFunctionBodyBlock(Program program, FileBytes fileBytes, long fileOffset, Address startAddress, long length, int funcidx) {
+		try {
+			MemoryBlock block = program.getMemory().createInitializedBlock(".function" + funcidx, startAddress, fileBytes, fileOffset, length, false);
 			block.setRead(true);
 			block.setWrite(false);
 			block.setExecute(true);
 			block.setSourceName("Wasm Function");
 		} catch (Exception e) {
-			Msg.error(WasmLoader.class, "Failed to create " + name + " block", e);
+			Msg.error(WasmLoader.class, "Failed to create function block " + funcidx + " at " + startAddress, e);
+		}
+	}
+
+	private static void createTableBlock(Program program, DataType elementDataType, long numElements, int tableidx, TaskMonitor monitor) {
+		long byteSize = elementDataType.getLength() * numElements;
+		Address dataStart = getTableAddress(program, tableidx, 0);
+		try {
+			MemoryBlock block = program.getMemory().createInitializedBlock(".table" + tableidx, dataStart, byteSize, (byte) 0xff, monitor, false);
+			block.setRead(true);
+			block.setWrite(true);
+			block.setExecute(false);
+			DataType tableDataType = new ArrayDataType(elementDataType, (int) numElements, elementDataType.getLength());
+			createData(program, program.getListing(), dataStart, tableDataType);
+			program.getSymbolTable().createLabel(dataStart, "table" + tableidx, SourceType.IMPORTED);
+		} catch (Exception e) {
+			Msg.error(WasmLoader.class, "Failed to create table block " + tableidx + " at " + dataStart, e);
 		}
 	}
 
 	private static void createMemoryBlock(Program program, int memidx, long length, TaskMonitor monitor) {
 		Address dataStart = getMemoryAddress(program, memidx, 0);
 		try {
-			MemoryBlock block = program.getMemory().createInitializedBlock(".mem" + memidx, dataStart, length, (byte) 0x00, monitor, false);
+			MemoryBlock block = program.getMemory().createInitializedBlock(".memory" + memidx, dataStart, length, (byte) 0x00, monitor, false);
 			block.setRead(true);
 			block.setWrite(true);
 			block.setExecute(false);
 			block.setSourceName("Wasm Memory");
 		} catch (Exception e) {
-			Msg.error(WasmLoader.class, "Failed to create memory block mem" + memidx, e);
+			Msg.error(WasmLoader.class, "Failed to create memory block " + memidx + " at " + dataStart, e);
 		}
 	}
 
-	private static void createImportStubBlock(Program program, WasmModule module, int funcidx) {
-		Address start = getFunctionAddress(program, module, funcidx);
-		long length = getFunctionSize(program, module, funcidx);
+	private static void createGlobalBlock(Program program, DataType dataType, byte[] initBytes, int globalidx, int mutability, TaskMonitor monitor) {
+		Address dataStart = getGlobalAddress(program, globalidx);
 		try {
-			MemoryBlock block = program.getMemory().createUninitializedBlock(".import.func" + funcidx, start, length, false);
+			MemoryBlock block;
+			if (initBytes == null) {
+				block = program.getMemory().createUninitializedBlock(".global" + globalidx, dataStart, dataType.getLength(), false);
+			} else {
+				block = program.getMemory().createInitializedBlock(".global" + globalidx, dataStart, dataType.getLength(), (byte) 0xff, monitor, false);
+				program.getMemory().setBytes(dataStart, initBytes);
+			}
 			block.setRead(true);
-			block.setWrite(false);
-			block.setExecute(true);
-			block.setComment("NOTE: This block is artificial and is used to represent imported functions");
+			block.setWrite((mutability != 0) ? true : false);
+			block.setExecute(false);
+			createData(program, program.getListing(), dataStart, dataType);
+			program.getSymbolTable().createLabel(dataStart, "global" + globalidx, SourceType.IMPORTED);
 		} catch (Exception e) {
-			Msg.error(WasmLoader.class, "Failed to create import block", e);
+			Msg.error(WasmLoader.class, "Failed to create global block " + globalidx + " at " + dataStart);
 		}
 	}
 	// #endregion
@@ -259,20 +290,20 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 			monitor.incrementProgress(1);
 
 			Address startAddress = getFunctionAddress(program, module, funcidx);
-			Address endAddress = startAddress.add(getFunctionSize(program, module, funcidx) - 1);
+			long functionLength = getFunctionSize(program, module, funcidx);
 			String functionName = getFunctionName(module, funcidx);
 			Namespace functionNamespace = getFunctionNamespace(program, module, funcidx);
 
 			if (funcidx < imports.size()) {
-				createImportStubBlock(program, module, funcidx);
+				createImportStubBlock(program, startAddress, functionLength, funcidx);
 			} else {
 				WasmFunctionBody body = functionBodies.get(funcidx - imports.size());
-				createFunctionBodyBlock(program, fileBytes, body.getOffset(), module, funcidx);
+				createFunctionBodyBlock(program, fileBytes, body.getOffset(), startAddress, functionLength, funcidx);
 			}
 
 			try {
 				program.getFunctionManager().createFunction(functionName, functionNamespace,
-						startAddress, new AddressSet(startAddress, endAddress), SourceType.IMPORTED);
+						startAddress, new AddressSet(startAddress, startAddress.add(functionLength - 1)), SourceType.IMPORTED);
 				program.getSymbolTable().createLabel(startAddress, functionName, functionNamespace, SourceType.IMPORTED);
 			} catch (Exception e) {
 				Msg.error(this, "Failed to create function index " + funcidx + "(" + functionName + ") at " + startAddress, e);
@@ -331,20 +362,7 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 				table = tables.get(tableidx - imports.size());
 			}
 
-			DataType dataType = table.getElementDataType();
-			long numElements = table.getLimits().getInitial();
-			long byteSize = table.getElementType().getSize() * numElements;
-			Address dataStart = getTableAddress(program, tableidx, 0);
-			try {
-				MemoryBlock block = program.getMemory().createInitializedBlock(".table" + tableidx, dataStart, byteSize, (byte) 0xff, monitor, false);
-				block.setRead(true);
-				block.setWrite(true);
-				block.setExecute(false);
-				createData(program, program.getListing(), dataStart, new ArrayDataType(dataType, (int) numElements, dataType.getLength()));
-				program.getSymbolTable().createLabel(dataStart, "table" + tableidx, SourceType.IMPORTED);
-			} catch (Exception e) {
-				Msg.error(this, "Failed to create table " + tableidx + " at " + dataStart, e);
-			}
+			createTableBlock(program, table.getElementDataType(), table.getLimits().getInitial(), tableidx, monitor);
 		}
 
 		/* Load active element segments into tables */
@@ -474,26 +492,10 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 				initRef = entry.asAddress(program, module);
 			}
 
-			Address dataStart = getGlobalAddress(program, globalidx);
-			try {
-				MemoryBlock block;
-				DataType dataType = globalType.getType().asDataType();
-				if (initBytes == null) {
-					block = program.getMemory().createUninitializedBlock(".global" + globalidx, dataStart, dataType.getLength(), false);
-				} else {
-					block = program.getMemory().createInitializedBlock(".global" + globalidx, dataStart, dataType.getLength(), (byte) 0xff, monitor, false);
-					program.getMemory().setBytes(dataStart, initBytes);
-				}
-				block.setRead(true);
-				block.setWrite((globalType.getMutability() != 0) ? true : false);
-				block.setExecute(false);
-				createData(program, program.getListing(), dataStart, dataType);
-				program.getSymbolTable().createLabel(dataStart, "global" + globalidx, SourceType.IMPORTED);
-			} catch (Exception e) {
-				Msg.error(this, "Failed to create global " + globalidx + " at " + dataStart, e);
-			}
+			createGlobalBlock(program, globalType.getType().asDataType(), initBytes, globalidx, globalType.getMutability(), monitor);
 
 			if (initRef != null) {
+				Address dataStart = getGlobalAddress(program, globalidx);
 				program.getReferenceManager().removeAllReferencesFrom(dataStart);
 				program.getReferenceManager().addMemoryReference(dataStart, initRef, RefType.DATA, SourceType.IMPORTED, 0);
 			}
