@@ -5,10 +5,12 @@ import java.io.IOException;
 import ghidra.app.util.bin.BinaryReader;
 import ghidra.app.util.bin.StructConverter;
 import ghidra.app.util.bin.format.dwarf4.LEB128;
+import ghidra.program.model.address.Address;
 import ghidra.program.model.data.DataType;
 import ghidra.program.model.data.Float4DataType;
 import ghidra.program.model.data.Float8DataType;
 import ghidra.program.model.data.Structure;
+import ghidra.program.model.listing.Program;
 import ghidra.util.exception.DuplicateNameException;
 import wasm.WasmLoader;
 import wasm.format.StructureUtils;
@@ -136,9 +138,9 @@ public final class ConstantExpression implements StructConverter {
 		}
 	}
 
-	public Long asReference(WasmModule module) {
+	public Address asAddress(Program program, WasmModule module) {
 		if (type == ConstantInstruction.REF_FUNC) {
-			return WasmLoader.getFunctionAddressOffset(module, (int) ((LEB128) value).asLong());
+			return WasmLoader.getFunctionAddress(program, module, (int) ((LEB128) value).asLong());
 		}
 		return null;
 	}

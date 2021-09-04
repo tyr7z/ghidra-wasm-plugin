@@ -98,10 +98,6 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 		}
 	}
 
-	public static Address getFunctionAddress(Program program, WasmModule module, int funcidx) {
-		return getProgramAddress(program, getFunctionAddressOffset(module, funcidx));
-	}
-
 	public static long getFunctionSize(Program program, WasmModule module, int funcidx) {
 		List<WasmImportEntry> imports = module.getImports(WasmExternalKind.EXT_FUNCTION);
 		if (funcidx < imports.size()) {
@@ -110,6 +106,10 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 			WasmFunctionBody functionBody = module.getNonImportedFunctionBodies().get(funcidx - imports.size());
 			return functionBody.getInstructions().length;
 		}
+	}
+
+	public static Address getFunctionAddress(Program program, WasmModule module, int funcidx) {
+		return program.getAddressFactory().getAddressSpace("ram").getAddress(getFunctionAddressOffset(module, funcidx));
 	}
 
 	public static Address getTableAddress(Program program, int tableidx, long itemIndex) {
@@ -127,10 +127,6 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 
 	public static Address getGlobalAddress(Program program, int globalidx) {
 		return program.getAddressFactory().getAddressSpace("global").getAddress(((long) globalidx) * 8);
-	}
-
-	private static Address getProgramAddress(Program program, long offset) {
-		return program.getAddressFactory().getAddressSpace("ram").getAddress(offset);
 	}
 	// #endregion
 
@@ -303,16 +299,14 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 		if (initBytes == null)
 			return;
 
-		Address dataStart = getTableAddress(program, tableidx, offset);
-		program.getMemory().setBytes(dataStart, initBytes);
+		program.getMemory().setBytes(getTableAddress(program, tableidx, offset), initBytes);
 
-		Long[] refs = elemSegment.getAddresses(module);
+		Address[] refs = elemSegment.getAddresses(program, module);
 		for (int i = 0; i < refs.length; i++) {
 			if (refs[i] != null) {
-				Address refAddr = getProgramAddress(program, refs[i]);
-				Address elementAddr = dataStart.add(i * 8);
+				Address elementAddr = getTableAddress(program, tableidx, offset + i);
 				program.getReferenceManager().removeAllReferencesFrom(elementAddr);
-				program.getReferenceManager().addMemoryReference(elementAddr, refAddr, RefType.DATA, SourceType.IMPORTED, 0);
+				program.getReferenceManager().addMemoryReference(elementAddr, refs[i], RefType.DATA, SourceType.IMPORTED, 0);
 			}
 		}
 	}
@@ -339,7 +333,7 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 
 			DataType dataType = table.getElementDataType();
 			long numElements = table.getLimits().getInitial();
-			long byteSize = 8 * numElements;
+			long byteSize = table.getElementType().getSize() * numElements;
 			Address dataStart = getTableAddress(program, tableidx, 0);
 			try {
 				MemoryBlock block = program.getMemory().createInitializedBlock(".table" + tableidx, dataStart, byteSize, (byte) 0xff, monitor, false);
@@ -468,7 +462,7 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 
 			WasmGlobalType globalType;
 			byte[] initBytes;
-			Long initRef;
+			Address initRef;
 			if (globalidx < imports.size()) {
 				globalType = imports.get(globalidx).getGlobalType();
 				initBytes = null;
@@ -477,7 +471,7 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 				WasmGlobalEntry entry = globals.get(globalidx - imports.size());
 				globalType = entry.getGlobalType();
 				initBytes = entry.asBytes(module);
-				initRef = entry.asReference(module);
+				initRef = entry.asAddress(program, module);
 			}
 
 			Address dataStart = getGlobalAddress(program, globalidx);
@@ -500,9 +494,8 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 			}
 
 			if (initRef != null) {
-				Address refAddr = getProgramAddress(program, initRef);
 				program.getReferenceManager().removeAllReferencesFrom(dataStart);
-				program.getReferenceManager().addMemoryReference(dataStart, refAddr, RefType.DATA, SourceType.IMPORTED, 0);
+				program.getReferenceManager().addMemoryReference(dataStart, initRef, RefType.DATA, SourceType.IMPORTED, 0);
 			}
 		}
 	}
