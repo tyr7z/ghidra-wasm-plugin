@@ -350,6 +350,38 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 		}
 	}
 
+	/**
+	 * Copy element segment to table.
+	 * 
+	 * This is public so that it can be called after loading, e.g. to load a passive
+	 * element segment once the dynamic table index and offset are known.
+	 *
+	 * For example, this could be called from a script as follows:
+	 * 
+	 * WasmLoader.loadElementsToTable(getCurrentProgram(),
+	 * WasmAnalysis.getState(getCurrentProgram()).getModule(), elemidx, tableidx, offset, new ConsoleTaskMonitor())
+	 */
+	public static void loadElementsToTable(Program program, WasmModule module, int elemidx, int tableidx, long offset, TaskMonitor monitor) throws Exception {
+		WasmElementSegment elemSegment = module.getElementSegments().get(elemidx);
+
+		byte[] initBytes = elemSegment.getInitData(module);
+		if (initBytes == null)
+			return;
+
+		Address dataStart = getTableAddress(program, tableidx, offset);
+		program.getMemory().setBytes(dataStart, initBytes);
+
+		Long[] refs = elemSegment.getAddresses(module);
+		for (int i = 0; i < refs.length; i++) {
+			if (refs[i] != null) {
+				Address refAddr = getProgramAddress(program, refs[i]);
+				Address elementAddr = dataStart.add(i * 8);
+				program.getReferenceManager().removeAllReferencesFrom(elementAddr);
+				program.getReferenceManager().addMemoryReference(elementAddr, refAddr, RefType.DATA, SourceType.IMPORTED, 0);
+			}
+		}
+	}
+
 	private void loadTables(Program program, FileBytes fileBytes, WasmModule module, TaskMonitor monitor) {
 		List<WasmImportEntry> imports = module.getImports(WasmExternalKind.EXT_TABLE);
 		List<WasmTableType> tables = module.getNonImportedTables();
@@ -385,30 +417,14 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 			WasmElementSegment elemSegment = entries.get(elemidx);
 			int tableidx = (int) elemSegment.getTableIndex();
 
-			byte[] initBytes = elemSegment.getInitData(module);
-			if (initBytes == null)
-				continue;
-
-			// TODO: load passive/declarative element segments to a special region of memory
 			Long offset = elemSegment.getOffset();
 			if (offset == null)
 				continue;
 
-			Address dataStart = getTableAddress(program, tableidx, offset);
 			try {
-				program.getMemory().setBytes(dataStart, initBytes);
+				loadElementsToTable(program, module, elemidx, tableidx, offset, monitor);
 			} catch (Exception e) {
 				Msg.error(this, "Failed to process element segment " + elemidx, e);
-			}
-
-			Long[] refs = elemSegment.getAddresses(module);
-			for (int i = 0; i < refs.length; i++) {
-				if (refs[i] != null) {
-					Address refAddr = getProgramAddress(program, refs[i]);
-					Address elementAddr = dataStart.add(i * 8);
-					program.getReferenceManager().removeAllReferencesFrom(elementAddr);
-					program.getReferenceManager().addMemoryReference(elementAddr, refAddr, RefType.DATA, SourceType.IMPORTED, 0);
-				}
 			}
 		}
 	}

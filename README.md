@@ -22,6 +22,21 @@ Additionally, parameter passing and returns are handled by virtual input/output
 registers which are copied to/from the stack and locals registers via Pcode
 injection.
 
+## Tips
+
+- Element segments may be passive, or have offset expressions that depend on
+imported globals. In this case, the element segments are not automatically
+loaded to the table. You can manually load these segments by calling
+`WasmLoader.loadElementsToTable`. For example, to load element segment #0 to
+table #1 at offset 2 in Python:
+```python
+from wasm import WasmLoader
+from wasm.analysis import WasmAnalysis
+from ghidra.util.task import ConsoleTaskMonitor
+monitor = ConsoleTaskMonitor()
+WasmLoader.loadElementsToTable(currentProgram, WasmAnalysis.getState(currentProgram).module, 0, 1, 2, monitor)
+```
+
 ## Limitations
 
 - Currently, inlining functions (via marking them "In Line") is not supported

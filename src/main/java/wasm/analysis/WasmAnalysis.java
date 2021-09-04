@@ -60,6 +60,10 @@ public class WasmAnalysis implements AnalysisState {
 		this.functions = getFunctions(program, module);
 	}
 
+	public WasmModule getModule() {
+		return module;
+	}
+
 	public List<WasmFuncSignature> getFunctions() {
 		return Collections.unmodifiableList(functions);
 	}
