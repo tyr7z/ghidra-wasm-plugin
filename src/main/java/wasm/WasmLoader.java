@@ -256,6 +256,7 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 	// #endregion
 
 	private void loadFunctions(Program program, FileBytes fileBytes, WasmModule module, TaskMonitor monitor) {
+		monitor.setMessage("Loading functions");
 		List<WasmImportEntry> imports = module.getImports(WasmExternalKind.EXT_FUNCTION);
 		if (imports.size() > 0) {
 			createImportStubBlock(program, imports.size() * IMPORT_STUB_LEN);
@@ -263,7 +264,13 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 		List<WasmFunctionBody> functionBodies = module.getNonImportedFunctionBodies();
 		int numFunctions = imports.size() + functionBodies.size();
 
+		monitor.initialize(numFunctions);
 		for (int funcidx = 0; funcidx < numFunctions; funcidx++) {
+			if (monitor.isCancelled()) {
+				break;
+			}
+			monitor.incrementProgress(1);
+
 			Address startAddress = getFunctionAddress(program, module, funcidx);
 			Address endAddress = startAddress.add(getFunctionSize(program, module, funcidx) - 1);
 			String functionName = getFunctionName(module, funcidx);
@@ -318,11 +325,18 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 	}
 
 	private void loadTables(Program program, FileBytes fileBytes, WasmModule module, TaskMonitor monitor) {
+		monitor.setMessage("Loading tables");
 		List<WasmImportEntry> imports = module.getImports(WasmExternalKind.EXT_TABLE);
 		List<WasmTableType> tables = module.getNonImportedTables();
 		int numTables = imports.size() + tables.size();
 
+		monitor.initialize(numTables);
 		for (int tableidx = 0; tableidx < numTables; tableidx++) {
+			if (monitor.isCancelled()) {
+				break;
+			}
+			monitor.incrementProgress(1);
+
 			WasmTableType table;
 			if (tableidx < imports.size()) {
 				table = imports.get(tableidx).getTableType();
@@ -347,8 +361,15 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 		}
 
 		/* Load elements */
+		monitor.setMessage("Loading table elements");
 		List<WasmElementSegment> entries = module.getElementSegments();
+		monitor.initialize(entries.size());
 		for (int elemidx = 0; elemidx < entries.size(); elemidx++) {
+			if (monitor.isCancelled()) {
+				break;
+			}
+			monitor.incrementProgress(1);
+
 			WasmElementSegment elemSegment = entries.get(elemidx);
 			int tableidx = (int) elemSegment.getTableIndex();
 
@@ -383,11 +404,18 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 	}
 
 	private void loadMemories(Program program, FileBytes fileBytes, WasmModule module, TaskMonitor monitor) {
+		monitor.setMessage("Loading memories");
 		List<WasmImportEntry> imports = module.getImports(WasmExternalKind.EXT_MEMORY);
 		List<WasmResizableLimits> memories = module.getNonImportedMemories();
 		int numMemories = imports.size() + memories.size();
 
+		monitor.initialize(numMemories);
 		for (int memidx = 0; memidx < numMemories; memidx++) {
+			if (monitor.isCancelled()) {
+				break;
+			}
+			monitor.incrementProgress(1);
+
 			if (memidx != 0) {
 				/* only handle memory 0 for now */
 				continue;
@@ -402,8 +430,15 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 		}
 
 		/* Load data into memory */
+		monitor.setMessage("Loading data segments");
 		List<WasmDataSegment> dataSegments = module.getDataSegments();
+		monitor.initialize(dataSegments.size());
 		for (int dataidx = 0; dataidx < dataSegments.size(); dataidx++) {
+			if (monitor.isCancelled()) {
+				break;
+			}
+			monitor.incrementProgress(1);
+
 			WasmDataSegment dataSegment = dataSegments.get(dataidx);
 			int memidx = (int) dataSegment.getIndex();
 			if (memidx != 0) {
@@ -437,11 +472,18 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 	}
 
 	private void loadGlobals(Program program, FileBytes fileBytes, WasmModule module, TaskMonitor monitor) {
+		monitor.setMessage("Loading globals");
 		List<WasmImportEntry> imports = module.getImports(WasmExternalKind.EXT_GLOBAL);
 		List<WasmGlobalEntry> globals = module.getNonImportedGlobals();
 		int numGlobals = imports.size() + globals.size();
 
+		monitor.initialize(numGlobals);
 		for (int globalidx = 0; globalidx < numGlobals; globalidx++) {
+			if (monitor.isCancelled()) {
+				break;
+			}
+			monitor.incrementProgress(1);
+
 			WasmGlobalType globalType;
 			byte[] initBytes;
 			Long initRef;
@@ -487,12 +529,12 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 	protected void load(ByteProvider provider, LoadSpec loadSpec, List<Option> options,
 			Program program, TaskMonitor monitor, MessageLog log) throws IOException {
 
-		monitor.setMessage("Wasm Loader: Start loading");
+		monitor.setMessage("Start loading");
 
 		try {
 			doLoad(provider, program, monitor);
 		} catch (Exception e) {
-			monitor.setMessage("Wasm Loader: Error");
+			monitor.setMessage("Error");
 			Msg.error(this, "Failed to load Wasm module", e);
 		}
 	}
@@ -507,7 +549,7 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 		createData(program, program.getListing(), moduleBlock.getStart(), module.getHeader().toDataType());
 
 		for (WasmSection section : module.getSections()) {
-			monitor.setMessage("Wasm Loader: Loading section " + section.getId().toString());
+			monitor.setMessage("Creating section " + section.getName());
 			createData(program, program.getListing(), moduleBlock.getStart().add(section.getSectionOffset()), section.toDataType());
 		}
 
