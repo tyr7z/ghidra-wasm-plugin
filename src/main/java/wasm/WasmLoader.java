@@ -285,7 +285,8 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 	}
 
 	/**
-	 * Delete any overlapping portions of an existing memory block.
+	 * Delete any overlapping portions of an existing memory block. Assumes that
+	 * only one memory block overlaps the given range.
 	 * 
 	 * @param program
 	 * @param startAddress
@@ -359,7 +360,8 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 	 * For example, this could be called from a script as follows:
 	 * 
 	 * WasmLoader.loadElementsToTable(getCurrentProgram(),
-	 * WasmAnalysis.getState(getCurrentProgram()).getModule(), elemidx, tableidx, offset, new ConsoleTaskMonitor())
+	 * WasmAnalysis.getState(getCurrentProgram()).getModule(), elemidx, tableidx,
+	 * offset, new ConsoleTaskMonitor())
 	 */
 	public static void loadElementsToTable(Program program, WasmModule module, int elemidx, int tableidx, long offset, TaskMonitor monitor) throws Exception {
 		WasmElementSegment elemSegment = module.getElementSegments().get(elemidx);
@@ -429,6 +431,31 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 		}
 	}
 
+	/**
+	 * Copy data segment to memory.
+	 * 
+	 * This is public so that it can be called after loading, e.g. to load a passive
+	 * data segment once the dynamic memory index and offset are known.
+	 *
+	 * For example, this could be called from a script as follows:
+	 * 
+	 * WasmLoader.loadDataToMemory(getCurrentProgram(),
+	 * WasmAnalysis.getState(getCurrentProgram()).getModule(), dataidx, memidx,
+	 * offset, new ConsoleTaskMonitor())
+	 */
+	public static void loadDataToMemory(Program program, WasmModule module, int dataidx, int memidx, long offset, TaskMonitor monitor) throws Exception {
+		WasmDataSegment dataSegment = module.getDataSegments().get(dataidx);
+		MemoryBlock dataBlock = program.getMemory().getBlock(".data" + dataidx);
+		FileBytes fileBytes = dataBlock.getSourceInfos().get(0).getFileBytes().get();
+
+		Address memStart = getMemoryAddress(program, memidx, offset);
+		removeOverlappingMemory(program, memStart, memStart.add(dataSegment.getSize() - 1), monitor);
+		MemoryBlock block = program.getMemory().createInitializedBlock(".mem" + memidx + ".data" + dataidx, memStart, fileBytes, dataSegment.getFileOffset(), dataSegment.getSize(), false);
+		block.setRead(true);
+		block.setWrite(true);
+		block.setExecute(false);
+	}
+
 	private void loadMemories(Program program, FileBytes fileBytes, WasmModule module, TaskMonitor monitor) {
 		List<WasmImportEntry> imports = module.getImports(WasmExternalKind.EXT_MEMORY);
 		List<WasmResizableLimits> memories = module.getNonImportedMemories();
@@ -471,15 +498,11 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 			if (offset == null) {
 				continue;
 			}
-			Address memStart = getMemoryAddress(program, memidx, offset);
+			/* Copy active segments into memory when the offset is known */
 			try {
-				/* Copy active segments into memory when the offset is known */
-				removeOverlappingMemory(program, memStart, memStart.add(dataSegment.getSize() - 1), monitor);
-				MemoryBlock block = program.getMemory().createInitializedBlock(".mem" + memidx + ".data" + dataidx, memStart, fileBytes, dataSegment.getFileOffset(), dataSegment.getSize(), false);
-				block.setRead(true);
-				block.setWrite(true);
-				block.setExecute(false);
+				loadDataToMemory(program, module, dataidx, memidx, offset, monitor);
 			} catch (Exception e) {
+				Address memStart = getMemoryAddress(program, memidx, offset);
 				Msg.error(this, "Failed to create data segment " + dataidx + " in memory " + memidx + " at " + memStart, e);
 			}
 		}

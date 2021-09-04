@@ -36,6 +36,14 @@ from ghidra.util.task import ConsoleTaskMonitor
 monitor = ConsoleTaskMonitor()
 WasmLoader.loadElementsToTable(currentProgram, WasmAnalysis.getState(currentProgram).module, 0, 1, 2, monitor)
 ```
+- Similarly, data segments can be manually loaded as well. For example, to load data segment #5 to memory #0 at offset 0x1000, do the following in Python:
+```
+from wasm import WasmLoader
+from wasm.analysis import WasmAnalysis
+from ghidra.util.task import ConsoleTaskMonitor
+monitor = ConsoleTaskMonitor()
+WasmLoader.loadDataToMemory(currentProgram, WasmAnalysis.getState(currentProgram).module, 5, 0, 0x1000, monitor)
+```
 
 ## Limitations
 
