@@ -353,7 +353,7 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 			}
 		}
 
-		/* Load elements */
+		/* Load active element segments into tables */
 		monitor.setMessage("Loading table elements");
 		List<WasmElementSegment> entries = module.getElementSegments();
 		monitor.initialize(entries.size());
@@ -422,7 +422,7 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 			createMemoryBlock(program, memidx, mem.getInitial() * 65536L, monitor);
 		}
 
-		/* Load data into memory */
+		/* Load active data segments into memory */
 		monitor.setMessage("Loading data segments");
 		List<WasmDataSegment> dataSegments = module.getDataSegments();
 		monitor.initialize(dataSegments.size());
@@ -439,22 +439,11 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 				continue;
 			}
 
-			Address dataStart = getProgramAddress(program, CODE_BASE + dataSegment.getFileOffset());
-			try {
-				/* Create a block for the data itself, for both passive and active segments */
-				MemoryBlock block = program.getMemory().createInitializedBlock(".data" + dataidx, dataStart, fileBytes, dataSegment.getFileOffset(), dataSegment.getSize(), false);
-				block.setRead(true);
-				block.setWrite(false);
-				block.setExecute(false);
-			} catch (Exception e) {
-				Msg.error(this, "Failed to create data segment " + dataidx + " at " + dataStart, e);
-			}
-
 			Long offset = dataSegment.getMemoryOffset();
 			if (offset == null) {
 				continue;
 			}
-			/* Copy active segments into memory when the offset is known */
+
 			try {
 				loadDataToMemory(program, module, dataidx, memidx, offset, monitor);
 			} catch (Exception e) {
