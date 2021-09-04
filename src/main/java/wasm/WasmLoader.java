@@ -311,6 +311,30 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 		}
 	}
 
+	private void loadTables(Program program, FileBytes fileBytes, WasmModule module, TaskMonitor monitor) {
+		monitor.setMessage("Loading tables");
+		List<WasmImportEntry> imports = module.getImports(WasmExternalKind.EXT_TABLE);
+		List<WasmTableType> tables = module.getNonImportedTables();
+		int numTables = imports.size() + tables.size();
+
+		monitor.initialize(numTables);
+		for (int tableidx = 0; tableidx < numTables; tableidx++) {
+			if (monitor.isCancelled()) {
+				break;
+			}
+			monitor.incrementProgress(1);
+
+			WasmTableType table;
+			if (tableidx < imports.size()) {
+				table = imports.get(tableidx).getTableType();
+			} else {
+				table = tables.get(tableidx - imports.size());
+			}
+
+			createTableBlock(program, table.getElementDataType(), table.getLimits().getInitial(), tableidx, monitor);
+		}
+	}
+
 	/**
 	 * Copy element segment to table.
 	 * 
@@ -342,32 +366,11 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 		}
 	}
 
-	private void loadTables(Program program, FileBytes fileBytes, WasmModule module, TaskMonitor monitor) {
-		monitor.setMessage("Loading tables");
-		List<WasmImportEntry> imports = module.getImports(WasmExternalKind.EXT_TABLE);
-		List<WasmTableType> tables = module.getNonImportedTables();
-		int numTables = imports.size() + tables.size();
-
-		monitor.initialize(numTables);
-		for (int tableidx = 0; tableidx < numTables; tableidx++) {
-			if (monitor.isCancelled()) {
-				break;
-			}
-			monitor.incrementProgress(1);
-
-			WasmTableType table;
-			if (tableidx < imports.size()) {
-				table = imports.get(tableidx).getTableType();
-			} else {
-				table = tables.get(tableidx - imports.size());
-			}
-
-			createTableBlock(program, table.getElementDataType(), table.getLimits().getInitial(), tableidx, monitor);
-		}
-
+	private void loadElementSegments(Program program, FileBytes fileBytes, WasmModule module, TaskMonitor monitor) {
 		/* Load active element segments into tables */
 		monitor.setMessage("Loading table elements");
 		List<WasmElementSegment> entries = module.getElementSegments();
+
 		monitor.initialize(entries.size());
 		for (int elemidx = 0; elemidx < entries.size(); elemidx++) {
 			if (monitor.isCancelled()) {
@@ -388,24 +391,6 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 				Msg.error(this, "Failed to initialize table " + tableidx + " with element segment " + elemidx + " at offset " + offset, e);
 			}
 		}
-	}
-
-	/**
-	 * Copy data segment to memory.
-	 * 
-	 * This is public so that it can be called after loading, e.g. to load a passive
-	 * data segment once the dynamic memory index and offset are known.
-	 *
-	 * For example, this could be called from a script as follows:
-	 * 
-	 * WasmLoader.loadDataToMemory(getCurrentProgram(),
-	 * WasmAnalysis.getState(getCurrentProgram()).getModule(), dataidx, memidx,
-	 * offset, new ConsoleTaskMonitor())
-	 */
-	public static void loadDataToMemory(Program program, WasmModule module, int dataidx, int memidx, long offset, TaskMonitor monitor) throws Exception {
-		WasmDataSegment dataSegment = module.getDataSegments().get(dataidx);
-		Address memStart = getMemoryAddress(program, memidx, offset);
-		program.getMemory().setBytes(memStart, dataSegment.getData());
 	}
 
 	private void loadMemories(Program program, FileBytes fileBytes, WasmModule module, TaskMonitor monitor) {
@@ -433,10 +418,31 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 			}
 			createMemoryBlock(program, memidx, mem.getInitial() * 65536L, monitor);
 		}
+	}
 
+	/**
+	 * Copy data segment to memory.
+	 * 
+	 * This is public so that it can be called after loading, e.g. to load a passive
+	 * data segment once the dynamic memory index and offset are known.
+	 *
+	 * For example, this could be called from a script as follows:
+	 * 
+	 * WasmLoader.loadDataToMemory(getCurrentProgram(),
+	 * WasmAnalysis.getState(getCurrentProgram()).getModule(), dataidx, memidx,
+	 * offset, new ConsoleTaskMonitor())
+	 */
+	public static void loadDataToMemory(Program program, WasmModule module, int dataidx, int memidx, long offset, TaskMonitor monitor) throws Exception {
+		WasmDataSegment dataSegment = module.getDataSegments().get(dataidx);
+		Address memStart = getMemoryAddress(program, memidx, offset);
+		program.getMemory().setBytes(memStart, dataSegment.getData());
+	}
+
+	private void loadDataSegments(Program program, FileBytes fileBytes, WasmModule module, TaskMonitor monitor) {
 		/* Load active data segments into memory */
 		monitor.setMessage("Loading data segments");
 		List<WasmDataSegment> dataSegments = module.getDataSegments();
+
 		monitor.initialize(dataSegments.size());
 		for (int dataidx = 0; dataidx < dataSegments.size(); dataidx++) {
 			if (monitor.isCancelled()) {
@@ -532,7 +538,9 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 
 		loadFunctions(program, fileBytes, module, monitor);
 		loadTables(program, fileBytes, module, monitor);
+		loadElementSegments(program, fileBytes, module, monitor);
 		loadMemories(program, fileBytes, module, monitor);
+		loadDataSegments(program, fileBytes, module, monitor);
 		loadGlobals(program, fileBytes, module, monitor);
 	}
 }
