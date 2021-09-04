@@ -31,6 +31,7 @@ import ghidra.app.util.opinion.LoadSpec;
 import ghidra.program.database.mem.FileBytes;
 import ghidra.program.model.address.Address;
 import ghidra.program.model.address.AddressSet;
+import ghidra.program.model.address.AddressSpace;
 import ghidra.program.model.data.ArrayDataType;
 import ghidra.program.model.data.DataType;
 import ghidra.program.model.data.DataTypeConflictException;
@@ -40,7 +41,6 @@ import ghidra.program.model.lang.LanguageCompilerSpecPair;
 import ghidra.program.model.listing.Data;
 import ghidra.program.model.listing.Listing;
 import ghidra.program.model.listing.Program;
-import ghidra.program.model.mem.Memory;
 import ghidra.program.model.mem.MemoryBlock;
 import ghidra.program.model.symbol.Namespace;
 import ghidra.program.model.symbol.RefType;
@@ -203,47 +203,15 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 		return null;
 	}
 
-	private static void createModuleBlock(Program program, FileBytes fileBytes) {
-		Address start = getProgramAddress(program, MODULE_BASE);
-		try {
-			MemoryBlock block = program.getMemory().createInitializedBlock(".module", start, fileBytes, 0, fileBytes.getSize(), false);
-			block.setRead(true);
-			block.setWrite(false);
-			block.setExecute(false);
-			block.setSourceName("Wasm Module");
-			block.setComment("The full file contents of the Wasm module");
-		} catch (Exception e) {
-			Msg.error(WasmLoader.class, "Failed to create .module block", e);
-		}
-	}
-
-	private static void createHeaderBlock(Program program, FileBytes fileBytes, WasmHeader header) {
-		Address start = getProgramAddress(program, HEADER_BASE);
-		try {
-			MemoryBlock block = program.getMemory().createInitializedBlock(".header", start, fileBytes, 0, 8, false);
-			block.setRead(true);
-			block.setWrite(false);
-			block.setExecute(false);
-			block.setSourceName("Wasm Module");
-			createData(program, program.getListing(), start, header.toDataType());
-		} catch (Exception e) {
-			Msg.error(WasmLoader.class, "Failed to create .header block", e);
-		}
-	}
-
-	private static void createSectionBlock(Program program, FileBytes fileBytes, WasmSection section) {
-		Address start = getProgramAddress(program, HEADER_BASE + section.getSectionOffset());
-		String name = ".section" + section.getName();
-		try {
-			MemoryBlock block = program.getMemory().createInitializedBlock(name, start, fileBytes, section.getSectionOffset(), section.getSectionSize(), false);
-			block.setRead(true);
-			block.setWrite(false);
-			block.setExecute(false);
-			block.setSourceName("Wasm Section");
-			createData(program, program.getListing(), start, section.toDataType());
-		} catch (Exception e) {
-			Msg.error(WasmLoader.class, "Failed to create " + name + " block", e);
-		}
+	private static MemoryBlock createModuleBlock(Program program, FileBytes fileBytes) throws Exception {
+		Address start = AddressSpace.OTHER_SPACE.getAddress(0L);
+		MemoryBlock block = program.getMemory().createInitializedBlock(".module", start, fileBytes, 0, fileBytes.getSize(), false);
+		block.setRead(true);
+		block.setWrite(false);
+		block.setExecute(false);
+		block.setSourceName("Wasm Module");
+		block.setComment("The full file contents of the Wasm module");
+		return block;
 	}
 
 	private static void createFunctionBodyBlock(Program program, FileBytes fileBytes, int funcidx, long offset, long length) {
@@ -535,12 +503,12 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 
 		FileBytes fileBytes = MemoryBlockUtils.createFileBytes(program, provider, 0, provider.length(), monitor);
 
-		createModuleBlock(program, fileBytes);
-		createHeaderBlock(program, fileBytes, module.getHeader());
+		MemoryBlock moduleBlock = createModuleBlock(program, fileBytes);
+		createData(program, program.getListing(), moduleBlock.getStart(), module.getHeader().toDataType());
 
 		for (WasmSection section : module.getSections()) {
 			monitor.setMessage("Wasm Loader: Loading section " + section.getId().toString());
-			createSectionBlock(program, fileBytes, section);
+			createData(program, program.getListing(), moduleBlock.getStart().add(section.getSectionOffset()), section.toDataType());
 		}
 
 		loadFunctions(program, fileBytes, module, monitor);
