@@ -40,8 +40,10 @@ public class WasmAnalysis implements AnalysisState {
 		return analysisState;
 	}
 
+	private Program program;
 	private WasmModule module = null;
 	private List<WasmFuncSignature> functions = null;
+	private Map<Address, WasmFuncSignature> functionsByAddress = new HashMap<>();
 	private Map<Function, WasmFunctionPreAnalysis> functionPreAnalyses = new HashMap<>();
 
 	public WasmAnalysis(Program program) {
@@ -49,15 +51,17 @@ public class WasmAnalysis implements AnalysisState {
 		Address moduleStart = mem.getBlock(".module").getStart();
 		ByteProvider memByteProvider = new MemoryByteProvider(mem, moduleStart);
 		BinaryReader memBinaryReader = new BinaryReader(memByteProvider, true);
-		WasmModule module = null;
 		try {
 			module = new WasmModule(memBinaryReader);
 		} catch (IOException e) {
 			Msg.error(this, "Failed to construct WasmModule", e);
 		}
 
-		this.module = module;
+		this.program = program;
 		this.functions = getFunctions(program, module);
+		for (WasmFuncSignature func : functions) {
+			functionsByAddress.put(func.getStartAddr(), func);
+		}
 	}
 
 	public WasmModule getModule() {
@@ -72,12 +76,24 @@ public class WasmAnalysis implements AnalysisState {
 		return functions.get(funcIdx);
 	}
 
-	public WasmFunctionPreAnalysis getFunctionPreAnalysis(Function f) {
-		return functionPreAnalyses.get(f);
+	public WasmFuncSignature getFunctionByAddress(Address address) {
+		return functionsByAddress.get(address);
 	}
 
-	public void setFunctionPreAnalysis(Function f, WasmFunctionPreAnalysis analysis) {
-		functionPreAnalyses.put(f, analysis);
+	public synchronized WasmFunctionPreAnalysis getFunctionPreAnalysis(Function f) {
+		if (!functionPreAnalyses.containsKey(f)) {
+			WasmFuncSignature func = getFunctionByAddress(f.getEntryPoint());
+			BinaryReader codeReader = new BinaryReader(new MemoryByteProvider(program.getMemory(), func.getStartAddr()), true);
+			WasmFunctionPreAnalysis preAnalysis = new WasmFunctionPreAnalysis(func);
+			try {
+				preAnalysis.analyzeFunction(program, codeReader);
+				functionPreAnalyses.put(f, preAnalysis);
+			} catch (Exception e) {
+				Msg.error(this, "Failed to analyze function " + func.getName(), e);
+				f.setComment("WARNING: Wasm pre-analysis failed, output may be incorrect: " + e);
+			}
+		}
+		return functionPreAnalyses.get(f);
 	}
 
 	public WasmFuncType getType(int typeidx) {

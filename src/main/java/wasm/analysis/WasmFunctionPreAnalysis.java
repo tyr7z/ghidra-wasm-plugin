@@ -14,7 +14,6 @@ import ghidra.program.model.lang.Register;
 import ghidra.program.model.listing.ContextChangeException;
 import ghidra.program.model.listing.Program;
 import ghidra.util.Msg;
-import ghidra.util.task.TaskMonitor;
 import wasm.format.WasmEnums.ValType;
 import wasm.format.sections.structures.WasmFuncType;
 
@@ -25,17 +24,15 @@ import wasm.format.sections.structures.WasmFuncType;
  */
 public class WasmFunctionPreAnalysis {
 
-	private static Map<Address, StackEffect> stackEffects = new HashMap<>();
-
 	private WasmFuncSignature func;
-	private int cStackGlobal;
 	/* null in the value stack means Unknown */
 	private List<ValType> valueStack = new ArrayList<>();
 	private List<ControlFrame> controlStack = new ArrayList<>();
+	private Map<Address, StackEffect> stackEffects = new HashMap<>();
+	private Map<Address, Long> globalGetSets = new HashMap<>();
 
-	public WasmFunctionPreAnalysis(WasmFuncSignature func, int cStackGlobal) {
+	public WasmFunctionPreAnalysis(WasmFuncSignature func) {
 		this.func = func;
-		this.cStackGlobal = cStackGlobal;
 	}
 
 	private static class ProgramContext {
@@ -50,6 +47,9 @@ public class WasmFunctionPreAnalysis {
 		private static final String REG_CASE_INDEX = "ctx_case_index";
 
 		private static void setRegister(Program program, Address address, String name, long value) {
+			if (!program.getListing().isUndefined(address, address))
+				return;
+
 			Register register = program.getRegister(name);
 
 			if (register == null) {
@@ -88,8 +88,8 @@ public class WasmFunctionPreAnalysis {
 		}
 
 		/** Mark this global.* instruction as operating on the C stack pointer. */
-		public static void setIsGlobalSp(Program program, Address address) {
-			setRegister(program, address, REG_IS_GLOBAL_SP, 1);
+		public static void setIsGlobalSp(Program program, Address address, boolean value) {
+			setRegister(program, address, REG_IS_GLOBAL_SP, value ? 1 : 0);
 		}
 
 		/** Set the address that this instruction branches to. */
@@ -103,15 +103,6 @@ public class WasmFunctionPreAnalysis {
 		 */
 		public static void setStackPointer(Program program, Address address, long value) {
 			setRegister(program, address, REG_SP, value);
-		}
-
-		/**
-		 * Set the stack effect of this instruction - which types it pushes and pops.
-		 * This is used to handle variable-argument instructions, which currently
-		 * includes branch, call and return instructions.
-		 */
-		public static void setStackEffect(Program program, Address address, int popHeight, ValType[] toPop, int pushHeight, ValType[] toPush) {
-			stackEffects.put(address, new StackEffect(popHeight, toPop, pushHeight, toPush));
 		}
 
 		/**
@@ -279,6 +270,17 @@ public class WasmFunctionPreAnalysis {
 		return func;
 	}
 
+	/**
+	 * Set the stack effect of this instruction - which types it pushes and pops.
+	 * This is used to handle variable-argument instructions, which currently
+	 * includes branch, call and return instructions. TODO: Ideally, these would be
+	 * saved to the program context, which would save us from having to re-analyze
+	 * functions when reopening the DB.
+	 */
+	private void setStackEffect(Program program, Address address, int popHeight, ValType[] toPop, int pushHeight, ValType[] toPush) {
+		stackEffects.put(address, new StackEffect(popHeight, toPop, pushHeight, toPush));
+	}
+
 	public StackEffect getStackEffect(Address address) {
 		return stackEffects.get(address);
 	}
@@ -376,7 +378,7 @@ public class WasmFunctionPreAnalysis {
 		ControlFrame block = getBlock(instAddress, labelidx);
 		ValType[] arguments = block.getBranchArguments();
 		popValues(instAddress, arguments);
-		ProgramContext.setStackEffect(program, instAddress, valueStack.size(), arguments, block.initialStack.size(), arguments);
+		setStackEffect(program, instAddress, valueStack.size(), arguments, block.initialStack.size(), arguments);
 		block.addBranch(program, instAddress);
 		pushValues(instAddress, arguments);
 	}
@@ -458,7 +460,7 @@ public class WasmFunctionPreAnalysis {
 		case 0x0B: /* end */ {
 			ControlFrame block = popBlock(instAddress);
 			// this stack effect will only be used by the final end
-			ProgramContext.setStackEffect(program, instAddress, valueStack.size(), block.blockType.returns, 0, null);
+			setStackEffect(program, instAddress, valueStack.size(), block.blockType.returns, 0, null);
 			pushValues(instAddress, block.blockType.returns);
 			block.setEnd(program, instAddress);
 			break;
@@ -491,7 +493,7 @@ public class WasmFunctionPreAnalysis {
 		}
 		case 0x0F: /* return */ {
 			popValues(instAddress, func.getReturns());
-			ProgramContext.setStackEffect(program, instAddress, valueStack.size(), func.getReturns(), 0, null);
+			setStackEffect(program, instAddress, valueStack.size(), func.getReturns(), 0, null);
 			markUnreachable(instAddress);
 			break;
 		}
@@ -502,7 +504,7 @@ public class WasmFunctionPreAnalysis {
 			ValType[] params = targetFunc.getParams();
 			ValType[] returns = targetFunc.getReturns();
 			popValues(instAddress, params);
-			ProgramContext.setStackEffect(program, instAddress, valueStack.size(), params, valueStack.size(), returns);
+			setStackEffect(program, instAddress, valueStack.size(), params, valueStack.size(), returns);
 			ProgramContext.setBranchTarget(program, instAddress, targetFunc.getStartAddr());
 			pushValues(instAddress, returns);
 			break;
@@ -520,7 +522,7 @@ public class WasmFunctionPreAnalysis {
 			ValType[] params = type.getParamTypes();
 			ValType[] returns = type.getReturnTypes();
 			popValues(instAddress, params);
-			ProgramContext.setStackEffect(program, instAddress, valueStack.size(), params, valueStack.size(), returns);
+			setStackEffect(program, instAddress, valueStack.size(), params, valueStack.size(), returns);
 			pushValues(instAddress, returns);
 			break;
 		}
@@ -580,9 +582,7 @@ public class WasmFunctionPreAnalysis {
 			long globalidx = readLeb128(reader);
 			ValType type = WasmAnalysis.getState(program).getGlobalType((int) globalidx);
 			ProgramContext.setIsOp64(program, instAddress, type);
-			if (globalidx == cStackGlobal) {
-				ProgramContext.setIsGlobalSp(program, instAddress);
-			}
+			globalGetSets.put(instAddress, globalidx);
 			pushValue(instAddress, type);
 			break;
 		}
@@ -590,9 +590,7 @@ public class WasmFunctionPreAnalysis {
 			long globalidx = readLeb128(reader);
 			ValType type = WasmAnalysis.getState(program).getGlobalType((int) globalidx);
 			ProgramContext.setIsOp64(program, instAddress, type);
-			if (globalidx == cStackGlobal) {
-				ProgramContext.setIsGlobalSp(program, instAddress);
-			}
+			globalGetSets.put(instAddress, globalidx);
 			popValue(instAddress, type);
 			break;
 		}
@@ -993,17 +991,22 @@ public class WasmFunctionPreAnalysis {
 		}
 	}
 
-	public void analyzeFunction(Program program, BinaryReader reader, TaskMonitor monitor) throws IOException {
+	public void analyzeFunction(Program program, BinaryReader reader) throws IOException {
 		Address startAddress = func.getStartAddr();
 		long functionLength = func.getEndAddr().subtract(func.getStartAddr());
 
 		pushBlock(startAddress, new ControlFrame(program, startAddress, new BlockType(program, func)));
 		while (reader.getPointerIndex() < functionLength) {
-			if (monitor.isCancelled()) {
-				break;
-			}
 			Address instAddress = startAddress.add(reader.getPointerIndex());
 			analyzeOpcode(program, instAddress, reader);
+		}
+	}
+
+	public void applyContext(Program program, int cStackGlobal) {
+		for (Map.Entry<Address, Long> entry : globalGetSets.entrySet()) {
+			if (entry.getValue() == cStackGlobal) {
+				ProgramContext.setIsGlobalSp(program, entry.getKey(), entry.getValue() == cStackGlobal);
+			}
 		}
 	}
 }

@@ -5,16 +5,16 @@ import java.util.List;
 import ghidra.app.services.AbstractAnalyzer;
 import ghidra.app.services.AnalysisPriority;
 import ghidra.app.services.AnalyzerType;
-import ghidra.app.util.bin.BinaryReader;
-import ghidra.app.util.bin.MemoryByteProvider;
 import ghidra.app.util.importer.MessageLog;
 import ghidra.framework.options.Options;
+import ghidra.program.disassemble.Disassembler;
+import ghidra.program.disassemble.DisassemblerMessageListener;
+import ghidra.program.model.address.AddressSet;
 import ghidra.program.model.address.AddressSetView;
 import ghidra.program.model.lang.Processor;
 import ghidra.program.model.listing.Function;
 import ghidra.program.model.listing.Program;
 import ghidra.util.HelpLocation;
-import ghidra.util.Msg;
 import ghidra.util.exception.CancelledException;
 import ghidra.util.task.TaskMonitor;
 
@@ -58,34 +58,35 @@ public class WasmPreAnalyzer extends AbstractAnalyzer {
 		WasmAnalysis state = WasmAnalysis.getState(program);
 		List<WasmFuncSignature> functions = state.getFunctions();
 		monitor.initialize(functions.size());
-		for (int i = 0; i < functions.size(); i++) {
+
+		Disassembler disassembler = Disassembler.getDisassembler(program, monitor, new DisassemblerMessageListener() {
+			@Override
+			public void disassembleMessageReported(String msg) {
+				if (monitor != null) {
+					monitor.setMessage(msg);
+				}
+			}
+		});
+		disassembler.setRepeatPatternLimit(-1);
+
+		/*
+		 * TODO: Support reanalyzing changed functions, to handle patches and
+		 * significant function changes.
+		 */
+		for (Function function : program.getListing().getFunctions(set, true)) {
 			if (monitor.isCancelled()) {
 				break;
 			}
-			monitor.setProgress(i);
+			monitor.incrementProgress(1);
 
-			WasmFuncSignature func = functions.get(i);
-			Function function = program.getListing().getFunctionAt(func.getStartAddr());
+			WasmFuncSignature func = state.getFunctionByAddress(function.getEntryPoint());
 			if (func.isImport()) {
 				continue;
 			}
-			/*
-			 * TODO: Support reanalyzing changed functions, to handle patches and
-			 * significant function changes.
-			 */
-			if (state.getFunctionPreAnalysis(function) != null) {
-				continue;
-			}
-
-			BinaryReader codeReader = new BinaryReader(new MemoryByteProvider(program.getMemory(), func.getStartAddr()), true);
-			WasmFunctionPreAnalysis preAnalysis = new WasmFunctionPreAnalysis(func, cStackGlobal);
-			state.setFunctionPreAnalysis(function, preAnalysis);
-			try {
-				preAnalysis.analyzeFunction(program, codeReader, monitor);
-			} catch (Exception e) {
-				Msg.error(this, "Failed to analyze function at index " + i + " (" + func.getName() + ")", e);
-				function.setComment("WARNING: Wasm pre-analysis failed, output may be incorrect: " + e);
-			}
+			WasmFunctionPreAnalysis funcAnalysis = state.getFunctionPreAnalysis(function);
+			funcAnalysis.applyContext(program, cStackGlobal);
+			AddressSet funcSet = new AddressSet(func.getStartAddr(), func.getEndAddr());
+			disassembler.disassemble(funcSet, funcSet, false);
 		}
 		return true;
 	}
