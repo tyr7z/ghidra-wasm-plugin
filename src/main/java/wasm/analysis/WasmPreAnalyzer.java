@@ -23,9 +23,9 @@ public class WasmPreAnalyzer extends AbstractAnalyzer {
 	private final static String DESCRIPTION = "Analyze Wasm code before disassembly to resolve operand sizes and jump offsets";
 
 	private final static String OPTION_NAME_CSTACK_GLOBAL = "C Stack Pointer";
-	private static final String OPTION_DESCRIPTION_CSTACK_GLOBAL = "Index of the global variable being used as the C stack pointer. Set to -1 to disable C stack inference.";
+	private static final String OPTION_DESCRIPTION_CSTACK_GLOBAL = "0-based index of the global variable being used as the C stack pointer. Set to -1 to disable C stack inference.";
 	/* Default to global0, which is what Emscripten appears to do */
-	private final static int OPTION_DEFAULT_CSTACK_GLOBAL = 0;
+	private final static int OPTION_DEFAULT_CSTACK_GLOBAL = -1;
 	private int cStackGlobal = OPTION_DEFAULT_CSTACK_GLOBAL;
 
 	public WasmPreAnalyzer() {

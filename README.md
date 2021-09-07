@@ -24,6 +24,18 @@ injection.
 
 ## Tips
 
+- Many Wasm programs, especially those compiled by Emscripten or Clang, use a
+global variable to store the C stack pointer. Real programs often make heavy use
+of the C stack; it's the only place to store variables that are larger than a
+single u32/u64, for example, or variables which require physical memory
+addresses. In order to allow Ghidra to analyze the C stack, set the "C Stack
+Pointer" in the Wasm Pre-Analyzer settings during initial analysis to the index
+of the global variable which is being used as the stack pointer (this will be
+the global used in the `stackSave`/`stackRestore` functions, if present, or the
+global used in the function prologue of any functions which use the C stack).
+Setting this option will cause Ghidra to analyze global.set/global.get
+operations involving the targeted global as stack pointer manipulations, which
+will allow the decompiler to recover stack variables and objects.
 - Element segments may be passive, or have offset expressions that depend on
 imported globals. In this case, the element segments are not automatically
 loaded to the table. You can manually load these segments by calling
@@ -36,7 +48,8 @@ from ghidra.util.task import ConsoleTaskMonitor
 monitor = ConsoleTaskMonitor()
 WasmLoader.loadElementsToTable(currentProgram, WasmAnalysis.getState(currentProgram).module, 0, 1, 2, monitor)
 ```
-- Similarly, data segments can be manually loaded as well. For example, to load data segment #5 to memory #0 at offset 0x1000, do the following in Python:
+- Similarly, data segments can be manually loaded as well. For example, to load
+data segment #5 to memory #0 at offset 0x1000, do the following in Python:
 ```
 from wasm import WasmLoader
 from wasm.analysis import WasmAnalysis
