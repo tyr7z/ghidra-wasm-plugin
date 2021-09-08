@@ -23,17 +23,17 @@
     <prototype name="__wasm" extrapop="0" stackshift="0">
       <input>
         <pentry minsize="1" maxsize="500" align="8">
-          <addr offset="0x2000000000" space="register"/>
+          <addr offset="0x20000000" space="register"/>
         </pentry>
       </input>
       <output>
         <pentry minsize="1" maxsize="500" align="8">
-          <addr offset="0x3000000000" space="register"/>
+          <addr offset="0x30000000" space="register"/>
         </pentry>
       </output>
       <unaffected>
-        <varnode space="register" offset="0x1000000000" size="0x800000000"/>
-        <varnode space="register" offset="0x5000000000" size="0x800000000"/>
+        <varnode space="register" offset="0x10000000" size="0x10000000"/>
+        <varnode space="register" offset="0x50000000" size="0x10000000"/>
         <register name="SP"/>
       </unaffected>
       <pcode inject="uponentry" dynamic="true" />

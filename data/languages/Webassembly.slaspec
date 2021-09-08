@@ -9,7 +9,7 @@ define alignment=1;
 define space ram    type=ram_space      size=4 default;
 define space table   type=ram_space		 size=8;
 define space global  type=ram_space		 size=4;
-define space register type=register_space size=8;
+define space register type=register_space size=4;
 
 define register offset=0 size=4 [ _  PC SP LR BRTableInput];
 
@@ -17,7 +17,7 @@ define register offset=0 size=4 [ _  PC SP LR BRTableInput];
 define register offset=0x1000 size=16   contextreg;
 
 # Stack slots within a function
-define register offset=0x5000000000 size=8 [
+define register offset=0x50000000 size=8 [
       s0q   s1q   s2q   s3q   s4q   s5q   s6q   s7q
       s8q   s9q  s10q  s11q  s12q  s13q  s14q  s15q
      s16q  s17q  s18q  s19q  s20q  s21q  s22q  s23q
@@ -51,7 +51,7 @@ define register offset=0x5000000000 size=8 [
     s240q s241q s242q s243q s244q s245q s246q s247q
     s248q s249q s250q s251q s252q s253q s254q s255q
 ];
-define register offset=0x5000000000 size=4 [
+define register offset=0x50000000 size=4 [
       s0 _   s1 _   s2 _   s3 _   s4 _   s5 _   s6 _   s7 _
       s8 _   s9 _  s10 _  s11 _  s12 _  s13 _  s14 _  s15 _
      s16 _  s17 _  s18 _  s19 _  s20 _  s21 _  s22 _  s23 _
@@ -86,7 +86,7 @@ define register offset=0x5000000000 size=4 [
     s248 _ s249 _ s250 _ s251 _ s252 _ s253 _ s254 _ s255 _
 ];
 
-define register offset=0x1000000000 size=8 [
+define register offset=0x10000000 size=8 [
       l0q   l1q   l2q   l3q   l4q   l5q   l6q   l7q
       l8q   l9q  l10q  l11q  l12q  l13q  l14q  l15q
      l16q  l17q  l18q  l19q  l20q  l21q  l22q  l23q
@@ -120,7 +120,7 @@ define register offset=0x1000000000 size=8 [
     l240q l241q l242q l243q l244q l245q l246q l247q
     l248q l249q l250q l251q l252q l253q l254q l255q
 ];
-define register offset=0x1000000000 size=4 [
+define register offset=0x10000000 size=4 [
       l0 _   l1 _   l2 _   l3 _   l4 _   l5 _   l6 _   l7 _
       l8 _   l9 _  l10 _  l11 _  l12 _  l13 _  l14 _  l15 _
      l16 _  l17 _  l18 _  l19 _  l20 _  l21 _  l22 _  l23 _
@@ -156,7 +156,7 @@ define register offset=0x1000000000 size=4 [
 ];
 
 # Artificial registers used to hold function inputs
-define register offset=0x2000000000 size=8 [
+define register offset=0x20000000 size=8 [
       i0q   i1q   i2q   i3q   i4q   i5q   i6q   i7q
       i8q   i9q  i10q  i11q  i12q  i13q  i14q  i15q
      i16q  i17q  i18q  i19q  i20q  i21q  i22q  i23q
@@ -190,7 +190,7 @@ define register offset=0x2000000000 size=8 [
     i240q i241q i242q i243q i244q i245q i246q i247q
     i248q i249q i250q i251q i252q i253q i254q i255q
 ];
-define register offset=0x2000000000 size=4 [
+define register offset=0x20000000 size=4 [
       i0 _   i1 _   i2 _   i3 _   i4 _   i5 _   i6 _   i7 _
       i8 _   i9 _  i10 _  i11 _  i12 _  i13 _  i14 _  i15 _
      i16 _  i17 _  i18 _  i19 _  i20 _  i21 _  i22 _  i23 _
@@ -226,7 +226,7 @@ define register offset=0x2000000000 size=4 [
 ];
 
 # Artificial registers used to hold function outputs
-define register offset=0x3000000000 size=8 [
+define register offset=0x30000000 size=8 [
       o0q   o1q   o2q   o3q   o4q   o5q   o6q   o7q
       o8q   o9q  o10q  o11q  o12q  o13q  o14q  o15q
      o16q  o17q  o18q  o19q  o20q  o21q  o22q  o23q
@@ -260,7 +260,7 @@ define register offset=0x3000000000 size=8 [
     o240q o241q o242q o243q o244q o245q o246q o247q
     o248q o249q o250q o251q o252q o253q o254q o255q
 ];
-define register offset=0x3000000000 size=4 [
+define register offset=0x30000000 size=4 [
       o0 _   o1 _   o2 _   o3 _   o4 _   o5 _   o6 _   o7 _
       o8 _   o9 _  o10 _  o11 _  o12 _  o13 _  o14 _  o15 _
      o16 _  o17 _  o18 _  o19 _  o20 _  o21 _  o22 _  o23 _
@@ -296,7 +296,7 @@ define register offset=0x3000000000 size=4 [
 ];
 
 # Artificial temporary registers used to hold block arguments during branches
-define register offset=0x4000000000 size=8 [ t0 ];
+define register offset=0x40000000 size=8 [ t0 ];
 
 # All context registers are set by the pre-analyzer
 define context contextreg
