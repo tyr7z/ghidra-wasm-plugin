@@ -142,8 +142,9 @@ public class WasmElementSegment implements StructConverter {
 	}
 
 	public byte[] getInitData(WasmModule module) {
+		int elemSize = getElementType().getSize();
 		int count = (int) this.count.asLong();
-		byte[] result = new byte[count * 8];
+		byte[] result = new byte[count * elemSize];
 		Arrays.fill(result, (byte) 0xff);
 
 		if (funcidxs != null) {
@@ -151,7 +152,7 @@ public class WasmElementSegment implements StructConverter {
 				long funcidx = funcidxs.get(i).asLong();
 				long funcaddr = WasmLoader.getFunctionAddressOffset(module, (int) funcidx);
 				byte[] v = ConstantExpression.longToBytes(funcaddr);
-				System.arraycopy(v, 0, result, i * 8, 8);
+				System.arraycopy(v, 0, result, i * elemSize, elemSize);
 			}
 			return result;
 		}
@@ -160,7 +161,7 @@ public class WasmElementSegment implements StructConverter {
 			for (int i = 0; i < count; i++) {
 				byte[] v = exprs.get(i).asBytes(module);
 				if (v != null)
-					System.arraycopy(v, 0, result, i * 8, 8);
+					System.arraycopy(v, 0, result, i * elemSize, elemSize);
 			}
 			return result;
 		}

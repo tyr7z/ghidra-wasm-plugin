@@ -5,7 +5,6 @@ import java.io.IOException;
 import ghidra.app.util.bin.BinaryReader;
 import ghidra.app.util.bin.StructConverter;
 import ghidra.program.model.data.DataType;
-import ghidra.program.model.data.Pointer64DataType;
 import ghidra.program.model.data.Structure;
 import ghidra.util.exception.DuplicateNameException;
 import wasm.format.StructureUtils;
@@ -26,13 +25,7 @@ public class WasmTableType implements StructConverter {
 	}
 
 	public DataType getElementDataType() {
-		switch (elemType) {
-		case funcref:
-		case externref:
-			return Pointer64DataType.dataType;
-		default:
-			return null;
-		}
+		return elemType.asDataType();
 	}
 
 	public WasmResizableLimits getLimits() {
