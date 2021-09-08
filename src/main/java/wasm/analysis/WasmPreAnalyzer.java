@@ -15,6 +15,7 @@ import ghidra.program.model.lang.Processor;
 import ghidra.program.model.listing.Function;
 import ghidra.program.model.listing.Program;
 import ghidra.util.HelpLocation;
+import ghidra.util.Msg;
 import ghidra.util.exception.CancelledException;
 import ghidra.util.task.TaskMonitor;
 
@@ -84,9 +85,13 @@ public class WasmPreAnalyzer extends AbstractAnalyzer {
 				continue;
 			}
 			WasmFunctionPreAnalysis funcAnalysis = state.getFunctionPreAnalysis(function);
-			funcAnalysis.applyContext(program, cStackGlobal);
-			AddressSet funcSet = new AddressSet(func.getStartAddr(), func.getEndAddr());
-			disassembler.disassemble(funcSet, funcSet, false);
+			try {
+				funcAnalysis.applyContext(program, cStackGlobal);
+				AddressSet funcSet = new AddressSet(func.getStartAddr(), func.getEndAddr());
+				disassembler.disassemble(funcSet, funcSet, false);
+			} catch (Exception e) {
+				Msg.error(this, "Failed to analyze function " + func, e);
+			}
 		}
 		return true;
 	}
