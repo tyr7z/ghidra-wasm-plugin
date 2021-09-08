@@ -152,6 +152,13 @@ public final class ConstantExpression implements StructConverter {
 		return null;
 	}
 
+	public Long asGlobalGet() {
+		if (type == ConstantInstruction.GLOBAL_GET) {
+			return ((LEB128) value).asLong();
+		}
+		return null;
+	}
+
 	@Override
 	public DataType toDataType() throws DuplicateNameException, IOException {
 		Structure structure = StructureUtils.createStructure("expr");

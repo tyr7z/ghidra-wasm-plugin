@@ -34,6 +34,10 @@ public class WasmGlobalEntry implements StructConverter {
 		return expr.asAddress(program, module);
 	}
 
+	public Long asGlobalGet() {
+		return expr.asGlobalGet();
+	}
+
 	@Override
 	public DataType toDataType() throws DuplicateNameException, IOException {
 		Structure structure = StructureUtils.createStructure("global_entry");

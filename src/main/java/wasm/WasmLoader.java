@@ -38,6 +38,7 @@ import ghidra.program.model.data.DataTypeConflictException;
 import ghidra.program.model.data.DataUtilities;
 import ghidra.program.model.data.DataUtilities.ClearDataMode;
 import ghidra.program.model.lang.LanguageCompilerSpecPair;
+import ghidra.program.model.listing.CodeUnit;
 import ghidra.program.model.listing.Data;
 import ghidra.program.model.listing.Listing;
 import ghidra.program.model.listing.Program;
@@ -144,38 +145,64 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 		}
 	}
 
-	public static Namespace getFunctionNamespace(Program program, WasmModule module, int funcidx) {
+	private static Namespace getObjectNamespace(Program program, WasmModule module, WasmExternalKind objectKind, int objidx) {
 		Namespace globalNamespace = program.getGlobalNamespace();
 
-		List<WasmImportEntry> imports = module.getImports(WasmExternalKind.EXT_FUNCTION);
-		if (funcidx < imports.size()) {
+		List<WasmImportEntry> imports = module.getImports(objectKind);
+		if (objidx < imports.size()) {
 			Namespace importNamespace = getNamespace(program, globalNamespace, "import");
-			return getNamespace(program, importNamespace, imports.get(funcidx).getModule());
+			return getNamespace(program, importNamespace, imports.get(objidx).getModule());
 		}
-		WasmExportEntry entry = module.findExport(WasmExternalKind.EXT_FUNCTION, funcidx);
+		WasmExportEntry entry = module.findExport(objectKind, objidx);
 		if (entry != null) {
 			return getNamespace(program, globalNamespace, "export");
 		}
 		return globalNamespace;
 	}
 
-	public static String getFunctionName(WasmModule module, int funcidx) {
+	private static String getObjectName(Program program, WasmModule module, WasmExternalKind objectKind, int objidx) {
+		List<WasmImportEntry> imports = module.getImports(objectKind);
+		if (objidx < imports.size()) {
+			return imports.get(objidx).getName();
+		}
+		WasmExportEntry entry = module.findExport(objectKind, objidx);
+		if (entry != null) {
+			return entry.getName();
+		}
+		return null;
+	}
+
+	public static Namespace getFunctionNamespace(Program program, WasmModule module, int funcidx) {
+		return getObjectNamespace(program, module, WasmExternalKind.EXT_FUNCTION, funcidx);
+	}
+
+	public static String getFunctionName(Program program, WasmModule module, int funcidx) {
+		String name;
 		WasmNameSection nameSection = module.getNameSection();
 		if (nameSection != null) {
-			String name = nameSection.getFunctionName(funcidx);
+			name = nameSection.getFunctionName(funcidx);
 			if (name != null) {
 				return name;
 			}
 		}
-		List<WasmImportEntry> imports = module.getImports(WasmExternalKind.EXT_FUNCTION);
-		if (funcidx < imports.size()) {
-			return imports.get(funcidx).getName();
-		}
-		WasmExportEntry entry = module.findExport(WasmExternalKind.EXT_FUNCTION, funcidx);
-		if (entry != null) {
-			return entry.getName();
+		name = getObjectName(program, module, WasmExternalKind.EXT_FUNCTION, funcidx);
+		if (name != null) {
+			return name;
 		}
 		return "unnamed_function_" + funcidx;
+	}
+
+	public static Namespace getGlobalNamespace(Program program, WasmModule module, int globalidx) {
+		return getObjectNamespace(program, module, WasmExternalKind.EXT_GLOBAL, globalidx);
+	}
+
+	public static String getGlobalName(Program program, WasmModule module, int globalidx) {
+		String name;
+		name = getObjectName(program, module, WasmExternalKind.EXT_GLOBAL, globalidx);
+		if (name != null) {
+			return name;
+		}
+		return "global_" + globalidx;
 	}
 	// #endregion
 
@@ -274,7 +301,6 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 			block.setWrite((mutability != 0) ? true : false);
 			block.setExecute(false);
 			createData(program, program.getListing(), dataStart, dataType);
-			program.getSymbolTable().createLabel(dataStart, "global" + globalidx, SourceType.IMPORTED);
 		} catch (Exception e) {
 			Msg.error(WasmLoader.class, "Failed to create global block " + globalidx + " at " + dataStart);
 		}
@@ -311,7 +337,7 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 
 			Address startAddress = getFunctionAddress(program, module, funcidx);
 			long functionLength = getFunctionSize(program, module, funcidx);
-			String functionName = getFunctionName(module, funcidx);
+			String functionName = getFunctionName(program, module, funcidx);
 			Namespace functionNamespace = getFunctionNamespace(program, module, funcidx);
 
 			try {
@@ -319,7 +345,7 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 						startAddress, new AddressSet(startAddress, startAddress.add(functionLength - 1)), SourceType.IMPORTED);
 				program.getSymbolTable().createLabel(startAddress, functionName, functionNamespace, SourceType.IMPORTED);
 			} catch (Exception e) {
-				Msg.error(this, "Failed to create function index " + funcidx + "(" + functionName + ") at " + startAddress, e);
+				Msg.error(this, "Failed to create function index " + funcidx + " (" + functionName + ") at " + startAddress, e);
 			}
 		}
 	}
@@ -500,23 +526,45 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 			WasmGlobalType globalType;
 			byte[] initBytes;
 			Address initRef;
+			Long initGlobal;
 			if (globalidx < imports.size()) {
 				globalType = imports.get(globalidx).getGlobalType();
 				initBytes = null;
 				initRef = null;
+				initGlobal = null;
 			} else {
 				WasmGlobalEntry entry = globals.get(globalidx - imports.size());
 				globalType = entry.getGlobalType();
 				initBytes = entry.asBytes(module);
 				initRef = entry.asAddress(program, module);
+				initGlobal = entry.asGlobalGet();
 			}
 
 			createGlobalBlock(program, globalType.getType().asDataType(), initBytes, globalidx, globalType.getMutability(), monitor);
 
+			Address dataStart = getGlobalAddress(program, globalidx);
+			Namespace namespace = getGlobalNamespace(program, module, globalidx);
+			String name = getGlobalName(program, module, globalidx);
+			try {
+				program.getSymbolTable().createLabel(dataStart, name, namespace, SourceType.IMPORTED);
+			} catch (Exception e) {
+				Msg.error(this, "Failed to label global " + globalidx + " (" + name + ") at " + dataStart, e);
+			}
+
 			if (initRef != null) {
-				Address dataStart = getGlobalAddress(program, globalidx);
 				program.getReferenceManager().removeAllReferencesFrom(dataStart);
 				program.getReferenceManager().addMemoryReference(dataStart, initRef, RefType.DATA, SourceType.IMPORTED, 0);
+			}
+			if (initGlobal != null) {
+				int commentType = CodeUnit.PLATE_COMMENT;
+				String currentComment = program.getListing().getComment(commentType, dataStart);
+				if (currentComment == null) {
+					currentComment = "";
+				} else if (!currentComment.isEmpty()) {
+					currentComment += "\n";
+				}
+				Address otherAddress = getGlobalAddress(program, (int) (long) initGlobal);
+				program.getListing().setComment(dataStart, commentType, currentComment + "Initializer: {@symbol " + otherAddress + "}");
 			}
 		}
 	}
