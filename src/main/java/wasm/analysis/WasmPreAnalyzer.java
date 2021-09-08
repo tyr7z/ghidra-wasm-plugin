@@ -56,6 +56,7 @@ public class WasmPreAnalyzer extends AbstractAnalyzer {
 
 	@Override
 	public boolean added(Program program, AddressSetView set, TaskMonitor monitor, MessageLog log) throws CancelledException {
+		monitor.setMessage("Parsing module...");
 		WasmAnalysis state = WasmAnalysis.getState(program);
 		List<WasmFuncSignature> functions = state.getFunctions();
 		monitor.initialize(functions.size());

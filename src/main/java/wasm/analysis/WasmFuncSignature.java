@@ -8,7 +8,7 @@ public class WasmFuncSignature {
 	private ValType[] returns;
 	private String name;
 	private Address startAddr;
-	private Address endAddr;
+	private Address endAddr; // address of last byte in the function (inclusive)
 	private ValType[] locals;
 
 	public ValType[] getParams() {

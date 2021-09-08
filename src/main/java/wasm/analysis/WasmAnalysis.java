@@ -114,7 +114,7 @@ public class WasmAnalysis implements AnalysisState {
 		for (int funcidx = 0; funcidx < numFunctions; funcidx++) {
 			WasmFuncType funcType = module.getFunctionType(funcidx);
 			Address startAddress = WasmLoader.getFunctionAddress(program, module, funcidx);
-			Address endAddress = startAddress.add(WasmLoader.getFunctionSize(program, module, funcidx));
+			Address endAddress = startAddress.add(WasmLoader.getFunctionSize(program, module, funcidx) - 1);
 
 			String name = null;
 			Symbol[] labels = program.getSymbolTable().getSymbols(startAddress);

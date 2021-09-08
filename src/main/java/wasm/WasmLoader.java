@@ -54,6 +54,7 @@ import wasm.format.WasmHeader;
 import wasm.format.WasmModule;
 import wasm.format.sections.WasmNameSection;
 import wasm.format.sections.WasmSection;
+import wasm.format.sections.WasmSection.WasmSectionId;
 import wasm.format.sections.structures.WasmDataSegment;
 import wasm.format.sections.structures.WasmElementSegment;
 import wasm.format.sections.structures.WasmExportEntry;
@@ -127,6 +128,10 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 
 	public static Address getGlobalAddress(Program program, int globalidx) {
 		return program.getAddressFactory().getAddressSpace("global").getAddress(((long) globalidx) * 8);
+	}
+
+	private static Address getCodeAddress(Program program, long fileOffset) {
+		return program.getAddressFactory().getAddressSpace("ram").getAddress(CODE_BASE + fileOffset);
 	}
 	// #endregion
 
@@ -202,27 +207,27 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 		return block;
 	}
 
-	private static void createImportStubBlock(Program program, Address startAddress, long length, int funcidx) {
+	private static void createImportStubBlock(Program program, Address startAddress, long length) {
 		try {
-			MemoryBlock block = program.getMemory().createUninitializedBlock(".function" + funcidx, startAddress, length, false);
+			MemoryBlock block = program.getMemory().createUninitializedBlock(MemoryBlock.EXTERNAL_BLOCK_NAME, startAddress, length, false);
 			block.setRead(true);
 			block.setWrite(false);
 			block.setExecute(true);
 			block.setComment("NOTE: This block is artificial and is used to represent imported functions");
 		} catch (Exception e) {
-			Msg.error(WasmLoader.class, "Failed to create imported function block " + funcidx + " at " + startAddress, e);
+			Msg.error(WasmLoader.class, "Failed to create imported function block at " + startAddress, e);
 		}
 	}
 
-	private static void createFunctionBodyBlock(Program program, FileBytes fileBytes, long fileOffset, Address startAddress, long length, int funcidx) {
+	private static void createFunctionBodyBlock(Program program, FileBytes fileBytes, long fileOffset, Address startAddress, long length) {
 		try {
-			MemoryBlock block = program.getMemory().createInitializedBlock(".function" + funcidx, startAddress, fileBytes, fileOffset, length, false);
+			MemoryBlock block = program.getMemory().createInitializedBlock(".function", startAddress, fileBytes, fileOffset, length, false);
 			block.setRead(true);
 			block.setWrite(false);
 			block.setExecute(true);
 			block.setSourceName("Wasm Function");
 		} catch (Exception e) {
-			Msg.error(WasmLoader.class, "Failed to create function block " + funcidx + " at " + startAddress, e);
+			Msg.error(WasmLoader.class, "Failed to create function block at " + startAddress, e);
 		}
 	}
 
@@ -282,6 +287,21 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 		List<WasmFunctionBody> functionBodies = module.getNonImportedFunctionBodies();
 		int numFunctions = imports.size() + functionBodies.size();
 
+		/*
+		 * Create two memory blocks to hold the imported and non-imported functions.
+		 * While it would be cleaner (in memory) to load each function into its own
+		 * block, this can cause massive slowdowns for files with many functions.
+		 */
+		WasmSection importSection = module.getSection(WasmSectionId.SEC_IMPORT);
+		if (importSection != null) {
+			createImportStubBlock(program, getCodeAddress(program, importSection.getSectionOffset()), importSection.getSectionSize());
+		}
+		WasmSection codeSection = module.getSection(WasmSectionId.SEC_CODE);
+		if (codeSection != null) {
+			long codeOffset = codeSection.getSectionOffset();
+			createFunctionBodyBlock(program, fileBytes, codeOffset, getCodeAddress(program, codeOffset), codeSection.getSectionSize());
+		}
+
 		monitor.initialize(numFunctions);
 		for (int funcidx = 0; funcidx < numFunctions; funcidx++) {
 			if (monitor.isCancelled()) {
@@ -293,13 +313,6 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 			long functionLength = getFunctionSize(program, module, funcidx);
 			String functionName = getFunctionName(module, funcidx);
 			Namespace functionNamespace = getFunctionNamespace(program, module, funcidx);
-
-			if (funcidx < imports.size()) {
-				createImportStubBlock(program, startAddress, functionLength, funcidx);
-			} else {
-				WasmFunctionBody body = functionBodies.get(funcidx - imports.size());
-				createFunctionBodyBlock(program, fileBytes, body.getOffset(), startAddress, functionLength, funcidx);
-			}
 
 			try {
 				program.getFunctionManager().createFunction(functionName, functionNamespace,

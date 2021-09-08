@@ -68,6 +68,10 @@ public class WasmModule {
 		return sections;
 	}
 
+	public WasmSection getSection(WasmSectionId sectionId) {
+		return sectionMap.get(sectionId);
+	}
+
 	// #region Sections which do not represent vectors of entries
 	public List<WasmCustomSection> getCustomSections() {
 		return Collections.unmodifiableList(customSections);

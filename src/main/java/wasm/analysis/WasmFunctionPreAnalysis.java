@@ -996,7 +996,7 @@ public class WasmFunctionPreAnalysis {
 		long functionLength = func.getEndAddr().subtract(func.getStartAddr());
 
 		pushBlock(startAddress, new ControlFrame(program, startAddress, new BlockType(program, func)));
-		while (reader.getPointerIndex() < functionLength) {
+		while (reader.getPointerIndex() <= functionLength) {
 			Address instAddress = startAddress.add(reader.getPointerIndex());
 			analyzeOpcode(program, instAddress, reader);
 		}
