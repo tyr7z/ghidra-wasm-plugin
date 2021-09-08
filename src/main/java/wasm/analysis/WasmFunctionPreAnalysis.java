@@ -37,13 +37,13 @@ public class WasmFunctionPreAnalysis {
 
 	private static class ProgramContext {
 		/* These labels must be synced with WebAssembly.slaspec */
-		private static final String REG_INDENT = "ctx_indent";
-		private static final String REG_ISOP64 = "ctx_is_op64";
-		private static final String REG_SP = "ctx_sp";
-		private static final String REG_BRTARGET = "ctx_br_target";
 		private static final String REG_IS_CASE = "ctx_is_case";
 		private static final String REG_IS_DEFAULT = "ctx_is_default";
+		private static final String REG_IS_RETURN = "ctx_is_return";
 		private static final String REG_IS_GLOBAL_SP = "ctx_is_global_sp";
+		private static final String REG_IS_OP64 = "ctx_is_op64";
+		private static final String REG_SP = "ctx_sp";
+		private static final String REG_BRTARGET = "ctx_br_target";
 		private static final String REG_CASE_INDEX = "ctx_case_index";
 
 		private static void setRegister(Program program, Address address, String name, long value) {
@@ -63,12 +63,8 @@ public class WasmFunctionPreAnalysis {
 			}
 		}
 
-		/**
-		 * Set the indentation level for this instruction. This is also necessary for
-		 * SLEIGH to detect the end of the function and stop disassembling.
-		 */
-		public static void setIndent(Program program, Address address, int value) {
-			setRegister(program, address, REG_INDENT, value);
+		public static void setIsReturn(Program program, Address address, int value) {
+			setRegister(program, address, REG_IS_RETURN, value);
 		}
 
 		/**
@@ -84,7 +80,7 @@ public class WasmFunctionPreAnalysis {
 				/* 64-bit operand */
 				value = 1;
 			}
-			setRegister(program, address, REG_ISOP64, value);
+			setRegister(program, address, REG_IS_OP64, value);
 		}
 
 		/** Mark this global.* instruction as operating on the C stack pointer. */
@@ -411,7 +407,6 @@ public class WasmFunctionPreAnalysis {
 	// #endregion
 
 	private void analyzeOpcode(Program program, Address instAddress, BinaryReader reader) throws IOException {
-		ProgramContext.setIndent(program, instAddress, controlStack.size() - 1);
 		ProgramContext.setStackPointer(program, instAddress, 8 * valueStack.size());
 		int opcode = reader.readNextUnsignedByte();
 		switch (opcode) {
@@ -463,6 +458,9 @@ public class WasmFunctionPreAnalysis {
 			setStackEffect(program, instAddress, valueStack.size(), block.blockType.returns, 0, null);
 			pushValues(instAddress, block.blockType.returns);
 			block.setEnd(program, instAddress);
+			if (controlStack.isEmpty()) {
+				ProgramContext.setIsReturn(program, instAddress, 1);
+			}
 			break;
 		}
 
@@ -483,7 +481,6 @@ public class WasmFunctionPreAnalysis {
 			popValue(instAddress, ValType.i32);
 			for (int i = 0; i < count + 1; i++) {
 				Address caseAddress = func.getStartAddr().add(reader.getPointerIndex());
-				ProgramContext.setIndent(program, caseAddress, controlStack.size() - 1);
 				ProgramContext.setBrTableCase(program, caseAddress, (i < count) ? i : -1);
 				long labelidx = readLeb128(reader);
 				branchToBlock(program, caseAddress, labelidx);

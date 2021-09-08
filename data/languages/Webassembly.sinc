@@ -165,74 +165,64 @@ macro doBranch(br_target) {
 
 ################################################################
 
-indent: "" is ctx_indent=0 & ctx_is_case=0 {}
-indent: "  "^indent is indent & ctx_is_case=0 [ ctx_indent = ctx_indent - 1; ] {}
-
-# This outputs one less indentation than indent, use this when the ctx_indent is decreased by the current instruction
-dec_indent: "" is (ctx_indent=1 | ctx_indent=0) & ctx_is_case=0 {}
-dec_indent: "  "^dec_indent is dec_indent & ctx_is_case=0 [ ctx_indent = ctx_indent-1; ]{}
-
-case_indent: "" is ctx_indent=0 & ctx_is_case=1 {}
-case_indent: "  "^case_indent is case_indent & ctx_is_case=1 [ ctx_indent = ctx_indent - 1; ] {}
-
 ## Control instructions
-:""^indent^"unreachable" is opc=0x00; indent {
+:unreachable is opc=0x00; ctx_is_case=0 {
 	trap();
 }
 
-:""^indent^"nop" is opc=0x01; indent {
+:nop is opc=0x01; ctx_is_case=0 {
 }
 
-:""^indent^"block" "blocktype="^ULeb128 is opc=0x02; ULeb128; indent {
+:block "blocktype="^ULeb128 is opc=0x02; ULeb128; ctx_is_case=0 {
 }
-:""^indent^"loop" "blocktype="^ULeb128 is opc=0x03; ULeb128; indent {
+:loop "blocktype="^ULeb128 is opc=0x03; ULeb128; ctx_is_case=0 {
 }
-:""^indent^"if" "blocktype="^ULeb128 is opc=0x04; ULeb128; br_target; sp1_32; indent {
+:if "blocktype="^ULeb128 is opc=0x04; ULeb128; br_target; sp1_32; ctx_is_case=0 {
 	if(sp1_32 != 0) goto inst_next;
 	doBranch(br_target);
 }
-:""^indent^"else" is opc=0x05; br_target; indent {
+:else is opc=0x05; br_target; ctx_is_case=0 {
 	doBranch(br_target);
 }
 
-:end is opc=0x0b; ctx_indent=0; indent {
+:end is opc=0x0b; ctx_is_return=1; ctx_is_case=0 {
 	popCallOther(&o0);
 	return [LR];
 }
-:""^dec_indent^"end" is opc=0x0b; dec_indent {
+:end is opc=0x0b; ctx_is_return=0; ctx_is_case=0 {
 }
 
-:""^indent^"br" br_target is opc=0x0c; ULeb128; br_target; indent {
+:br br_target is opc=0x0c; ULeb128; br_target; ctx_is_case=0 {
 	doBranch(br_target);
 }
-:""^indent^"br_if" br_target is opc=0x0d; ULeb128; br_target; sp1_32; indent {
+:br_if br_target is opc=0x0d; ULeb128; br_target; sp1_32; ctx_is_case=0 {
 	if(sp1_32 == 0) goto inst_next;
 	doBranch(br_target);
 }
 
-:""^case_indent^".case" ctx_case_index br_target is ULeb128; br_target; ctx_case_index; ctx_is_default=0; case_indent {
+:.case ctx_case_index br_target is ULeb128; br_target; ctx_case_index; ctx_is_default=0; ctx_is_case=1 {
 	if(BRTableInput != ctx_case_index) goto inst_next;
 	doBranch(br_target);
 }
 
-:""^case_indent^".default" br_target is ULeb128; br_target; ctx_is_default=1; case_indent {
+:.default br_target is ULeb128; br_target; ctx_is_default=1; ctx_is_case=1 {
 	doBranch(br_target);
 }
 
-:""^indent^"br_table" is opc=0x0e; ULeb128; sp1_32; indent {
+:br_table is opc=0x0e; ULeb128; sp1_32; ctx_is_case=0 {
 	BRTableInput = sp1_32;
 }
 
-:""^indent^"return" is opc=0x0f; indent {
+:return is opc=0x0f; ctx_is_case=0 {
 	popCallOther(&o0);
 	return [LR];
 }
-:""^indent^"call" br_target is opc=0x10; ULeb128; br_target; indent {
+:call br_target is opc=0x10; ULeb128; br_target; ctx_is_case=0 {
 	popCallOther(&i0);
 	call br_target;
 	pushCallOther(&o0);
 }
-:""^indent^"call_indirect" "type="^typeidx tableref is opc=0x11; typeidx; tableref; sp1_32; indent {
+:call_indirect "type="^typeidx tableref is opc=0x11; typeidx; tableref; sp1_32; ctx_is_case=0 {
 	addr:8 = &tableref + sext(sp1_32) * 8;
 	val:8 = *[table] addr;
 	popCallOther(&i0);
@@ -241,19 +231,19 @@ case_indent: "  "^case_indent is case_indent & ctx_is_case=1 [ ctx_indent = ctx_
 }
 
 ## Reference Instructions
-:""^indent^"ref.null" reftype is opc=0xd0; reftype; sp0_64; indent {
+:ref.null reftype is opc=0xd0; reftype; sp0_64; ctx_is_case=0 {
 	sp0_64 = 0;
 }
-:""^indent^"ref.is_null" is opc=0xd1; sp1_32; sp1_64; indent {
+:ref.is_null is opc=0xd1; sp1_32; sp1_64; ctx_is_case=0 {
 	res:4 = zext(sp1_64 == 0);
 	sp1_32 = res;
 }
-:""^indent^"ref.func" funcidx is opc=0xd2; funcidx; br_target; sp0_64; indent {
+:ref.func funcidx is opc=0xd2; funcidx; br_target; sp0_64; ctx_is_case=0 {
 	sp0_64 = &br_target;
 }
 
 ## Parametric Instructions
-:""^indent^"drop" is opc=0x1a; indent {
+:drop is opc=0x1a; ctx_is_case=0 {
 	# stack adjustment is handled by preanalyzer
 }
 
@@ -267,145 +257,145 @@ macro select64(sp1_32, sp2_64, sp3_64) {
 	sp3_64 = sp2_64;
 }
 
-:""^indent^"select" is opc=0x1b; sp1_32; sp2_32; sp3_32; indent; ctx_is_op64=0 {
+:select is opc=0x1b; sp1_32; sp2_32; sp3_32; ctx_is_case=0; ctx_is_op64=0 {
 	select32(sp1_32, sp2_32, sp3_32);
 }
-:""^indent^"select" is opc=0x1b; sp1_32; sp2_64; sp3_64; indent; ctx_is_op64=1 {
+:select is opc=0x1b; sp1_32; sp2_64; sp3_64; ctx_is_case=0; ctx_is_op64=1 {
 	select64(sp1_32, sp2_64, sp3_64);
 }
 
 # In the current version of WASM, only one type index is permitted in select t*.
 # This is functionally identical to regular select.
-:""^indent^"select" is opc=0x1c; opc2=0x01; valtype; sp1_32; sp2_64; sp3_64; indent {
+:select is opc=0x1c; opc2=0x01; valtype; sp1_32; sp2_64; sp3_64; ctx_is_case=0 {
 	# i64, f64, funcref, externref
 	select64(sp1_32, sp2_64, sp3_64);
 }
-:""^indent^"select" 0x7f is opc=0x1c; opc2=0x01; valtype=0x7f; sp1_32; sp2_32; sp3_32; indent {
+:select 0x7f is opc=0x1c; opc2=0x01; valtype=0x7f; sp1_32; sp2_32; sp3_32; ctx_is_case=0 {
 	# i32
 	select32(sp1_32, sp2_32, sp3_32);
 }
-:""^indent^"select" 0x7d is opc=0x1c; opc2=0x01; valtype=0x7d; sp1_32; sp2_32; sp3_32; indent {
+:select 0x7d is opc=0x1c; opc2=0x01; valtype=0x7d; sp1_32; sp2_32; sp3_32; ctx_is_case=0 {
 	# f32
 	select32(sp1_32, sp2_32, sp3_32);
 }
 
 ## Variable Instructions
-:""^indent^"local.get" local4 is opc=0x20; local4; sp0_32; indent; ctx_is_op64=0 {
+:local.get local4 is opc=0x20; local4; sp0_32; ctx_is_case=0; ctx_is_op64=0 {
 	sp0_32 = local4;
 }
-:""^indent^"local.get" local8 is opc=0x20; local8; sp0_64; indent; ctx_is_op64=1 {
+:local.get local8 is opc=0x20; local8; sp0_64; ctx_is_case=0; ctx_is_op64=1 {
 	sp0_64 = local8;
 }
 
-:""^indent^"local.set" local4 is opc=0x21; local4; sp1_32; indent; ctx_is_op64=0 {
+:local.set local4 is opc=0x21; local4; sp1_32; ctx_is_case=0; ctx_is_op64=0 {
 	local4 = sp1_32;
 }
-:""^indent^"local.set" local8 is opc=0x21; local8; sp1_64; indent; ctx_is_op64=1 {
+:local.set local8 is opc=0x21; local8; sp1_64; ctx_is_case=0; ctx_is_op64=1 {
 	local8 = sp1_64;
 }
 
-:""^indent^"local.tee" local4 is opc=0x22; local4; sp1_32; indent; ctx_is_op64=0 {
+:local.tee local4 is opc=0x22; local4; sp1_32; ctx_is_case=0; ctx_is_op64=0 {
 	local4 = sp1_32;
 }
-:""^indent^"local.tee" local8 is opc=0x22; local8; sp1_64; indent; ctx_is_op64=1 {
+:local.tee local8 is opc=0x22; local8; sp1_64; ctx_is_case=0; ctx_is_op64=1 {
 	local8 = sp1_64;
 }
 
-:""^indent^"global.get" global4 is opc=0x23; global4; sp0_32; indent; ctx_is_op64=0; ctx_is_global_sp=0 {
+:global.get global4 is opc=0x23; global4; sp0_32; ctx_is_case=0; ctx_is_op64=0; ctx_is_global_sp=0 {
 	sp0_32 = global4;
 }
-:""^indent^"global.get" global4 is opc=0x23; global4; sp0_32; indent; ctx_is_op64=0; ctx_is_global_sp=1 {
+:global.get global4 is opc=0x23; global4; sp0_32; ctx_is_case=0; ctx_is_op64=0; ctx_is_global_sp=1 {
 	sp0_32 = SP;
 }
-:""^indent^"global.get" global8 is opc=0x23; global8; sp0_64; indent; ctx_is_op64=1 {
+:global.get global8 is opc=0x23; global8; sp0_64; ctx_is_case=0; ctx_is_op64=1 {
 	sp0_64 = global8;
 }
 
-:""^indent^"global.set" global4 is opc=0x24; global4; sp1_32; indent; ctx_is_op64=0; ctx_is_global_sp=0 {
+:global.set global4 is opc=0x24; global4; sp1_32; ctx_is_case=0; ctx_is_op64=0; ctx_is_global_sp=0 {
 	global4 = sp1_32;
 }
-:""^indent^"global.set" global4 is opc=0x24; global4; sp1_32; indent; ctx_is_op64=0; ctx_is_global_sp=1 {
+:global.set global4 is opc=0x24; global4; sp1_32; ctx_is_case=0; ctx_is_op64=0; ctx_is_global_sp=1 {
 	SP = sp1_32;
 }
-:""^indent^"global.set" global8 is opc=0x24; global8; sp1_64; indent; ctx_is_op64=1 {
+:global.set global8 is opc=0x24; global8; sp1_64; ctx_is_case=0; ctx_is_op64=1 {
 	global8 = sp1_64;
 }
 
 ## Table Instructions
-:""^indent^"table.get" tableref is opc=0x25; tableref; sp1_32; sp1_64; indent {
+:table.get tableref is opc=0x25; tableref; sp1_32; sp1_64; ctx_is_case=0 {
 	addr:8 = &tableref + sext(sp1_32) * 8;
 	sp1_64 = *[table] addr;
 }
 
-:""^indent^"table.set" tableref is opc=0x26; tableref; sp1_64; sp2_32; indent {
+:table.set tableref is opc=0x26; tableref; sp1_64; sp2_32; ctx_is_case=0 {
 	addr:8 = &tableref + sext(sp2_32) * 8;
 	*[table] addr = sp1_64;
 }
 
-:""^indent^"table.init" elemidx tableidx is opc=0xfc; opc2=0x0c; elemidx; tableidx; sp1_32; sp2_32; sp3_32; indent {
+:table.init elemidx tableidx is opc=0xfc; opc2=0x0c; elemidx; tableidx; sp1_32; sp2_32; sp3_32; ctx_is_case=0 {
 	table_init(elemidx:4, tableidx:4, sp1_32, sp2_32, sp3_32);
 }
 
-:""^indent^"elem.drop" elemidx is opc=0xfc; opc2=0x0d; elemidx; indent {
+:elem.drop elemidx is opc=0xfc; opc2=0x0d; elemidx; ctx_is_case=0 {
 	elem_drop(elemidx:4);
 }
 
-:""^indent^"table.copy" tableidx tableidx2 is opc=0xfc; opc2=0x0e; tableidx; tableidx2; sp1_32; sp2_32; sp3_32; indent {
+:table.copy tableidx tableidx2 is opc=0xfc; opc2=0x0e; tableidx; tableidx2; sp1_32; sp2_32; sp3_32; ctx_is_case=0 {
 	table_copy(tableidx:4, tableidx2:4, sp1_32, sp2_32, sp3_32);
 }
 
-:""^indent^"table.grow" tableidx is opc=0xfc; opc2=0x0f; tableidx; sp1_32; indent {
+:table.grow tableidx is opc=0xfc; opc2=0x0f; tableidx; sp1_32; ctx_is_case=0 {
 	sp1_32 = table_grow(tableidx:4, sp1_32);
 }
 
-:""^indent^"table.size" tableidx is opc=0xfc; opc2=0x10; tableidx; sp0_32; indent {
+:table.size tableidx is opc=0xfc; opc2=0x10; tableidx; sp0_32; ctx_is_case=0 {
 	sp0_32 = table_size(tableidx:4);
 }
 
-:""^indent^"table.fill" tableidx is opc=0xfc; opc2=0x11; tableidx; sp1_32; sp2_64; sp3_32; indent {
+:table.fill tableidx is opc=0xfc; opc2=0x11; tableidx; sp1_32; sp2_64; sp3_32; ctx_is_case=0 {
 	table_fill(tableidx:4, sp1_32, sp2_64, sp3_32);
 }
 
 
 ## Memory Instructions
-:""^indent^"memory.size" memidx is opc=0x3f; memidx; sp0_32; indent {
+:memory.size memidx is opc=0x3f; memidx; sp0_32; ctx_is_case=0 {
 	sp0_32 = memory_size(memidx:4);
 }
 
-:""^indent^"memory.grow" memidx is opc=0x40; memidx; sp1_32; indent {
+:memory.grow memidx is opc=0x40; memidx; sp1_32; ctx_is_case=0 {
 	sp1_32 = memory_grow(memidx:4, sp1_32);
 }
 
-:""^indent^"memory.init" dataidx memidx is opc=0xfc; opc2=0x08; dataidx; memidx; sp1_32; sp2_32; sp3_32; indent {
+:memory.init dataidx memidx is opc=0xfc; opc2=0x08; dataidx; memidx; sp1_32; sp2_32; sp3_32; ctx_is_case=0 {
 	memory_init(dataidx, memidx:4, sp1_32, sp2_32, sp3_32);
 }
 
-:""^indent^"data.drop" dataidx is opc=0xfc; opc2=0x09; dataidx; indent {
+:data.drop dataidx is opc=0xfc; opc2=0x09; dataidx; ctx_is_case=0 {
 	data_drop(dataidx);
 }
 
-:""^indent^"memory.copy" memidx memidx2 is opc=0xfc; opc2=0x0a; memidx; memidx2; sp1_32; sp2_32; sp3_32; indent {
+:memory.copy memidx memidx2 is opc=0xfc; opc2=0x0a; memidx; memidx2; sp1_32; sp2_32; sp3_32; ctx_is_case=0 {
 	memory_copy(memidx:4, memidx2:4, sp1_32, sp2_32, sp3_32);
 }
 
-:""^indent^"memory.fill" memidx is opc=0xfc; opc2=0x0b; memidx; sp1_32; sp2_32; sp3_32; indent {
+:memory.fill memidx is opc=0xfc; opc2=0x0b; memidx; sp1_32; sp2_32; sp3_32; ctx_is_case=0 {
 	memory_fill(memidx:4, sp1_32, sp2_32, sp3_32);
 }
 
 ## Numeric Instructions: const
-:""^indent^"i32.const" SLeb128 is opc=0x41; SLeb128; sp0_32; indent {
+:i32.const SLeb128 is opc=0x41; SLeb128; sp0_32; ctx_is_case=0 {
 	sp0_32 = SLeb128:4;
 }
 
-:""^indent^"i64.const" SLeb128 is opc=0x42; SLeb128; sp0_64; indent {
+:i64.const SLeb128 is opc=0x42; SLeb128; sp0_64; ctx_is_case=0 {
 	sp0_64 = SLeb128:8;
 }
 
-:""^indent^"f32.const" f32 is opc=0x43; f32; sp0_32; indent {
+:f32.const f32 is opc=0x43; f32; sp0_32; ctx_is_case=0 {
 	sp0_32 = float2float(f32:4);
 }
 
-:""^indent^"f64.const" f64 is opc=0x44; f64; sp0_64; indent {
+:f64.const f64 is opc=0x44; f64; sp0_64; ctx_is_case=0 {
 	sp0_64 = float2float(f64:8);
 }
 
