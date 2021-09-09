@@ -148,19 +148,6 @@ public class WasmModule {
 		return importSection.getImports(kind);
 	}
 
-	public List<WasmFuncType> getNonImportedFunctions() {
-		WasmFunctionSection functionSection = getFunctionSection();
-		if (functionSection == null) {
-			return Collections.emptyList();
-		}
-		int count = functionSection.getTypeCount();
-		List<WasmFuncType> result = new ArrayList<>(count);
-		for (int i = 0; i < count; i++) {
-			result.add(getType(functionSection.getTypeIdx(i)));
-		}
-		return result;
-	}
-
 	public List<WasmTableType> getNonImportedTables() {
 		WasmTableSection tableSection = getTableSection();
 		if (tableSection == null) {
@@ -220,7 +207,12 @@ public class WasmModule {
 
 	// #region Convenience functions
 	public int getFunctionCount() {
-		return getImports(WasmExternalKind.EXT_FUNCTION).size() + getNonImportedFunctions().size();
+		int numFunctions = getImports(WasmExternalKind.EXT_FUNCTION).size();
+		WasmFunctionSection functionSection = getFunctionSection();
+		if (functionSection != null) {
+			numFunctions += functionSection.getTypeCount();
+		}
+		return numFunctions;
 	}
 
 	public WasmFuncType getFunctionType(int funcidx) {
@@ -228,7 +220,7 @@ public class WasmModule {
 		if (funcidx < imports.size()) {
 			return getType(imports.get(funcidx).getFunctionType());
 		}
-		return getNonImportedFunctions().get(funcidx - imports.size());
+		return getType(getFunctionSection().getTypeIdx(funcidx - imports.size()));
 	}
 
 	public ValType[] getFunctionLocals(int funcidx) {
