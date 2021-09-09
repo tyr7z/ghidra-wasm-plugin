@@ -3,9 +3,8 @@ package wasm.format.sections;
 import java.io.IOException;
 
 import ghidra.app.util.bin.BinaryReader;
-import ghidra.program.model.data.Structure;
 import ghidra.util.exception.DuplicateNameException;
-import wasm.format.StructureUtils;
+import wasm.format.StructureBuilder;
 
 public class WasmUnknownCustomSection extends WasmCustomSection {
 	byte[] contents;
@@ -16,9 +15,9 @@ public class WasmUnknownCustomSection extends WasmCustomSection {
 	}
 
 	@Override
-	protected void addToStructure(Structure structure) throws IllegalArgumentException, DuplicateNameException, IOException {
-		super.addToStructure(structure);
-		StructureUtils.addArrayField(structure, BYTE, (int) getCustomSize(), "custom");
+	protected void addToStructure(StructureBuilder builder) throws DuplicateNameException, IOException {
+		super.addToStructure(builder);
+		builder.addArray(BYTE, (int) getCustomSize(), "custom");
 	}
 
 	@Override

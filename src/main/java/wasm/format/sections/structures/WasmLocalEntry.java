@@ -6,9 +6,8 @@ import ghidra.app.util.bin.BinaryReader;
 import ghidra.app.util.bin.StructConverter;
 import ghidra.app.util.bin.format.dwarf4.LEB128;
 import ghidra.program.model.data.DataType;
-import ghidra.program.model.data.Structure;
 import ghidra.util.exception.DuplicateNameException;
-import wasm.format.StructureUtils;
+import wasm.format.StructureBuilder;
 
 public class WasmLocalEntry implements StructConverter {
 
@@ -30,9 +29,9 @@ public class WasmLocalEntry implements StructConverter {
 
 	@Override
 	public DataType toDataType() throws DuplicateNameException, IOException {
-		Structure structure = StructureUtils.createStructure("function_body");
-		StructureUtils.addField(structure, count, "count");
-		StructureUtils.addField(structure, BYTE, "type");
-		return structure;
+		StructureBuilder builder = new StructureBuilder("function_body");
+		builder.add(count, "count");
+		builder.add(BYTE, "type");
+		return builder.toStructure();
 	}
 }

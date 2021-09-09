@@ -6,9 +6,8 @@ import ghidra.app.util.bin.BinaryReader;
 import ghidra.app.util.bin.StructConverter;
 import ghidra.app.util.bin.format.dwarf4.LEB128;
 import ghidra.program.model.data.DataType;
-import ghidra.program.model.data.Structure;
 import ghidra.util.exception.DuplicateNameException;
-import wasm.format.StructureUtils;
+import wasm.format.StructureBuilder;
 
 public abstract class WasmNameSubsection implements StructConverter {
 
@@ -54,16 +53,16 @@ public abstract class WasmNameSubsection implements StructConverter {
 
 	@Override
 	public DataType toDataType() throws DuplicateNameException, IOException {
-		Structure structure = StructureUtils.createStructure(getName());
-		StructureUtils.addField(structure, BYTE, "id");
-		StructureUtils.addField(structure, contentLength, "size");
-		addToStructure(structure);
-		return structure;
+		StructureBuilder builder = new StructureBuilder(getName());
+		builder.add(BYTE, "id");
+		builder.add(contentLength, "size");
+		addToStructure(builder);
+		return builder.toStructure();
 	}
 
 	public abstract String getName();
 
-	protected abstract void addToStructure(Structure s) throws IllegalArgumentException, DuplicateNameException, IOException;
+	protected abstract void addToStructure(StructureBuilder builder) throws DuplicateNameException, IOException;
 
 	public WasmNameSubsectionId getId() {
 		if (id < WasmNameSubsectionId.values().length) {

@@ -9,9 +9,8 @@ import ghidra.app.util.bin.BinaryReader;
 import ghidra.app.util.bin.StructConverter;
 import ghidra.app.util.bin.format.dwarf4.LEB128;
 import ghidra.program.model.data.DataType;
-import ghidra.program.model.data.Structure;
 import ghidra.util.exception.DuplicateNameException;
-import wasm.format.StructureUtils;
+import wasm.format.StructureBuilder;
 import wasm.format.WasmEnums.ValType;
 
 public class WasmFunctionBody implements StructConverter {
@@ -57,13 +56,13 @@ public class WasmFunctionBody implements StructConverter {
 
 	@Override
 	public DataType toDataType() throws DuplicateNameException, IOException {
-		Structure structure = StructureUtils.createStructure("function_body_" + instructionsOffset);
-		StructureUtils.addField(structure, bodySize, "body_size");
-		StructureUtils.addField(structure, localCount, "local_count");
+		StructureBuilder builder = new StructureBuilder("function_body_" + instructionsOffset);
+		builder.add(bodySize, "body_size");
+		builder.add(localCount, "local_count");
 		for (int i = 0; i < localCount.asLong(); i++) {
-			StructureUtils.addField(structure, locals.get(i).toDataType(), "compressed_locals_" + i);
+			builder.add(locals.get(i).toDataType(), "compressed_locals_" + i);
 		}
-		StructureUtils.addArrayField(structure, BYTE, instructions.length, "instructions");
-		return structure;
+		builder.addArray(BYTE, instructions.length, "instructions");
+		return builder.toStructure();
 	}
 }

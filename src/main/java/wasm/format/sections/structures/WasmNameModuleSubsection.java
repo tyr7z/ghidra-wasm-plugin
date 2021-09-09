@@ -3,9 +3,8 @@ package wasm.format.sections.structures;
 import java.io.IOException;
 
 import ghidra.app.util.bin.BinaryReader;
-import ghidra.program.model.data.Structure;
 import ghidra.util.exception.DuplicateNameException;
-import wasm.format.StructureUtils;
+import wasm.format.StructureBuilder;
 
 public class WasmNameModuleSubsection extends WasmNameSubsection {
 
@@ -21,8 +20,8 @@ public class WasmNameModuleSubsection extends WasmNameSubsection {
 	}
 
 	@Override
-	public void addToStructure(Structure structure) throws IllegalArgumentException, DuplicateNameException, IOException {
-		StructureUtils.addField(structure, moduleName, "module_name");
+	public void addToStructure(StructureBuilder builder) throws DuplicateNameException, IOException {
+		builder.add(moduleName, "module_name");
 	}
 
 	@Override

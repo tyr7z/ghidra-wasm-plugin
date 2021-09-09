@@ -6,9 +6,8 @@ import ghidra.app.util.bin.BinaryReader;
 import ghidra.app.util.bin.StructConverter;
 import ghidra.app.util.bin.format.dwarf4.LEB128;
 import ghidra.program.model.data.DataType;
-import ghidra.program.model.data.Structure;
 import ghidra.util.exception.DuplicateNameException;
-import wasm.format.StructureUtils;
+import wasm.format.StructureBuilder;
 import wasm.format.WasmEnums.WasmExternalKind;
 
 public class WasmImportEntry implements StructConverter {
@@ -98,26 +97,26 @@ public class WasmImportEntry implements StructConverter {
 
 	@Override
 	public DataType toDataType() throws DuplicateNameException, IOException {
-		Structure structure = StructureUtils.createStructure("import_" + getName());
-		StructureUtils.addField(structure, module, "module");
-		StructureUtils.addField(structure, field, "field");
-		StructureUtils.addField(structure, BYTE, "kind");
+		StructureBuilder builder = new StructureBuilder("import_" + getName());
+		builder.add(module, "module");
+		builder.add(field, "field");
+		builder.add(BYTE, "kind");
 		switch (kind) {
 		case EXT_FUNCTION:
-			StructureUtils.addField(structure, function_type, "type");
+			builder.add(function_type, "type");
 			break;
 		case EXT_TABLE:
-			StructureUtils.addField(structure, table_type, "type");
+			builder.add(table_type, "type");
 			break;
 		case EXT_MEMORY:
-			StructureUtils.addField(structure, memory_type, "type");
+			builder.add(memory_type, "type");
 			break;
 		case EXT_GLOBAL:
-			StructureUtils.addField(structure, global_type, "type");
+			builder.add(global_type, "type");
 			break;
 		default:
 			break;
 		}
-		return structure;
+		return builder.toStructure();
 	}
 }

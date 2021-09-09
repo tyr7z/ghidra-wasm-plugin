@@ -10,11 +10,10 @@ import ghidra.app.util.bin.StructConverter;
 import ghidra.app.util.bin.format.dwarf4.LEB128;
 import ghidra.program.model.address.Address;
 import ghidra.program.model.data.DataType;
-import ghidra.program.model.data.Structure;
 import ghidra.program.model.listing.Program;
 import ghidra.util.exception.DuplicateNameException;
 import wasm.WasmLoader;
-import wasm.format.StructureUtils;
+import wasm.format.StructureBuilder;
 import wasm.format.WasmEnums.ValType;
 import wasm.format.WasmModule;
 
@@ -170,31 +169,31 @@ public class WasmElementSegment implements StructConverter {
 
 	@Override
 	public DataType toDataType() throws DuplicateNameException, IOException {
-		Structure structure = StructureUtils.createStructure("element_segment");
-		StructureUtils.addField(structure, BYTE, "flags");
+		StructureBuilder builder = new StructureBuilder("element_segment");
+		builder.add(BYTE, "flags");
 		if (tableidx != null) {
-			StructureUtils.addField(structure, tableidx, "tableidx");
+			builder.add(tableidx, "tableidx");
 		}
 		if (offset != null) {
-			StructureUtils.addField(structure, offset, "offset");
+			builder.add(offset, "offset");
 		}
 		if ((flags & 3) != 0) {
 			/* both elemkind and reftype are single bytes */
-			StructureUtils.addField(structure, BYTE, "element_type");
+			builder.add(BYTE, "element_type");
 		}
 
-		StructureUtils.addField(structure, count, "count");
+		builder.add(count, "count");
 		if (funcidxs != null) {
 			for (int i = 0; i < funcidxs.size(); i++) {
-				StructureUtils.addField(structure, funcidxs.get(i), "element" + i);
+				builder.add(funcidxs.get(i), "element" + i);
 			}
 		}
 		if (exprs != null) {
 			for (int i = 0; i < exprs.size(); i++) {
-				StructureUtils.addField(structure, exprs.get(i), "element" + i);
+				builder.add(exprs.get(i), "element" + i);
 			}
 		}
 
-		return structure;
+		return builder.toStructure();
 	}
 }

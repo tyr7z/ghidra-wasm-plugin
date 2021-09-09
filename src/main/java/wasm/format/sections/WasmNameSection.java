@@ -7,9 +7,8 @@ import java.util.List;
 import java.util.Map;
 
 import ghidra.app.util.bin.BinaryReader;
-import ghidra.program.model.data.Structure;
 import ghidra.util.exception.DuplicateNameException;
-import wasm.format.StructureUtils;
+import wasm.format.StructureBuilder;
 import wasm.format.sections.structures.WasmNameFunctionSubsection;
 import wasm.format.sections.structures.WasmNameLocalSubsection;
 import wasm.format.sections.structures.WasmNameModuleSubsection;
@@ -34,10 +33,10 @@ public class WasmNameSection extends WasmCustomSection {
 	}
 
 	@Override
-	protected void addToStructure(Structure structure) throws IllegalArgumentException, DuplicateNameException, IOException {
-		super.addToStructure(structure);
+	protected void addToStructure(StructureBuilder builder) throws DuplicateNameException, IOException {
+		super.addToStructure(builder);
 		for (int i = 0; i < subsections.size(); i++) {
-			StructureUtils.addField(structure, subsections.get(i), subsections.get(i).getName());
+			builder.add(subsections.get(i), subsections.get(i).getName());
 		}
 	}
 

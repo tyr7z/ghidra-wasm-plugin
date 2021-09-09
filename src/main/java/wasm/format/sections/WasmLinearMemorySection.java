@@ -7,9 +7,8 @@ import java.util.List;
 
 import ghidra.app.util.bin.BinaryReader;
 import ghidra.app.util.bin.format.dwarf4.LEB128;
-import ghidra.program.model.data.Structure;
 import ghidra.util.exception.DuplicateNameException;
-import wasm.format.StructureUtils;
+import wasm.format.StructureBuilder;
 import wasm.format.sections.structures.WasmResizableLimits;
 
 public class WasmLinearMemorySection extends WasmSection {
@@ -30,10 +29,10 @@ public class WasmLinearMemorySection extends WasmSection {
 	}
 
 	@Override
-	protected void addToStructure(Structure structure) throws IllegalArgumentException, DuplicateNameException, IOException {
-		StructureUtils.addField(structure, count, "count");
+	protected void addToStructure(StructureBuilder builder) throws DuplicateNameException, IOException {
+		builder.add(count, "count");
 		for (int i = 0; i < limits.size(); i++) {
-			StructureUtils.addField(structure, limits.get(i), "memory_type_" + i);
+			builder.add(limits.get(i), "memory_type_" + i);
 		}
 	}
 

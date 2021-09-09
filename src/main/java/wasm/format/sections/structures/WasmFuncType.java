@@ -6,9 +6,8 @@ import ghidra.app.util.bin.BinaryReader;
 import ghidra.app.util.bin.StructConverter;
 import ghidra.app.util.bin.format.dwarf4.LEB128;
 import ghidra.program.model.data.DataType;
-import ghidra.program.model.data.Structure;
 import ghidra.util.exception.DuplicateNameException;
-import wasm.format.StructureUtils;
+import wasm.format.StructureBuilder;
 import wasm.format.WasmEnums.ValType;
 
 public class WasmFuncType implements StructConverter {
@@ -56,12 +55,12 @@ public class WasmFuncType implements StructConverter {
 
 	@Override
 	public DataType toDataType() throws DuplicateNameException, IOException {
-		Structure structure = StructureUtils.createStructure("func_type_" + paramCount.asLong() + "_" + returnCount.asLong());
-		StructureUtils.addField(structure, BYTE, "form");
-		StructureUtils.addField(structure, paramCount, "param_count");
-		StructureUtils.addArrayField(structure, BYTE, (int) paramCount.asLong(), "param_types");
-		StructureUtils.addField(structure, returnCount, "return_count");
-		StructureUtils.addArrayField(structure, BYTE, (int) returnCount.asLong(), "return_types");
-		return structure;
+		StructureBuilder builder = new StructureBuilder("func_type_" + paramCount.asLong() + "_" + returnCount.asLong());
+		builder.add(BYTE, "form");
+		builder.add(paramCount, "param_count");
+		builder.addArray(BYTE, (int) paramCount.asLong(), "param_types");
+		builder.add(returnCount, "return_count");
+		builder.addArray(BYTE, (int) returnCount.asLong(), "return_types");
+		return builder.toStructure();
 	}
 }

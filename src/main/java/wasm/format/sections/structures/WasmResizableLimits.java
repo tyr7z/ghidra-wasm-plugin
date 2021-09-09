@@ -6,9 +6,8 @@ import ghidra.app.util.bin.BinaryReader;
 import ghidra.app.util.bin.StructConverter;
 import ghidra.app.util.bin.format.dwarf4.LEB128;
 import ghidra.program.model.data.DataType;
-import ghidra.program.model.data.Structure;
 import ghidra.util.exception.DuplicateNameException;
-import wasm.format.StructureUtils;
+import wasm.format.StructureBuilder;
 
 public class WasmResizableLimits implements StructConverter {
 
@@ -37,12 +36,12 @@ public class WasmResizableLimits implements StructConverter {
 
 	@Override
 	public DataType toDataType() throws DuplicateNameException, IOException {
-		Structure structure = StructureUtils.createStructure("limits");
-		StructureUtils.addField(structure, BYTE, "flags");
-		StructureUtils.addField(structure, initial, "initial");
+		StructureBuilder builder = new StructureBuilder("limits");
+		builder.add(BYTE, "flags");
+		builder.add(initial, "initial");
 		if (maximum != null) {
-			StructureUtils.addField(structure, maximum, "maximum");
+			builder.add(maximum, "maximum");
 		}
-		return structure;
+		return builder.toStructure();
 	}
 }

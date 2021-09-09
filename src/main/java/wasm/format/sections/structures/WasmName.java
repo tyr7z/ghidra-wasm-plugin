@@ -7,9 +7,8 @@ import ghidra.app.util.bin.BinaryReader;
 import ghidra.app.util.bin.StructConverter;
 import ghidra.app.util.bin.format.dwarf4.LEB128;
 import ghidra.program.model.data.DataType;
-import ghidra.program.model.data.Structure;
 import ghidra.util.exception.DuplicateNameException;
-import wasm.format.StructureUtils;
+import wasm.format.StructureBuilder;
 
 public class WasmName implements StructConverter {
 	private LEB128 size;
@@ -31,9 +30,9 @@ public class WasmName implements StructConverter {
 
 	@Override
 	public DataType toDataType() throws DuplicateNameException, IOException {
-		Structure structure = StructureUtils.createStructure("name_" + size.asLong());
-		StructureUtils.addField(structure, size, "size");
-		StructureUtils.addStringField(structure, (int) size.asLong(), "value");
-		return structure;
+		StructureBuilder builder = new StructureBuilder("name_" + size.asLong());
+		builder.add(size, "size");
+		builder.addString((int) size.asLong(), "value");
+		return builder.toStructure();
 	}
 }

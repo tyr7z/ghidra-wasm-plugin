@@ -4,9 +4,8 @@ import java.io.IOException;
 
 import ghidra.app.util.bin.BinaryReader;
 import ghidra.app.util.bin.format.dwarf4.LEB128;
-import ghidra.program.model.data.Structure;
 import ghidra.util.exception.DuplicateNameException;
-import wasm.format.StructureUtils;
+import wasm.format.StructureBuilder;
 
 public class WasmStartSection extends WasmSection {
 
@@ -22,8 +21,8 @@ public class WasmStartSection extends WasmSection {
 	}
 
 	@Override
-	public void addToStructure(Structure structure) throws IllegalArgumentException, DuplicateNameException, IOException {
-		StructureUtils.addField(structure, funcIdx, "func");
+	public void addToStructure(StructureBuilder builder) throws DuplicateNameException, IOException {
+		builder.add(funcIdx, "func");
 	}
 
 	@Override

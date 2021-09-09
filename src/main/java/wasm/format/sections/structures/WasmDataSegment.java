@@ -6,9 +6,8 @@ import ghidra.app.util.bin.BinaryReader;
 import ghidra.app.util.bin.StructConverter;
 import ghidra.app.util.bin.format.dwarf4.LEB128;
 import ghidra.program.model.data.DataType;
-import ghidra.program.model.data.Structure;
 import ghidra.util.exception.DuplicateNameException;
-import wasm.format.StructureUtils;
+import wasm.format.StructureBuilder;
 
 public class WasmDataSegment implements StructConverter {
 
@@ -71,19 +70,19 @@ public class WasmDataSegment implements StructConverter {
 		if (getMemoryOffset() != null) {
 			structName += "_" + getMemoryOffset();
 		}
-		Structure structure = StructureUtils.createStructure(structName);
+		StructureBuilder builder = new StructureBuilder(structName);
 
-		StructureUtils.addField(structure, BYTE, "mode");
+		builder.add(BYTE, "mode");
 		if (index != null) {
-			StructureUtils.addField(structure, index, "index");
+			builder.add(index, "index");
 		}
 		if (offsetExpr != null) {
-			StructureUtils.addField(structure, offsetExpr, "offset");
+			builder.add(offsetExpr, "offset");
 		}
-		StructureUtils.addField(structure, size, "size");
+		builder.add(size, "size");
 		if (data.length != 0) {
-			StructureUtils.addArrayField(structure, BYTE, data.length, "data");
+			builder.addArray(BYTE, data.length, "data");
 		}
-		return structure;
+		return builder.toStructure();
 	}
 }

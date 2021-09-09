@@ -10,9 +10,8 @@ import ghidra.app.util.bin.BinaryReader;
 import ghidra.app.util.bin.StructConverter;
 import ghidra.app.util.bin.format.dwarf4.LEB128;
 import ghidra.program.model.data.DataType;
-import ghidra.program.model.data.Structure;
 import ghidra.util.exception.DuplicateNameException;
-import wasm.format.StructureUtils;
+import wasm.format.StructureBuilder;
 
 public class WasmNameMap implements StructConverter {
 	private LEB128 count;
@@ -44,13 +43,13 @@ public class WasmNameMap implements StructConverter {
 
 	@Override
 	public DataType toDataType() throws DuplicateNameException, IOException {
-		Structure structure = StructureUtils.createStructure("namemap");
-		StructureUtils.addField(structure, count, "count");
+		StructureBuilder builder = new StructureBuilder("namemap");
+		builder.add(count, "count");
 		for (int i = 0; i < entries.size(); i++) {
 			WasmAssoc assoc = entries.get(i);
-			StructureUtils.addField(structure, assoc.idx, "idx" + i);
-			StructureUtils.addField(structure, assoc.name, "name" + i);
+			builder.add(assoc.idx, "idx" + i);
+			builder.add(assoc.name, "name" + i);
 		}
-		return structure;
+		return builder.toStructure();
 	}
 }

@@ -5,9 +5,8 @@ import java.io.IOException;
 import ghidra.app.util.bin.BinaryReader;
 import ghidra.app.util.bin.StructConverter;
 import ghidra.program.model.data.DataType;
-import ghidra.program.model.data.Structure;
 import ghidra.util.exception.DuplicateNameException;
-import wasm.format.StructureUtils;
+import wasm.format.StructureBuilder;
 import wasm.format.WasmEnums.ValType;
 
 public class WasmTableType implements StructConverter {
@@ -34,9 +33,9 @@ public class WasmTableType implements StructConverter {
 
 	@Override
 	public DataType toDataType() throws DuplicateNameException, IOException {
-		Structure structure = StructureUtils.createStructure("table_type");
-		StructureUtils.addField(structure, BYTE, "element_type");
-		StructureUtils.addField(structure, limits, "limits");
-		return structure;
+		StructureBuilder builder = new StructureBuilder("table_type");
+		builder.add(BYTE, "element_type");
+		builder.add(limits, "limits");
+		return builder.toStructure();
 	}
 }

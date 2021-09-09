@@ -6,9 +6,8 @@ import java.util.List;
 
 import ghidra.app.util.bin.BinaryReader;
 import ghidra.app.util.bin.format.dwarf4.LEB128;
-import ghidra.program.model.data.Structure;
 import ghidra.util.exception.DuplicateNameException;
-import wasm.format.StructureUtils;
+import wasm.format.StructureBuilder;
 
 public class WasmFunctionSection extends WasmSection {
 
@@ -32,10 +31,10 @@ public class WasmFunctionSection extends WasmSection {
 	}
 
 	@Override
-	protected void addToStructure(Structure structure) throws IllegalArgumentException, DuplicateNameException, IOException {
-		StructureUtils.addField(structure, count, "count");
+	protected void addToStructure(StructureBuilder builder) throws DuplicateNameException, IOException {
+		builder.add(count, "count");
 		for (int i = 0; i < types.size(); i++) {
-			StructureUtils.addField(structure, types.get(i), "function_" + i);
+			builder.add(types.get(i), "function_" + i);
 		}
 	}
 

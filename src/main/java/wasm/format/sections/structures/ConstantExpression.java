@@ -9,11 +9,10 @@ import ghidra.program.model.address.Address;
 import ghidra.program.model.data.DataType;
 import ghidra.program.model.data.Float4DataType;
 import ghidra.program.model.data.Float8DataType;
-import ghidra.program.model.data.Structure;
 import ghidra.program.model.listing.Program;
 import ghidra.util.exception.DuplicateNameException;
 import wasm.WasmLoader;
-import wasm.format.StructureUtils;
+import wasm.format.StructureBuilder;
 import wasm.format.WasmModule;
 
 /* A reader for expressions containing a single constant instruction.
@@ -161,27 +160,27 @@ public final class ConstantExpression implements StructConverter {
 
 	@Override
 	public DataType toDataType() throws DuplicateNameException, IOException {
-		Structure structure = StructureUtils.createStructure("expr");
-		StructureUtils.addField(structure, BYTE, "opcode");
+		StructureBuilder builder = new StructureBuilder("expr");
+		builder.add(BYTE, "opcode");
 		switch (type) {
 		case I32_CONST:
 		case I64_CONST:
 		case REF_FUNC:
 		case GLOBAL_GET:
-			StructureUtils.addField(structure, (LEB128) value, "value");
+			builder.add((LEB128) value, "value");
 			break;
 		case F32_CONST:
-			StructureUtils.addField(structure, Float4DataType.dataType, "value");
+			builder.add(Float4DataType.dataType, "value");
 			break;
 		case F64_CONST:
-			StructureUtils.addField(structure, Float8DataType.dataType, "value");
+			builder.add(Float8DataType.dataType, "value");
 			break;
 		case REF_NULL_FUNCREF:
 		case REF_NULL_EXTERNREF:
-			StructureUtils.addField(structure, BYTE, "nulltype");
+			builder.add(BYTE, "nulltype");
 			break;
 		}
-		StructureUtils.addField(structure, BYTE, "end_opcode");
-		return structure;
+		builder.add(BYTE, "end_opcode");
+		return builder.toStructure();
 	}
 }
