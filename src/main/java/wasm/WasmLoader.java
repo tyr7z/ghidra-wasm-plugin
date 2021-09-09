@@ -68,7 +68,7 @@ import wasm.format.sections.structures.WasmTableType;
 
 public class WasmLoader extends AbstractLibrarySupportLoader {
 
-	public final static long CODE_BASE = 0x80000000;
+	public final static long CODE_BASE = 0x80000000L;
 
 	@Override
 	public String getName() {
