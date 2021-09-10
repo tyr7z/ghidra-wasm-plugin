@@ -36,6 +36,13 @@ global used in the function prologue of any functions which use the C stack).
 Setting this option will cause Ghidra to analyze global.set/global.get
 operations involving the targeted global as stack pointer manipulations, which
 will allow the decompiler to recover stack variables and objects.
+- By default, the C stack is assumed to grow in the negative direction, i.e.
+towards smaller addresses. However, compilers are actually free to choose either
+stack direction, and both positive and negative-growing stacks have been
+observed in real-world samples. If your C stack grows upwards (which can be
+determined by looking at whether it adds or subtracts a constant to the C stack
+global in the function prologue), select the `pos-stack` compiler when importing
+the file, or via `Set Language...` on an existing file in the project window.
 - Element segments may be passive, or have offset expressions that depend on
 imported globals. In this case, the element segments are not automatically
 loaded to the table. You can manually load these segments by calling

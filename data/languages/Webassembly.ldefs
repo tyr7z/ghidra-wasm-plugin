@@ -12,5 +12,6 @@
             id="Wasm:LE:32:default">
     <description>Webassembly Language Module</description>
     <compiler name="default" spec="Webassembly.cspec" id="default"/>
+    <compiler name="pos-stack" spec="Webassembly-pos-stack.cspec" id="pos-stack"/>
   </language> 
 </language_definitions>
