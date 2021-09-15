@@ -83,7 +83,7 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 		WasmHeader header = new WasmHeader(reader);
 
 		if (Arrays.equals(WasmConstants.WASM_MAGIC, header.getMagic()) && WasmConstants.WASM_VERSION == header.getVersion()) {
-			loadSpecs.add(new LoadSpec(this, 0x10000000, new LanguageCompilerSpecPair("Wasm:LE:32:default", "default"), true));
+			loadSpecs.add(new LoadSpec(this, CODE_BASE, new LanguageCompilerSpecPair("Wasm:LE:32:default", "default"), true));
 		}
 
 		return loadSpecs;
@@ -455,7 +455,7 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 			} else {
 				mem = memories.get(memidx - imports.size());
 			}
-			createMemoryBlock(program, memidx, mem.getInitial() * 65536L, monitor);
+			createMemoryBlock(program, memidx, Math.min(mem.getInitial() * 65536L, CODE_BASE), monitor);
 		}
 	}
 
