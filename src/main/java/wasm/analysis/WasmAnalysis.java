@@ -124,15 +124,15 @@ public class WasmAnalysis implements AnalysisState {
 
 			ValType[] params = funcType.getParamTypes();
 			ValType[] returns = funcType.getReturnTypes();
-			ValType[] nonparam_locals = module.getFunctionLocals(funcidx);
-			if (nonparam_locals == null) {
+			ValType[] nonParamLocals = module.getFunctionLocals(funcidx);
+			if (nonParamLocals == null) {
 				/* import */
 				functions.add(new WasmFuncSignature(params, returns, name, startAddress));
 			} else {
-				ValType[] locals = new ValType[params.length + nonparam_locals.length];
+				ValType[] locals = new ValType[params.length + nonParamLocals.length];
 
 				System.arraycopy(params, 0, locals, 0, params.length);
-				System.arraycopy(nonparam_locals, 0, locals, params.length, nonparam_locals.length);
+				System.arraycopy(nonParamLocals, 0, locals, params.length, nonParamLocals.length);
 				functions.add(new WasmFuncSignature(params, returns, name, startAddress, endAddress, locals));
 			}
 		}

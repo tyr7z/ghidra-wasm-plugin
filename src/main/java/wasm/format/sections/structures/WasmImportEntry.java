@@ -16,10 +16,10 @@ public class WasmImportEntry implements StructConverter {
 	private WasmName field;
 	private WasmExternalKind kind;
 
-	private LEB128 function_type;
-	private WasmTableType table_type;
-	private WasmResizableLimits memory_type;
-	private WasmGlobalType global_type;
+	private LEB128 functionEntry;
+	private WasmTableType tableEntry;
+	private WasmResizableLimits memoryEntry;
+	private WasmGlobalType globalEntry;
 
 	private long startOffset, endOffset;
 
@@ -30,16 +30,16 @@ public class WasmImportEntry implements StructConverter {
 		kind = WasmExternalKind.values()[reader.readNextByte()];
 		switch (kind) {
 		case EXT_FUNCTION:
-			function_type = LEB128.readUnsignedValue(reader);
+			functionEntry = LEB128.readUnsignedValue(reader);
 			break;
 		case EXT_TABLE:
-			table_type = new WasmTableType(reader);
+			tableEntry = new WasmTableType(reader);
 			break;
 		case EXT_MEMORY:
-			memory_type = new WasmResizableLimits(reader);
+			memoryEntry = new WasmResizableLimits(reader);
 			break;
 		case EXT_GLOBAL:
-			global_type = new WasmGlobalType(reader);
+			globalEntry = new WasmGlobalType(reader);
 			break;
 		default:
 			break;
@@ -55,28 +55,28 @@ public class WasmImportEntry implements StructConverter {
 		if (kind != WasmExternalKind.EXT_FUNCTION) {
 			throw new IllegalArgumentException("Cannot get function type of non-function import");
 		}
-		return (int) function_type.asLong();
+		return (int) functionEntry.asLong();
 	}
 
 	public WasmTableType getTableType() {
 		if (kind != WasmExternalKind.EXT_TABLE) {
 			throw new IllegalArgumentException("Cannot get table type of non-table import");
 		}
-		return table_type;
+		return tableEntry;
 	}
 
 	public WasmResizableLimits getMemoryType() {
 		if (kind != WasmExternalKind.EXT_MEMORY) {
 			throw new IllegalArgumentException("Cannot get memory type of non-memory import");
 		}
-		return memory_type;
+		return memoryEntry;
 	}
 
 	public WasmGlobalType getGlobalType() {
 		if (kind != WasmExternalKind.EXT_GLOBAL) {
 			throw new IllegalArgumentException("Cannot get global type of non-global import");
 		}
-		return global_type;
+		return globalEntry;
 	}
 
 	public String getModule() {
@@ -103,16 +103,16 @@ public class WasmImportEntry implements StructConverter {
 		builder.add(BYTE, "kind");
 		switch (kind) {
 		case EXT_FUNCTION:
-			builder.add(function_type, "type");
+			builder.add(functionEntry, "type");
 			break;
 		case EXT_TABLE:
-			builder.add(table_type, "type");
+			builder.add(tableEntry, "type");
 			break;
 		case EXT_MEMORY:
-			builder.add(memory_type, "type");
+			builder.add(memoryEntry, "type");
 			break;
 		case EXT_GLOBAL:
-			builder.add(global_type, "type");
+			builder.add(globalEntry, "type");
 			break;
 		default:
 			break;
