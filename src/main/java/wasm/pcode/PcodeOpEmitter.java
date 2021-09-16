@@ -21,7 +21,8 @@ public class PcodeOpEmitter {
 
 	public PcodeOp[] getPcodeOps() {
 		if (ops.size() == 0) {
-			/* The decompiler may crash if we emit an empty array */
+			// Work around Ghidra issue #3389: decompiler can crash if injection produces an
+			// empty array
 			emitNop();
 		}
 		return ops.toArray(new PcodeOp[0]);
