@@ -6,8 +6,8 @@ import ghidra.program.model.lang.InjectPayloadCallother;
 import ghidra.program.model.listing.Program;
 import ghidra.program.model.pcode.PcodeOp;
 import wasm.analysis.WasmAnalysis;
-import wasm.analysis.WasmFunctionPreAnalysis;
-import wasm.analysis.WasmFunctionPreAnalysis.StackEffect;
+import wasm.analysis.WasmFunctionAnalysis;
+import wasm.analysis.WasmFunctionAnalysis.StackEffect;
 import wasm.format.WasmEnums.ValType;
 
 /**
@@ -29,7 +29,7 @@ public class InjectPayloadWasmPush extends InjectPayloadCallother {
 		Address baseAddress = program.getAddressFactory().getAddressSpace("register").getAddress(regoffset);
 
 		WasmAnalysis state = WasmAnalysis.getState(program);
-		WasmFunctionPreAnalysis funcAnalysis = state.getFunctionPreAnalysis(
+		WasmFunctionAnalysis funcAnalysis = state.getFunctionAnalysis(
 				program.getFunctionManager().getFunctionContaining(con.baseAddr));
 		if (funcAnalysis == null) {
 			return ops.getPcodeOps();

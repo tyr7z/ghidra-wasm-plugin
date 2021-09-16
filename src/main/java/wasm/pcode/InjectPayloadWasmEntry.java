@@ -6,7 +6,7 @@ import ghidra.program.model.lang.InjectPayloadSleigh;
 import ghidra.program.model.listing.Program;
 import ghidra.program.model.pcode.PcodeOp;
 import wasm.analysis.WasmAnalysis;
-import wasm.analysis.WasmFunctionPreAnalysis;
+import wasm.analysis.WasmFunctionAnalysis;
 import wasm.format.WasmEnums.ValType;
 
 /**
@@ -24,7 +24,7 @@ public class InjectPayloadWasmEntry extends InjectPayloadSleigh {
 		PcodeOpEmitter ops = new PcodeOpEmitter(program, con.baseAddr);
 
 		WasmAnalysis state = WasmAnalysis.getState(program);
-		WasmFunctionPreAnalysis funcAnalysis = state.getFunctionPreAnalysis(
+		WasmFunctionAnalysis funcAnalysis = state.getFunctionAnalysis(
 				program.getFunctionManager().getFunctionContaining(con.baseAddr));
 		if (funcAnalysis == null) {
 			return ops.getPcodeOps();

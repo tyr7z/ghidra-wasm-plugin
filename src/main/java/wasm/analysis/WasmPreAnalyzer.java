@@ -85,7 +85,7 @@ public class WasmPreAnalyzer extends AbstractAnalyzer {
 			if (func.isImport()) {
 				continue;
 			}
-			WasmFunctionPreAnalysis funcAnalysis = state.getFunctionPreAnalysis(function);
+			WasmFunctionAnalysis funcAnalysis = state.getFunctionAnalysis(function);
 			try {
 				funcAnalysis.applyContext(program, cStackGlobal);
 				AddressSet funcSet = new AddressSet(func.getStartAddr(), func.getEndAddr());

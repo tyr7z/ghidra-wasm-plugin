@@ -44,7 +44,7 @@ public class WasmAnalysis implements AnalysisState {
 	private WasmModule module = null;
 	private List<WasmFuncSignature> functions = null;
 	private Map<Address, WasmFuncSignature> functionsByAddress = new HashMap<>();
-	private Map<Function, WasmFunctionPreAnalysis> functionPreAnalyses = new HashMap<>();
+	private Map<Function, WasmFunctionAnalysis> functionAnalyses = new HashMap<>();
 
 	public WasmAnalysis(Program program) {
 		Memory mem = program.getMemory();
@@ -80,20 +80,20 @@ public class WasmAnalysis implements AnalysisState {
 		return functionsByAddress.get(address);
 	}
 
-	public synchronized WasmFunctionPreAnalysis getFunctionPreAnalysis(Function f) {
-		if (!functionPreAnalyses.containsKey(f)) {
+	public synchronized WasmFunctionAnalysis getFunctionAnalysis(Function f) {
+		if (!functionAnalyses.containsKey(f)) {
 			WasmFuncSignature func = getFunctionByAddress(f.getEntryPoint());
 			BinaryReader codeReader = new BinaryReader(new MemoryByteProvider(program.getMemory(), func.getStartAddr()), true);
-			WasmFunctionPreAnalysis preAnalysis = new WasmFunctionPreAnalysis(func);
+			WasmFunctionAnalysis funcAnalysis = new WasmFunctionAnalysis(func);
 			try {
-				preAnalysis.analyzeFunction(program, codeReader);
-				functionPreAnalyses.put(f, preAnalysis);
+				funcAnalysis.analyzeFunction(program, codeReader);
+				functionAnalyses.put(f, funcAnalysis);
 			} catch (Exception e) {
 				Msg.error(this, "Failed to analyze function " + func.getName(), e);
-				f.setComment("WARNING: Wasm pre-analysis failed, output may be incorrect: " + e);
+				f.setComment("WARNING: Wasm function analysis failed, output may be incorrect: " + e);
 			}
 		}
-		return functionPreAnalyses.get(f);
+		return functionAnalyses.get(f);
 	}
 
 	public WasmFuncType getType(int typeidx) {

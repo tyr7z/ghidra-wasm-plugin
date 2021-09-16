@@ -22,7 +22,7 @@ import wasm.format.sections.structures.WasmFuncType;
  * described in the Appendix:
  * https://webassembly.github.io/spec/core/appendix/algorithm.html
  */
-public class WasmFunctionPreAnalysis {
+public class WasmFunctionAnalysis {
 
 	private WasmFuncSignature func;
 	/* null in the value stack means Unknown */
@@ -31,7 +31,7 @@ public class WasmFunctionPreAnalysis {
 	private Map<Address, StackEffect> stackEffects = new HashMap<>();
 	private Map<Address, Long> globalGetSets = new HashMap<>();
 
-	public WasmFunctionPreAnalysis(WasmFuncSignature func) {
+	public WasmFunctionAnalysis(WasmFuncSignature func) {
 		this.func = func;
 	}
 
