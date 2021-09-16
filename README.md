@@ -35,20 +35,29 @@ the global used in the `stackSave`/`stackRestore` functions, if present, or the
 global used in the function prologue of any functions which use the C stack).
 Setting this option will cause Ghidra to analyze global.set/global.get
 operations involving the targeted global as stack pointer manipulations, which
-will allow the decompiler to recover stack variables and objects.
+will allow the decompiler to recover C stack variables and objects.
 - By default, the C stack is assumed to grow in the negative direction, i.e.
 towards smaller addresses. However, compilers are actually free to choose either
 stack direction, and both positive and negative-growing stacks have been
-observed in real-world samples. If your C stack grows upwards (which can be
-determined by looking at whether it adds or subtracts a constant to the C stack
-global in the function prologue), select the `pos-stack` compiler when importing
-the file, or via `Set Language...` on an existing file in the project window.
+observed in real-world samples. If your C stack grows upwards (e.g. indicated by
+an add operation to the C stack pointer in the function prologue rather than a
+subtract), select the `pos-stack` compiler when importing the file, or via `Set
+Language...` on an existing file in the project window.
+- Emscripten will usually translate function pointer calls into calls to
+exported `dyncall_` functions, which take a call-type-specific index as the
+first parameter. The index is used to index a sub-section of the main function
+table (table0) to find the function to call. The included script
+`analyze_dyncalls.py` can analyze the `dyncall_` functions, extract the indices,
+and rename referenced functions according to their call type and function index
+(which will often serve as function pointer values in memory). This can be used
+to resolve function pointer references, for example.
 - Element segments may be passive, or have offset expressions that depend on
 imported globals. In this case, the element segments are not automatically
 loaded to the table. You can manually load these segments by calling
 `WasmLoader.loadElementsToTable`. For example, to load element segment #0 to
 table #1 at offset 2 in Python:
-```python
+
+    ```python
 from wasm import WasmLoader
 from wasm.analysis import WasmAnalysis
 from ghidra.util.task import ConsoleTaskMonitor
@@ -57,7 +66,8 @@ WasmLoader.loadElementsToTable(currentProgram, WasmAnalysis.getState(currentProg
 ```
 - Similarly, data segments can be manually loaded as well. For example, to load
 data segment #5 to memory #0 at offset 0x1000, do the following in Python:
-```
+
+    ```python
 from wasm import WasmLoader
 from wasm.analysis import WasmAnalysis
 from ghidra.util.task import ConsoleTaskMonitor
@@ -65,7 +75,7 @@ monitor = ConsoleTaskMonitor()
 WasmLoader.loadDataToMemory(currentProgram, WasmAnalysis.getState(currentProgram).module, 5, 0, 0x1000, monitor)
 ```
 
-## Limitations
+## Limitations and Known Bugs
 
 - Currently, inlining functions (via marking them "In Line") is not supported
 and will confuse the decompiler. This is because the inlined function's
@@ -73,13 +83,6 @@ references to stack and local variables will affect the caller. I tried to solve
 this limitation by injecting code to save and restore stack and locals on
 function entry/exit, but ran into a Ghidra limitation - the decompiler does not
 inject "uponentry" Pcode into inlined functions.
-
-- Currently, there is a bug with the decompiler (tracked as
-NationalSecurityAgency/ghidra#3390) which causes it to produce bogus
-decompilation under certain circumstances. For Wasm code, this seems to be
-triggered with nested blocks that have non-empty type (i.e. blocks which leave a
-return value on the stack). Compilers seem to prefer void blocks, though, so
-this limitation does not appear to be severe in practice.
 
 - Multiple return values are untested and will probably not work.
 
