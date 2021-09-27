@@ -44,7 +44,7 @@ loaded to the table. You can manually load these segments by calling
 `WasmLoader.loadElementsToTable`. For example, to load element segment #0 to
 table #1 at offset 2 in Python:
 
-    ```python
+```python
 from wasm import WasmLoader
 from wasm.analysis import WasmAnalysis
 from ghidra.util.task import ConsoleTaskMonitor
@@ -54,7 +54,7 @@ WasmLoader.loadElementsToTable(currentProgram, WasmAnalysis.getState(currentProg
 - Similarly, data segments can be manually loaded as well. For example, to load
 data segment #5 to memory #0 at offset 0x1000, do the following in Python:
 
-    ```python
+```python
 from wasm import WasmLoader
 from wasm.analysis import WasmAnalysis
 from ghidra.util.task import ConsoleTaskMonitor
