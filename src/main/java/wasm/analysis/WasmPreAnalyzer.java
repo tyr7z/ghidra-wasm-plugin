@@ -74,6 +74,7 @@ public class WasmPreAnalyzer extends AbstractAnalyzer {
 		/*
 		 * TODO: Support reanalyzing changed functions, to handle patches and
 		 * significant function changes.
+		 * TODO: Support reanalyzing to change C stack pointer
 		 */
 		for (Function function : program.getListing().getFunctions(set, true)) {
 			if (monitor.isCancelled()) {

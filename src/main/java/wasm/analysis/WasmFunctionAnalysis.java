@@ -11,8 +11,10 @@ import ghidra.app.util.bin.BinaryReader;
 import ghidra.app.util.bin.format.dwarf4.LEB128;
 import ghidra.program.model.address.Address;
 import ghidra.program.model.lang.Register;
+import ghidra.program.model.lang.RegisterValue;
 import ghidra.program.model.listing.ContextChangeException;
 import ghidra.program.model.listing.Program;
+import ghidra.program.model.listing.ProgramContext;
 import ghidra.util.Msg;
 import wasm.format.WasmEnums.ValType;
 import wasm.format.sections.structures.WasmFuncType;
@@ -30,40 +32,77 @@ public class WasmFunctionAnalysis {
 	private List<ControlFrame> controlStack = new ArrayList<>();
 	private Map<Address, StackEffect> stackEffects = new HashMap<>();
 	private Map<Address, Long> globalGetSets = new HashMap<>();
+	private ContextRegister contextreg = new ContextRegister();
 
 	public WasmFunctionAnalysis(WasmFuncSignature func) {
 		this.func = func;
 	}
 
-	private static class ProgramContext {
-		/* These labels must be synced with WebAssembly.slaspec */
-		private static final String REG_IS_CASE = "ctx_is_case";
-		private static final String REG_IS_DEFAULT = "ctx_is_default";
-		private static final String REG_IS_RETURN = "ctx_is_return";
-		private static final String REG_IS_GLOBAL_SP = "ctx_is_global_sp";
-		private static final String REG_IS_OP64 = "ctx_is_op64";
-		private static final String REG_SP = "ctx_sp";
-		private static final String REG_BRTARGET = "ctx_br_target";
-		private static final String REG_CASE_INDEX = "ctx_case_index";
+	/*
+	 * Cache for program context changes so we can set the context register once,
+	 * instead of piece-by-piece
+	 */
+	private static class ContextRegister {
+		private static class RegisterDefinition {
+			private int start;
+			private int end;
 
-		private static void setRegister(Program program, Address address, String name, long value) {
-			if (!program.getListing().isUndefined(address, address))
-				return;
-
-			Register register = program.getRegister(name);
-
-			if (register == null) {
-				throw new RuntimeException("Failed to find register " + name);
+			public RegisterDefinition(int start, int end) {
+				this.start = start;
+				this.end = end;
 			}
 
-			try {
-				program.getProgramContext().setValue(register, address, address, BigInteger.valueOf(value));
-			} catch (ContextChangeException e) {
-				Msg.error(ProgramContext.class, "Failed to set context register", e);
+			public int getShift() {
+				return CONTEXT_REG_WIDTH - 1 - end;
+			}
+
+			public int getWidth() {
+				return end - start + 1;
 			}
 		}
 
-		public static void setIsReturn(Program program, Address address, int value) {
+		/* These definitions must be synced with WebAssembly.slaspec */
+		private static final int CONTEXT_REG_WIDTH = 128;
+		private static final RegisterDefinition REG_IS_OP64 = new RegisterDefinition(0, 0);
+		private static final RegisterDefinition REG_IS_CASE = new RegisterDefinition(1, 1);
+		private static final RegisterDefinition REG_IS_DEFAULT = new RegisterDefinition(2, 2);
+		private static final RegisterDefinition REG_IS_RETURN = new RegisterDefinition(3, 3);
+		private static final RegisterDefinition REG_IS_GLOBAL_SP = new RegisterDefinition(4, 4);
+		private static final RegisterDefinition REG_CASE_INDEX = new RegisterDefinition(32, 63);
+		private static final RegisterDefinition REG_BR_TARGET = new RegisterDefinition(64, 95);
+		private static final RegisterDefinition REG_SP = new RegisterDefinition(96, 127);
+
+		private Map<Address, BigInteger> contextValues = new HashMap<>();
+
+		private void setRegister(Program program, Address address, RegisterDefinition reg, long value) {
+			if (!contextValues.containsKey(address)) {
+				if (program.getListing().getInstructionContaining(address) != null)
+					return;
+				contextValues.put(address, BigInteger.ZERO);
+			}
+
+			if (value < 0 || value > (1L << reg.getWidth()) - 1) {
+				throw new ArithmeticException("Context register value " + value + " is out of range");
+			}
+			contextValues.put(address, contextValues.get(address).or(BigInteger.valueOf(value).shiftLeft(reg.getShift())));
+		}
+
+		public void commitContext(Program program) {
+			ProgramContext context = program.getProgramContext();
+			Register contextRegister = context.getBaseContextRegister();
+			for (Map.Entry<Address, BigInteger> entry : contextValues.entrySet()) {
+				Address address = entry.getKey();
+				RegisterValue value = new RegisterValue(contextRegister, entry.getValue());
+				try {
+					context.setRegisterValue(address, address, value);
+				} catch (ContextChangeException e) {
+					Msg.error(this, "Failed to set context register at " + address, e);
+				}
+			}
+			contextValues.clear();
+		}
+
+		public void setIsReturn(Program program, Address address, int value) {
 			setRegister(program, address, REG_IS_RETURN, value);
 		}
 
@@ -71,7 +110,7 @@ public class WasmFunctionAnalysis {
 		 * Set whether the instruction takes a 64-bit stack operand. This currently
 		 * affects local.*, global.* and select instructions.
 		 */
-		public static void setIsOp64(Program program, Address address, ValType type) {
+		public void setIsOp64(Program program, Address address, ValType type) {
 			int value;
 			if (type == null || type == ValType.i32 || type == ValType.f32) {
 				/* 32-bit operand */
@@ -84,20 +123,20 @@ public class WasmFunctionAnalysis {
 		}
 
 		/** Mark this global.* instruction as operating on the C stack pointer. */
-		public static void setIsGlobalSp(Program program, Address address, boolean value) {
+		public void setIsGlobalSp(Program program, Address address, boolean value) {
 			setRegister(program, address, REG_IS_GLOBAL_SP, value ? 1 : 0);
 		}
 
 		/** Set the address that this instruction branches to. */
-		public static void setBranchTarget(Program program, Address address, Address target) {
-			setRegister(program, address, REG_BRTARGET, target.getOffset());
+		public void setBranchTarget(Program program, Address address, Address target) {
+			setRegister(program, address, REG_BR_TARGET, target.getOffset());
 		}
 
 		/**
 		 * Set the virtual stack pointer. Our SLEIGH converts stack operations into
 		 * register operations by using the stack pointer to index a register file.
 		 */
-		public static void setStackPointer(Program program, Address address, long value) {
+		public void setStackPointer(Program program, Address address, long value) {
 			setRegister(program, address, REG_SP, value);
 		}
 
@@ -106,7 +145,7 @@ public class WasmFunctionAnalysis {
 		 * break out case statements individually in order to provide each one with a
 		 * unique branch target.
 		 */
-		public static void setBrTableCase(Program program, Address address, int index) {
+		public void setBrTableCase(Program program, Address address, int index) {
 			setRegister(program, address, REG_IS_CASE, 1);
 			if (index == -1) {
 				setRegister(program, address, REG_IS_DEFAULT, 1);
@@ -149,7 +188,7 @@ public class WasmFunctionAnalysis {
 		LOOP
 	}
 
-	private static class ControlFrame {
+	private class ControlFrame {
 		Address startAddress;
 		BlockKind blockKind;
 		BlockType blockType;
@@ -200,12 +239,12 @@ public class WasmFunctionAnalysis {
 			if (blockKind != BlockKind.IF) {
 				throw new ValidationException(address, "else without corresponding if");
 			}
-			ProgramContext.setBranchTarget(program, startAddress, address.add(1));
+			contextreg.setBranchTarget(program, startAddress, address.add(1));
 		}
 
 		public void setEnd(Program program, Address address) {
 			if (blockKind == BlockKind.IF && !hasElse) {
-				ProgramContext.setBranchTarget(program, startAddress, address);
+				contextreg.setBranchTarget(program, startAddress, address);
 			}
 
 			Address branchTarget;
@@ -215,7 +254,7 @@ public class WasmFunctionAnalysis {
 				branchTarget = address;
 			}
 			for (Address branch : branchAddresses) {
-				ProgramContext.setBranchTarget(program, branch, branchTarget);
+				contextreg.setBranchTarget(program, branch, branchTarget);
 			}
 		}
 
@@ -407,7 +446,7 @@ public class WasmFunctionAnalysis {
 	// #endregion
 
 	private void analyzeOpcode(Program program, Address instAddress, BinaryReader reader) throws IOException {
-		ProgramContext.setStackPointer(program, instAddress, 8 * valueStack.size());
+		contextreg.setStackPointer(program, instAddress, 8 * valueStack.size());
 		int opcode = reader.readNextUnsignedByte();
 		switch (opcode) {
 		case 0x00: /* unreachable */
@@ -419,20 +458,20 @@ public class WasmFunctionAnalysis {
 		case 0x02: /* block bt */ {
 			BlockType blocktype = new BlockType(program, readSignedLeb128(reader));
 			popValues(instAddress, blocktype.params);
-			pushBlock(instAddress, new ControlFrame(program, instAddress, BlockKind.BLOCK, blocktype, valueStack));
+			pushBlock(instAddress, this.new ControlFrame(program, instAddress, BlockKind.BLOCK, blocktype, valueStack));
 			break;
 		}
 		case 0x03: /* loop bt */ {
 			BlockType blocktype = new BlockType(program, readSignedLeb128(reader));
 			popValues(instAddress, blocktype.params);
-			pushBlock(instAddress, new ControlFrame(program, instAddress, BlockKind.LOOP, blocktype, valueStack));
+			pushBlock(instAddress, this.new ControlFrame(program, instAddress, BlockKind.LOOP, blocktype, valueStack));
 			break;
 		}
 		case 0x04: /* if bt */ {
 			BlockType blocktype = new BlockType(program, readSignedLeb128(reader));
 			popValue(instAddress, ValType.i32);
 			popValues(instAddress, blocktype.params);
-			pushBlock(instAddress, new ControlFrame(program, instAddress, BlockKind.IF, blocktype, valueStack));
+			pushBlock(instAddress, this.new ControlFrame(program, instAddress, BlockKind.IF, blocktype, valueStack));
 			break;
 		}
 		case 0x05: /* else */ {
@@ -442,9 +481,9 @@ public class WasmFunctionAnalysis {
 			}
 
 			/*
-			 * The else instruction itself serves as a branch to the end of the block. The
-			 * branch from the if instruction will go to the instruction after the else.
-			 */
+				* The else instruction itself serves as a branch to the end of the block. The
+				* branch from the if instruction will go to the instruction after the else.
+				*/
 			block.addBranch(program, instAddress);
 			block.setElse(program, instAddress);
 
@@ -459,7 +498,7 @@ public class WasmFunctionAnalysis {
 			pushValues(instAddress, block.blockType.returns);
 			block.setEnd(program, instAddress);
 			if (controlStack.isEmpty()) {
-				ProgramContext.setIsReturn(program, instAddress, 1);
+				contextreg.setIsReturn(program, instAddress, 1);
 			}
 			break;
 		}
@@ -481,7 +520,7 @@ public class WasmFunctionAnalysis {
 			popValue(instAddress, ValType.i32);
 			for (int i = 0; i < count + 1; i++) {
 				Address caseAddress = func.getStartAddr().add(reader.getPointerIndex());
-				ProgramContext.setBrTableCase(program, caseAddress, (i < count) ? i : -1);
+				contextreg.setBrTableCase(program, caseAddress, (i < count) ? i : -1);
 				long labelidx = readLeb128(reader);
 				branchToBlock(program, caseAddress, labelidx);
 			}
@@ -502,7 +541,7 @@ public class WasmFunctionAnalysis {
 			ValType[] returns = targetFunc.getReturns();
 			popValues(instAddress, params);
 			setStackEffect(program, instAddress, valueStack.size(), params, valueStack.size(), returns);
-			ProgramContext.setBranchTarget(program, instAddress, targetFunc.getStartAddr());
+			contextreg.setBranchTarget(program, instAddress, targetFunc.getStartAddr());
 			pushValues(instAddress, returns);
 			break;
 		}
@@ -536,7 +575,7 @@ public class WasmFunctionAnalysis {
 				throw new ValidationException(instAddress, "inconsistent types in select");
 			}
 			ValType resultType = (t1 != null) ? t1 : t2;
-			ProgramContext.setIsOp64(program, instAddress, resultType);
+			contextreg.setIsOp64(program, instAddress, resultType);
 			pushValue(instAddress, resultType);
 			break;
 		}
@@ -556,21 +595,21 @@ public class WasmFunctionAnalysis {
 		case 0x20: /* local.get x */ {
 			long localidx = readLeb128(reader);
 			ValType type = func.getLocals()[(int) localidx];
-			ProgramContext.setIsOp64(program, instAddress, type);
+			contextreg.setIsOp64(program, instAddress, type);
 			pushValue(instAddress, type);
 			break;
 		}
 		case 0x21: /* local.set x */ {
 			long localidx = readLeb128(reader);
 			ValType type = func.getLocals()[(int) localidx];
-			ProgramContext.setIsOp64(program, instAddress, type);
+			contextreg.setIsOp64(program, instAddress, type);
 			popValue(instAddress, type);
 			break;
 		}
 		case 0x22: /* local.tee x */ {
 			long localidx = readLeb128(reader);
 			ValType type = func.getLocals()[(int) localidx];
-			ProgramContext.setIsOp64(program, instAddress, type);
+			contextreg.setIsOp64(program, instAddress, type);
 			popValue(instAddress, type);
 			pushValue(instAddress, type);
 			break;
@@ -578,7 +617,7 @@ public class WasmFunctionAnalysis {
 		case 0x23: /* global.get x */ {
 			long globalidx = readLeb128(reader);
 			ValType type = WasmAnalysis.getState(program).getGlobalType((int) globalidx);
-			ProgramContext.setIsOp64(program, instAddress, type);
+			contextreg.setIsOp64(program, instAddress, type);
 			globalGetSets.put(instAddress, globalidx);
 			pushValue(instAddress, type);
 			break;
@@ -586,7 +625,7 @@ public class WasmFunctionAnalysis {
 		case 0x24: /* global.set x */ {
 			long globalidx = readLeb128(reader);
 			ValType type = WasmAnalysis.getState(program).getGlobalType((int) globalidx);
-			ProgramContext.setIsOp64(program, instAddress, type);
+			contextreg.setIsOp64(program, instAddress, type);
 			globalGetSets.put(instAddress, globalidx);
 			popValue(instAddress, type);
 			break;
@@ -889,7 +928,7 @@ public class WasmFunctionAnalysis {
 			long funcidx = readLeb128(reader);
 			WasmAnalysis analysis = WasmAnalysis.getState(program);
 			WasmFuncSignature targetFunc = analysis.getFunction((int) funcidx);
-			ProgramContext.setBranchTarget(program, instAddress, targetFunc.getStartAddr());
+			contextreg.setBranchTarget(program, instAddress, targetFunc.getStartAddr());
 			pushValue(instAddress, ValType.funcref);
 		}
 		case 0xFC: {
@@ -1002,8 +1041,9 @@ public class WasmFunctionAnalysis {
 	public void applyContext(Program program, int cStackGlobal) {
 		for (Map.Entry<Address, Long> entry : globalGetSets.entrySet()) {
 			if (entry.getValue() == cStackGlobal) {
-				ProgramContext.setIsGlobalSp(program, entry.getKey(), entry.getValue() == cStackGlobal);
+				contextreg.setIsGlobalSp(program, entry.getKey(), entry.getValue() == cStackGlobal);
 			}
 		}
+		contextreg.commitContext(program);
 	}
 }

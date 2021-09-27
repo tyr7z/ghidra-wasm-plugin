@@ -9,19 +9,6 @@ Module to load WebAssembly files into Ghidra, supporting disassembly and decompi
 
 ![Sample disassembly and decompilation](sample.png)
 
-## Internals
-
-This module uses a pre-analyzer (WasmPreAnalyzer) to analyze all functions and
-opcodes, providing contextual information to the SLEIGH disassembler to enable
-correct disassembly (for example, operand sizes when they depend on the types in
-the value stack, branch target addresses, etc). In order to support recovery of
-the C stack, this module converts Wasm stack operations into operations on a
-register file. This frees up the decompiler's stack analysis to focus on the
-behaviour of the C stack, since the decompiler only supports a single stack.
-Additionally, parameter passing and returns are handled by virtual input/output
-registers which are copied to/from the stack and locals registers via Pcode
-injection.
-
 ## Tips
 
 - Many Wasm programs, especially those compiled by Emscripten or Clang, use a
@@ -83,8 +70,30 @@ references to stack and local variables will affect the caller. I tried to solve
 this limitation by injecting code to save and restore stack and locals on
 function entry/exit, but ran into a Ghidra limitation - the decompiler does not
 inject "uponentry" Pcode into inlined functions.
-
+- Currently, there is no way to change the C stack pointer after initial analysis
+(attempting to re-analyze the program with a new C stack pointer will not change
+anything).
+- Initial analysis and disassembly can be very slow. This is primarily because
+Ghidra is quite slow at setting large numbers of context registers.
 - Multiple return values are untested and will probably not work.
+
+## Internals
+
+This module uses a pre-analyzer (WasmPreAnalyzer) to analyze all functions and
+opcodes, providing contextual information to the SLEIGH disassembler to enable
+correct disassembly (for example, operand sizes when they depend on the types in
+the value stack, branch target addresses, etc). In order to support recovery of
+the C stack, this module converts Wasm stack operations into operations on a
+register file. This frees up the decompiler's stack analysis to focus on the
+behaviour of the C stack, since the decompiler only supports a single stack.
+Additionally, parameter passing and returns are handled by virtual input/output
+registers which are copied to/from the stack and locals registers via Pcode
+injection.
+
+Four different types of "registers" are defined: input (iN), output (oN), stack
+(sN) and locals (lN). Of these, only the locals will be visible in the
+disassembly; stack registers will appear in the PCode, and input/output
+registers will appear in function types.
 
 ## Acknowledgements
 
