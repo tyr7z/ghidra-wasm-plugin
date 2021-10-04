@@ -9,8 +9,8 @@ import java.util.Map;
 import ghidra.app.util.bin.BinaryReader;
 import ghidra.util.exception.DuplicateNameException;
 import wasm.format.StructureBuilder;
-import wasm.format.sections.structures.WasmNameFunctionSubsection;
 import wasm.format.sections.structures.WasmNameLocalSubsection;
+import wasm.format.sections.structures.WasmNameMapSubsection;
 import wasm.format.sections.structures.WasmNameModuleSubsection;
 import wasm.format.sections.structures.WasmNameSubsection;
 import wasm.format.sections.structures.WasmNameSubsection.WasmNameSubsectionId;;
@@ -51,7 +51,7 @@ public class WasmNameSection extends WasmCustomSection {
 		WasmNameSubsection subsection = subsectionMap.get(WasmNameSubsectionId.NAME_FUNCTION);
 		if (subsection == null)
 			return null;
-		return ((WasmNameFunctionSubsection) subsection).getFunctionName(idx);
+		return ((WasmNameMapSubsection) subsection).getName(idx);
 	}
 
 	public String getLocalName(int funcidx, int localidx) {
@@ -59,6 +59,20 @@ public class WasmNameSection extends WasmCustomSection {
 		if (subsection == null)
 			return null;
 		return ((WasmNameLocalSubsection) subsection).getLocalName(funcidx, localidx);
+	}
+
+	public String getGlobalName(int idx) {
+		WasmNameSubsection subsection = subsectionMap.get(WasmNameSubsectionId.NAME_GLOBAL);
+		if (subsection == null)
+			return null;
+		return ((WasmNameMapSubsection) subsection).getName(idx);
+	}
+
+	public String getDataName(int idx) {
+		WasmNameSubsection subsection = subsectionMap.get(WasmNameSubsectionId.NAME_DATA);
+		if (subsection == null)
+			return null;
+		return ((WasmNameMapSubsection) subsection).getName(idx);
 	}
 
 	@Override

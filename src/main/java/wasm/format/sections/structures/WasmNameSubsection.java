@@ -15,10 +15,18 @@ public abstract class WasmNameSubsection implements StructConverter {
 	private LEB128 contentLength;
 	private long sectionOffset;
 
+	// see https://github.com/WebAssembly/extended-name-section/blob/main/proposals/extended-name-section/Overview.md
 	public enum WasmNameSubsectionId {
 		NAME_MODULE,
 		NAME_FUNCTION,
-		NAME_LOCAL
+		NAME_LOCAL,
+		NAME_LABELS,
+		NAME_TYPE, 
+		NAME_TABLE, 
+		NAME_MEMORY, 
+		NAME_GLOBAL, 
+		NAME_ELEM,
+		NAME_DATA
 	}
 
 	public static WasmNameSubsection createSubsection(BinaryReader reader) throws IOException {
@@ -37,11 +45,26 @@ public abstract class WasmNameSubsection implements StructConverter {
 		case NAME_MODULE:
 			return new WasmNameModuleSubsection(sectionReader);
 		case NAME_FUNCTION:
-			return new WasmNameFunctionSubsection(sectionReader);
+			return new WasmNameMapSubsection("function", sectionReader);
 		case NAME_LOCAL:
 			return new WasmNameLocalSubsection(sectionReader);
+		case NAME_LABELS:
+			// not supported at the moment
+			return new WasmNameUnknownSubsection(sectionReader);
+		case NAME_TYPE:
+			return new WasmNameMapSubsection("type", sectionReader);
+		case NAME_TABLE:
+			return new WasmNameMapSubsection("table", sectionReader);
+		case NAME_MEMORY:
+			return new WasmNameMapSubsection("memory", sectionReader);
+		case NAME_GLOBAL:
+			return new WasmNameMapSubsection("global", sectionReader);
+		case NAME_ELEM:
+			return new WasmNameMapSubsection("elem", sectionReader);
+		case NAME_DATA:
+			return new WasmNameMapSubsection("data", sectionReader);
 		default:
-			return null;
+			return new WasmNameUnknownSubsection(sectionReader);
 		}
 	}
 
