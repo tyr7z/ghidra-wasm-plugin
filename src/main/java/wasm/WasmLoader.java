@@ -46,8 +46,11 @@ import ghidra.program.model.mem.MemoryBlock;
 import ghidra.program.model.symbol.Namespace;
 import ghidra.program.model.symbol.RefType;
 import ghidra.program.model.symbol.SourceType;
+import ghidra.program.model.symbol.Symbol;
+import ghidra.program.model.symbol.SymbolUtilities;
 import ghidra.program.model.util.CodeUnitInsertionException;
 import ghidra.util.Msg;
+import ghidra.util.exception.InvalidInputException;
 import ghidra.util.task.TaskMonitor;
 import wasm.format.WasmConstants;
 import wasm.format.WasmEnums.WasmExternalKind;
@@ -137,6 +140,30 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 	// #endregion
 
 	// #region Naming
+	private static Symbol createLabel(Program program, Address address, String name, Namespace namespace, SourceType sourceType) throws InvalidInputException {
+		if(name == null || name.isEmpty()) {
+			name = "unnamed";
+		}
+
+		// Make spaces into non-breaking spaces to avoid invalid chars
+		name = name.replace(" ", "\u00A0");
+		// Replace any other invalid chars with _
+		name = SymbolUtilities.replaceInvalidChars(name, true);
+		// Leave room for a suffix if necessary
+		int maxLen = SymbolUtilities.MAX_SYMBOL_NAME_LENGTH - 16;
+		if(name.length() > maxLen) {
+			name = name.substring(0, maxLen);
+		}
+		String newname = name;
+		int suffix = 0;
+		while(!program.getSymbolTable().getSymbols(newname, namespace).isEmpty()) {
+			suffix++;
+			newname = name + "_" + suffix;
+		}
+
+		return program.getSymbolTable().createLabel(address, newname, namespace, sourceType);
+	}
+
 	private static Namespace getNamespace(Program program, Namespace parent, String name) {
 		try {
 			return program.getSymbolTable().getOrCreateNameSpace(parent, name, SourceType.IMPORTED);
@@ -275,7 +302,7 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 			block.setExecute(false);
 			DataType tableDataType = new ArrayDataType(elementDataType, (int) numElements, elementDataType.getLength());
 			createData(program, program.getListing(), dataStart, tableDataType);
-			program.getSymbolTable().createLabel(dataStart, "table" + tableidx, SourceType.IMPORTED);
+			createLabel(program, dataStart, "table" + tableidx, program.getGlobalNamespace(), SourceType.IMPORTED);
 		} catch (Exception e) {
 			Msg.error(WasmLoader.class, "Failed to create table block " + tableidx + " at " + dataStart, e);
 		}
@@ -348,9 +375,9 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 			Namespace functionNamespace = getFunctionNamespace(program, module, funcidx);
 
 			try {
-				program.getFunctionManager().createFunction(functionName, functionNamespace,
+				Symbol symbol = createLabel(program, startAddress, functionName, functionNamespace, SourceType.IMPORTED);
+				program.getFunctionManager().createFunction(symbol.getName(false), symbol.getParentNamespace(),
 						startAddress, new AddressSet(startAddress, startAddress.add(functionLength - 1)), SourceType.IMPORTED);
-				program.getSymbolTable().createLabel(startAddress, functionName, functionNamespace, SourceType.IMPORTED);
 			} catch (Exception e) {
 				Msg.error(this, "Failed to create function index " + funcidx + " (" + functionName + ") at " + startAddress, e);
 			}
@@ -553,7 +580,7 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 			Namespace namespace = getGlobalNamespace(program, module, globalidx);
 			String name = getGlobalName(program, module, globalidx);
 			try {
-				program.getSymbolTable().createLabel(dataStart, name, namespace, SourceType.IMPORTED);
+				createLabel(program, dataStart, name, namespace, SourceType.IMPORTED);
 			} catch (Exception e) {
 				Msg.error(this, "Failed to label global " + globalidx + " (" + name + ") at " + dataStart, e);
 			}
