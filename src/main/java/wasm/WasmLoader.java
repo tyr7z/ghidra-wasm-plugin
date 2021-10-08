@@ -59,6 +59,7 @@ import wasm.format.WasmModule;
 import wasm.format.sections.WasmNameSection;
 import wasm.format.sections.WasmSection;
 import wasm.format.sections.WasmSection.WasmSectionId;
+import wasm.format.sections.WasmUnknownCustomSection;
 import wasm.format.sections.structures.WasmDataSegment;
 import wasm.format.sections.structures.WasmElementSegment;
 import wasm.format.sections.structures.WasmExportEntry;
@@ -71,11 +72,13 @@ import wasm.format.sections.structures.WasmTableType;
 
 public class WasmLoader extends AbstractLibrarySupportLoader {
 
+	public final static String WEBASSEMBLY = "WebAssembly";
+
 	public final static long CODE_BASE = 0x80000000L;
 
 	@Override
 	public String getName() {
-		return "WebAssembly";
+		return WEBASSEMBLY;
 	}
 
 	@Override
@@ -141,7 +144,7 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 
 	// #region Naming
 	private static Symbol createLabel(Program program, Address address, String name, Namespace namespace, SourceType sourceType) throws InvalidInputException {
-		if(name == null || name.isEmpty()) {
+		if (name == null || name.isEmpty()) {
 			name = "unnamed";
 		}
 
@@ -151,12 +154,12 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 		name = SymbolUtilities.replaceInvalidChars(name, true);
 		// Leave room for a suffix if necessary
 		int maxLen = SymbolUtilities.MAX_SYMBOL_NAME_LENGTH - 16;
-		if(name.length() > maxLen) {
+		if (name.length() > maxLen) {
 			name = name.substring(0, maxLen);
 		}
 		String newname = name;
 		int suffix = 0;
-		while(!program.getSymbolTable().getSymbols(newname, namespace).isEmpty()) {
+		while (!program.getSymbolTable().getSymbols(newname, namespace).isEmpty()) {
 			suffix++;
 			newname = name + "_" + suffix;
 		}
@@ -603,6 +606,35 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 		}
 	}
 
+	private MemoryBlock createCustomSectionBlock(Program program, FileBytes fileBytes, WasmUnknownCustomSection customSection, Address address)
+			throws Exception {
+		MemoryBlock block = program.getMemory().createInitializedBlock(customSection.getCustomName(), address, fileBytes, customSection.getContentOffset(), customSection.getCustomSize(), false);
+		block.setRead(true);
+		block.setWrite(false);
+		block.setExecute(false);
+		block.setSourceName("Wasm Module");
+		return block;
+	}
+
+	private void createCustomSections(Program program, FileBytes fileBytes, WasmModule module, TaskMonitor monitor) {
+		monitor.setMessage("Creating custom sections");
+		// start right after the module block
+		Address address = AddressSpace.OTHER_SPACE.getAddress(fileBytes.getSize());
+		for (WasmSection section : module.getCustomSections()) {
+			if (!(section instanceof WasmUnknownCustomSection)) {
+				continue;
+			}
+			WasmUnknownCustomSection customSection = (WasmUnknownCustomSection) section;
+			try {
+				monitor.setMessage("Creating custom section " + section.getName());
+				MemoryBlock block = createCustomSectionBlock(program, fileBytes, customSection, address);
+				address = address.add(block.getSize());
+			} catch (Exception e) {
+				Msg.error(this, "Failed to load Wasm Custom section " + customSection.getCustomName(), e);
+			}
+		}
+	}
+
 	@Override
 	protected void load(ByteProvider provider, LoadSpec loadSpec, List<Option> options,
 			Program program, TaskMonitor monitor, MessageLog log) throws IOException {
@@ -630,6 +662,8 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 			monitor.setMessage("Creating section " + section.getName());
 			createData(program, program.getListing(), moduleBlock.getStart().add(section.getSectionOffset()), section.toDataType());
 		}
+
+		createCustomSections(program, fileBytes, module, monitor);
 
 		loadFunctions(program, fileBytes, module, monitor);
 		loadTables(program, fileBytes, module, monitor);
