@@ -13,5 +13,6 @@
     <description>Webassembly Language Module</description>
     <compiler name="default" spec="Webassembly.cspec" id="default"/>
     <compiler name="pos-stack" spec="Webassembly-pos-stack.cspec" id="pos-stack"/>
+    <external_name tool="DWARF.register.mapping.file" name="Webassembly.dwarf"/>
   </language> 
 </language_definitions>
