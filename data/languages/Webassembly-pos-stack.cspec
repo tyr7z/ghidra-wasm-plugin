@@ -15,6 +15,7 @@
   </data_organization>
   <global>
     <range space="global"/>
+    <range space="table"/>
     <range space="ram"/>
   </global>
   <stackpointer register="SP" space="ram" growth="positive"/>
