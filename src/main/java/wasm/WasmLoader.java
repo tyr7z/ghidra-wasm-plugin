@@ -143,7 +143,7 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 
 	// #region Naming
 	private static Symbol createLabel(Program program, Address address, String name, Namespace namespace, SourceType sourceType) throws InvalidInputException {
-		if(name == null || name.isEmpty()) {
+		if (name == null || name.isEmpty()) {
 			name = "unnamed";
 		}
 
@@ -153,12 +153,12 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 		name = SymbolUtilities.replaceInvalidChars(name, true);
 		// Leave room for a suffix if necessary
 		int maxLen = SymbolUtilities.MAX_SYMBOL_NAME_LENGTH - 16;
-		if(name.length() > maxLen) {
+		if (name.length() > maxLen) {
 			name = name.substring(0, maxLen);
 		}
 		String newname = name;
 		int suffix = 0;
-		while(!program.getSymbolTable().getSymbols(newname, namespace).isEmpty()) {
+		while (!program.getSymbolTable().getSymbols(newname, namespace).isEmpty()) {
 			suffix++;
 			newname = name + "_" + suffix;
 		}

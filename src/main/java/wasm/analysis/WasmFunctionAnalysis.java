@@ -481,9 +481,9 @@ public class WasmFunctionAnalysis {
 			}
 
 			/*
-				* The else instruction itself serves as a branch to the end of the block. The
-				* branch from the if instruction will go to the instruction after the else.
-				*/
+			 * The else instruction itself serves as a branch to the end of the block. The
+			 * branch from the if instruction will go to the instruction after the else.
+			 */
 			block.addBranch(program, instAddress);
 			block.setElse(program, instAddress);
 
