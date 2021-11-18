@@ -64,13 +64,18 @@ public class WasmFunctionAnalysis {
 		/* These definitions must be synced with WebAssembly.slaspec */
 		private static final int CONTEXT_REG_WIDTH = 128;
 		private static final RegisterDefinition REG_IS_OP64 = new RegisterDefinition(0, 0);
-		private static final RegisterDefinition REG_IS_CASE = new RegisterDefinition(1, 1);
-		private static final RegisterDefinition REG_IS_DEFAULT = new RegisterDefinition(2, 2);
-		private static final RegisterDefinition REG_IS_RETURN = new RegisterDefinition(3, 3);
-		private static final RegisterDefinition REG_IS_GLOBAL_SP = new RegisterDefinition(4, 4);
+		private static final RegisterDefinition REG_IS_DIRECTIVE = new RegisterDefinition(1, 1);
+		private static final RegisterDefinition REG_IS_RETURN = new RegisterDefinition(2, 2);
+		private static final RegisterDefinition REG_IS_GLOBAL_SP = new RegisterDefinition(3, 3);
+		private static final RegisterDefinition REG_DIRECTIVE_TYPE = new RegisterDefinition(4, 6);
 		private static final RegisterDefinition REG_CASE_INDEX = new RegisterDefinition(32, 63);
 		private static final RegisterDefinition REG_BR_TARGET = new RegisterDefinition(64, 95);
 		private static final RegisterDefinition REG_SP = new RegisterDefinition(96, 127);
+
+		private static final int DIRECTIVE_CASE = 0;
+		private static final int DIRECTIVE_DEFAULT = 1;
+		private static final int DIRECTIVE_LOCALS = 2;
+		private static final int DIRECTIVE_LOCAL = 3;
 
 		private Map<Address, BigInteger> contextValues = new HashMap<>();
 
@@ -140,16 +145,29 @@ public class WasmFunctionAnalysis {
 			setRegister(program, address, REG_SP, value);
 		}
 
+		/* Number of locals table entries */
+		public void setLocalsDeclaration(Program program, Address address) {
+			setRegister(program, address, REG_IS_DIRECTIVE, 1);
+			setRegister(program, address, REG_DIRECTIVE_TYPE, DIRECTIVE_LOCALS);
+		}
+
+		/* One entry in the function locals table */
+		public void setLocalDeclaration(Program program, Address address) {
+			setRegister(program, address, REG_IS_DIRECTIVE, 1);
+			setRegister(program, address, REG_DIRECTIVE_TYPE, DIRECTIVE_LOCAL);
+		}
+
 		/**
 		 * Disassemble this "instruction" as a case statement underneath a br_table. We
 		 * break out case statements individually in order to provide each one with a
 		 * unique branch target.
 		 */
 		public void setBrTableCase(Program program, Address address, int index) {
-			setRegister(program, address, REG_IS_CASE, 1);
+			setRegister(program, address, REG_IS_DIRECTIVE, 1);
 			if (index == -1) {
-				setRegister(program, address, REG_IS_DEFAULT, 1);
+				setRegister(program, address, REG_DIRECTIVE_TYPE, DIRECTIVE_DEFAULT);
 			} else {
+				setRegister(program, address, REG_DIRECTIVE_TYPE, DIRECTIVE_CASE);
 				setRegister(program, address, REG_CASE_INDEX, index);
 			}
 		}
@@ -1032,9 +1050,23 @@ public class WasmFunctionAnalysis {
 		Address startAddress = func.getStartAddr();
 		long functionLength = func.getEndAddr().subtract(func.getStartAddr());
 
-		pushBlock(startAddress, new ControlFrame(program, startAddress, new BlockType(program, func)));
+		// read the function locals
+		Address instAddress;
+
+		instAddress = startAddress.add(reader.getPointerIndex());
+		contextreg.setLocalsDeclaration(program, instAddress);
+		long count = readLeb128(reader);
+		for (int i = 0; i < count; i++) {
+			instAddress = startAddress.add(reader.getPointerIndex());
+			contextreg.setLocalDeclaration(program, instAddress);
+			readLeb128(reader); /* count */
+			readLeb128(reader); /* type */
+		}
+
+		instAddress = startAddress.add(reader.getPointerIndex());
+		pushBlock(instAddress, new ControlFrame(program, instAddress, new BlockType(program, func)));
 		while (reader.getPointerIndex() <= functionLength) {
-			Address instAddress = startAddress.add(reader.getPointerIndex());
+			instAddress = startAddress.add(reader.getPointerIndex());
 			analyzeOpcode(program, instAddress, reader);
 		}
 	}

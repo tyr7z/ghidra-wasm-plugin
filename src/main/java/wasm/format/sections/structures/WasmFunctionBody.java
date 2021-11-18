@@ -18,22 +18,26 @@ public class WasmFunctionBody implements StructConverter {
 	private LEB128 bodySize;
 	private List<WasmLocalEntry> locals = new ArrayList<WasmLocalEntry>();
 	private LEB128 localCount;
-	private long instructionsOffset;
+	private long codeOffset;
 	private byte[] instructions;
 
 	public WasmFunctionBody(BinaryReader reader) throws IOException {
 		bodySize = LEB128.readUnsignedValue(reader);
-		int bodyStartOffset = (int) reader.getPointerIndex();
+		codeOffset = reader.getPointerIndex();
 		localCount = LEB128.readUnsignedValue(reader);
 		for (int i = 0; i < localCount.asLong(); ++i) {
 			locals.add(new WasmLocalEntry(reader));
 		}
-		instructionsOffset = reader.getPointerIndex();
-		instructions = reader.readNextByteArray((int) (bodyStartOffset + bodySize.asLong() - instructionsOffset));
+		int instructionOffset = (int) reader.getPointerIndex();
+		instructions = reader.readNextByteArray((int) (codeOffset + bodySize.asLong() - instructionOffset));
+	}
+
+	public long getBodySize() {
+		return bodySize.asLong();
 	}
 
 	public long getOffset() {
-		return instructionsOffset;
+		return codeOffset;
 	}
 
 	public byte[] getInstructions() {
@@ -56,7 +60,7 @@ public class WasmFunctionBody implements StructConverter {
 
 	@Override
 	public DataType toDataType() throws DuplicateNameException, IOException {
-		StructureBuilder builder = new StructureBuilder("function_body_" + instructionsOffset);
+		StructureBuilder builder = new StructureBuilder("function_body_" + codeOffset);
 		builder.add(bodySize, "body_size");
 		builder.add(localCount, "local_count");
 		for (int i = 0; i < localCount.asLong(); i++) {

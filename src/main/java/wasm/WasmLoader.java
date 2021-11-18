@@ -111,7 +111,7 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 			return imports.get(funcidx).getEntrySize();
 		} else {
 			WasmFunctionBody functionBody = module.getNonImportedFunctionBodies().get(funcidx - imports.size());
-			return functionBody.getInstructions().length;
+			return functionBody.getBodySize();
 		}
 	}
 
