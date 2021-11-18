@@ -29,7 +29,7 @@ import wasm.format.sections.structures.WasmDataSegment;
 import wasm.format.sections.structures.WasmElementSegment;
 import wasm.format.sections.structures.WasmExportEntry;
 import wasm.format.sections.structures.WasmFuncType;
-import wasm.format.sections.structures.WasmFunctionBody;
+import wasm.format.sections.structures.WasmCodeEntry;
 import wasm.format.sections.structures.WasmGlobalEntry;
 import wasm.format.sections.structures.WasmGlobalType;
 import wasm.format.sections.structures.WasmImportEntry;
@@ -188,7 +188,7 @@ public class WasmModule {
 		return elementSection.getSegments();
 	}
 
-	public List<WasmFunctionBody> getNonImportedFunctionBodies() {
+	public List<WasmCodeEntry> getNonImportedFunctions() {
 		WasmCodeSection codeSection = getCodeSection();
 		if (codeSection == null) {
 			return Collections.emptyList();
@@ -228,7 +228,7 @@ public class WasmModule {
 		if (funcidx < imports.size()) {
 			return null;
 		}
-		return getNonImportedFunctionBodies().get(funcidx - imports.size()).getLocals();
+		return getNonImportedFunctions().get(funcidx - imports.size()).getLocals();
 	}
 
 	public WasmGlobalType getGlobalType(int globalidx) {

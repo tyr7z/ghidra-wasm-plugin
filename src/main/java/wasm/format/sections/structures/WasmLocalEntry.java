@@ -29,7 +29,7 @@ public class WasmLocalEntry implements StructConverter {
 
 	@Override
 	public DataType toDataType() throws DuplicateNameException, IOException {
-		StructureBuilder builder = new StructureBuilder("function_body");
+		StructureBuilder builder = new StructureBuilder("locals_" + count.asLong() + "_" + type);
 		builder.add(count, "count");
 		builder.add(BYTE, "type");
 		return builder.toStructure();

@@ -9,22 +9,22 @@ import ghidra.app.util.bin.BinaryReader;
 import ghidra.app.util.bin.format.dwarf4.LEB128;
 import ghidra.util.exception.DuplicateNameException;
 import wasm.format.StructureBuilder;
-import wasm.format.sections.structures.WasmFunctionBody;
+import wasm.format.sections.structures.WasmCodeEntry;
 
 public class WasmCodeSection extends WasmSection {
 
 	private LEB128 count;
-	private List<WasmFunctionBody> functions = new ArrayList<WasmFunctionBody>();
+	private List<WasmCodeEntry> functions = new ArrayList<WasmCodeEntry>();
 
 	public WasmCodeSection(BinaryReader reader) throws IOException {
 		super(reader);
 		count = LEB128.readUnsignedValue(reader);
 		for (int i = 0; i < count.asLong(); ++i) {
-			functions.add(new WasmFunctionBody(reader));
+			functions.add(new WasmCodeEntry(reader));
 		}
 	}
 
-	public List<WasmFunctionBody> getFunctions() {
+	public List<WasmCodeEntry> getFunctions() {
 		return Collections.unmodifiableList(functions);
 	}
 

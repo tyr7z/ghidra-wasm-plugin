@@ -64,7 +64,7 @@ import wasm.format.sections.WasmSection.WasmSectionId;
 import wasm.format.sections.structures.WasmDataSegment;
 import wasm.format.sections.structures.WasmElementSegment;
 import wasm.format.sections.structures.WasmExportEntry;
-import wasm.format.sections.structures.WasmFunctionBody;
+import wasm.format.sections.structures.WasmCodeEntry;
 import wasm.format.sections.structures.WasmGlobalEntry;
 import wasm.format.sections.structures.WasmGlobalType;
 import wasm.format.sections.structures.WasmImportEntry;
@@ -100,8 +100,8 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 		if (funcidx < imports.size()) {
 			return CODE_BASE + imports.get(funcidx).getEntryOffset();
 		} else {
-			WasmFunctionBody functionBody = module.getNonImportedFunctionBodies().get(funcidx - imports.size());
-			return CODE_BASE + functionBody.getOffset();
+			WasmCodeEntry codeEntry = module.getNonImportedFunctions().get(funcidx - imports.size());
+			return CODE_BASE + codeEntry.getOffset();
 		}
 	}
 
@@ -110,8 +110,8 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 		if (funcidx < imports.size()) {
 			return imports.get(funcidx).getEntrySize();
 		} else {
-			WasmFunctionBody functionBody = module.getNonImportedFunctionBodies().get(funcidx - imports.size());
-			return functionBody.getBodySize();
+			WasmCodeEntry codeEntry = module.getNonImportedFunctions().get(funcidx - imports.size());
+			return codeEntry.getCodeSize();
 		}
 	}
 
@@ -282,7 +282,7 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 		}
 	}
 
-	private static void createFunctionBodyBlock(Program program, FileBytes fileBytes, long fileOffset, Address startAddress, long length) {
+	private static void createFunctionCodeBlock(Program program, FileBytes fileBytes, long fileOffset, Address startAddress, long length) {
 		try {
 			MemoryBlock block = program.getMemory().createInitializedBlock(".function", startAddress, fileBytes, fileOffset, length, false);
 			block.setRead(true);
@@ -367,8 +367,8 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 	private void loadFunctions(Program program, FileBytes fileBytes, WasmModule module, TaskMonitor monitor) {
 		monitor.setMessage("Loading functions");
 		List<WasmImportEntry> imports = module.getImports(WasmExternalKind.EXT_FUNCTION);
-		List<WasmFunctionBody> functionBodies = module.getNonImportedFunctionBodies();
-		int numFunctions = imports.size() + functionBodies.size();
+		List<WasmCodeEntry> codeEntries = module.getNonImportedFunctions();
+		int numFunctions = imports.size() + codeEntries.size();
 
 		/*
 		 * Create two memory blocks to hold the imported and non-imported functions.
@@ -382,7 +382,7 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 		WasmSection codeSection = module.getSection(WasmSectionId.SEC_CODE);
 		if (codeSection != null) {
 			long codeOffset = codeSection.getSectionOffset();
-			createFunctionBodyBlock(program, fileBytes, codeOffset, getCodeAddress(program, codeOffset), codeSection.getSectionSize());
+			createFunctionCodeBlock(program, fileBytes, codeOffset, getCodeAddress(program, codeOffset), codeSection.getSectionSize());
 		}
 
 		monitor.initialize(numFunctions);

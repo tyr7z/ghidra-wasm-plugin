@@ -13,27 +13,27 @@ import ghidra.util.exception.DuplicateNameException;
 import wasm.format.StructureBuilder;
 import wasm.format.WasmEnums.ValType;
 
-public class WasmFunctionBody implements StructConverter {
+public class WasmCodeEntry implements StructConverter {
 
-	private LEB128 bodySize;
+	private LEB128 codeSize;
 	private List<WasmLocalEntry> locals = new ArrayList<WasmLocalEntry>();
 	private LEB128 localCount;
 	private long codeOffset;
 	private byte[] instructions;
 
-	public WasmFunctionBody(BinaryReader reader) throws IOException {
-		bodySize = LEB128.readUnsignedValue(reader);
+	public WasmCodeEntry(BinaryReader reader) throws IOException {
+		codeSize = LEB128.readUnsignedValue(reader);
 		codeOffset = reader.getPointerIndex();
 		localCount = LEB128.readUnsignedValue(reader);
 		for (int i = 0; i < localCount.asLong(); ++i) {
 			locals.add(new WasmLocalEntry(reader));
 		}
 		int instructionOffset = (int) reader.getPointerIndex();
-		instructions = reader.readNextByteArray((int) (codeOffset + bodySize.asLong() - instructionOffset));
+		instructions = reader.readNextByteArray((int) (codeOffset + codeSize.asLong() - instructionOffset));
 	}
 
-	public long getBodySize() {
-		return bodySize.asLong();
+	public long getCodeSize() {
+		return codeSize.asLong();
 	}
 
 	public long getOffset() {
@@ -60,11 +60,11 @@ public class WasmFunctionBody implements StructConverter {
 
 	@Override
 	public DataType toDataType() throws DuplicateNameException, IOException {
-		StructureBuilder builder = new StructureBuilder("function_body_" + codeOffset);
-		builder.add(bodySize, "body_size");
+		StructureBuilder builder = new StructureBuilder("code_" + codeOffset);
+		builder.add(codeSize, "code_size");
 		builder.add(localCount, "local_count");
 		for (int i = 0; i < localCount.asLong(); i++) {
-			builder.add(locals.get(i).toDataType(), "compressed_locals_" + i);
+			builder.add(locals.get(i).toDataType(), "local_" + i);
 		}
 		builder.addArray(BYTE, instructions.length, "instructions");
 		return builder.toStructure();

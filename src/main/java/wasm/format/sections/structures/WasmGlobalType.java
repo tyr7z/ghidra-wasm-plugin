@@ -29,7 +29,7 @@ public class WasmGlobalType implements StructConverter {
 
 	@Override
 	public DataType toDataType() throws DuplicateNameException, IOException {
-		StructureBuilder builder = new StructureBuilder("global");
+		StructureBuilder builder = new StructureBuilder("global_type");
 		builder.add(BYTE, "type");
 		builder.add(BYTE, "mutability");
 		return builder.toStructure();
