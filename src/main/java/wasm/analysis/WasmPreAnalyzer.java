@@ -65,6 +65,11 @@ public class WasmPreAnalyzer extends AbstractAnalyzer {
 
 	private int guessCStackGlobalForFunction(Program program, Address funcAddress) throws IOException {
 		BinaryReader codeReader = new BinaryReader(new MemoryByteProvider(program.getMemory(), funcAddress), true);
+		int localsCount = LEB128.readAsInt32(codeReader);
+		for (int i = 0; i < localsCount; i++) {
+			LEB128.readAsInt32(codeReader); /* count */
+			LEB128.readAsInt32(codeReader); /* type */
+		}
 
 		/*
 		 * Look for a global.get at the start of the function, and assume that it loads
