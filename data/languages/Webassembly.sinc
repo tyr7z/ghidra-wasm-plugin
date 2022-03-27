@@ -251,7 +251,7 @@ macro doBranch(br_target) {
 	res:4 = zext(sp1_64 == 0);
 	sp1_32 = res;
 }
-:ref.func funcidx is opc=0xd2; funcidx; br_target; sp0_64; ctx_is_case=0 {
+:ref.func br_target is opc=0xd2; funcidx; br_target; sp0_64; ctx_is_case=0 {
 	sp0_64 = &br_target;
 }
 

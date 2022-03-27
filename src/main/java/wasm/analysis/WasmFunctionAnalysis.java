@@ -930,6 +930,7 @@ public class WasmFunctionAnalysis {
 			WasmFuncSignature targetFunc = analysis.getFunction((int) funcidx);
 			contextreg.setBranchTarget(program, instAddress, targetFunc.getStartAddr());
 			pushValue(instAddress, ValType.funcref);
+			break;
 		}
 		case 0xFC: {
 			int opcode2 = reader.readNextUnsignedByte();
@@ -1016,13 +1017,13 @@ public class WasmFunctionAnalysis {
 				break;
 			}
 			default:
-				Msg.warn(this, "Illegal opcode: 0xfc " + String.format("0x%02x", opcode2));
+				Msg.warn(this, "Illegal opcode 0xfc " + String.format("0x%02x", opcode2) + " at " + instAddress);
 				break;
 			}
 			break;
 		}
 		default:
-			Msg.warn(this, "Illegal opcode: " + String.format("0x%02x", opcode));
+			Msg.warn(this, "Illegal opcode " + String.format("0x%02x", opcode) + " at " + instAddress);
 			break;
 		}
 	}
