@@ -1,4 +1,4 @@
-# sleigh include file for Skeleton language instructions
+# sleigh include file for WebAssembly language instructions
 
 define token opbyte (8)
 	opc = (0, 7)

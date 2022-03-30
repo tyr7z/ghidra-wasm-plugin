@@ -51,7 +51,7 @@ public class WasmSignatureAnalyzer extends AbstractAnalyzer {
 
 	@Override
 	public boolean canAnalyze(Program program) {
-		return program.getLanguage().getProcessor().equals(Processor.findOrPossiblyCreateProcessor("Webassembly"));
+		return program.getLanguage().getProcessor().equals(Processor.findOrPossiblyCreateProcessor("WebAssembly"));
 	}
 
 	private static boolean paramsMatch(List<Parameter> newParams, Parameter[] existingParams) {

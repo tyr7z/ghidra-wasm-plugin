@@ -1,7 +1,4 @@
-# sleigh specification file for Skeleton Processor
-#   >> see docs/languages/sleigh.htm or sleigh.pdf for Sleigh syntax
-# Other language modules (see Ghidra/Processors) may provide better examples
-# when creating a new language module.
+# sleigh specification file for WebAssembly Processor
 
 define endian=little;
 define alignment=1;
@@ -1275,5 +1272,5 @@ define context contextreg
 @define DIRECTIVE_LOCALS 2
 @define DIRECTIVE_LOCAL 3
 
-# Include contents of Webassembly.sinc file
-@include "Webassembly.sinc"
+# Include contents of WebAssembly.sinc file
+@include "WebAssembly.sinc"
