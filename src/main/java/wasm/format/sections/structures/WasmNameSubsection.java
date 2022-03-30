@@ -36,10 +36,10 @@ public abstract class WasmNameSubsection implements StructConverter {
 		NAME_FUNCTION,
 		NAME_LOCAL,
 		NAME_LABELS,
-		NAME_TYPE, 
-		NAME_TABLE, 
-		NAME_MEMORY, 
-		NAME_GLOBAL, 
+		NAME_TYPE,
+		NAME_TABLE,
+		NAME_MEMORY,
+		NAME_GLOBAL,
 		NAME_ELEM,
 		NAME_DATA
 	}

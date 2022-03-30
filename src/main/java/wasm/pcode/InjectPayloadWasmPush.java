@@ -26,9 +26,9 @@ import wasm.analysis.WasmFunctionAnalysis.StackEffect;
 import wasm.format.WasmEnums.ValType;
 
 /**
- * Handle variable-length pushes from the stack to registers.
- * We use this to handle branches (pushing block arguments from temporary registers)
- * and function calls (pushing function return values from output registers).
+ * Handle variable-length pushes from the stack to registers. We use this to
+ * handle branches (pushing block arguments from temporary registers) and
+ * function calls (pushing function return values from output registers).
  */
 public class InjectPayloadWasmPush extends InjectPayloadCallother {
 

@@ -288,7 +288,7 @@ macro select64(sp1_32, sp2_64, sp3_64) {
 	select64(sp1_32, sp2_64, sp3_64);
 }
 
-# In the current version of WASM, only one type index is permitted in select t*.
+# In the current version of Wasm, only one type index is permitted in select t*.
 # This is functionally identical to regular select.
 :select is opc=0x1c; opc2=0x01; valtype; sp1_32; sp2_64; sp3_64; ctx_is_directive=0 {
 	# i64, f64, funcref, externref

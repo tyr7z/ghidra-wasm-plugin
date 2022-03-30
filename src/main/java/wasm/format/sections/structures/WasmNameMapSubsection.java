@@ -31,7 +31,7 @@ public class WasmNameMapSubsection extends WasmNameSubsection {
 	public WasmNameMapSubsection(String entityName, BinaryReader reader) throws IOException {
 		super(reader);
 		this.entityName = entityName;
-		nameMap = new WasmNameMap(entityName + "_namemap",reader);
+		nameMap = new WasmNameMap(entityName + "_namemap", reader);
 	}
 
 	public String getName(long idx) {
