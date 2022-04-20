@@ -33,7 +33,7 @@ tablespace = currentProgram.addressFactory.getAddressSpace("table")
 # We insert every dynCall index into a special namespace so that function pointers
 # can be easily resolved.
 # The format is dynCall::func_{calltype}_{index}.
-dynCallNamespace = currentProgram.symbolTable.getOrCreateNameSpace(None, "dynCall", SourceType.USER_DEFINED)
+dynCallNamespace = currentProgram.symbolTable.getOrCreateNameSpace(currentProgram.globalNamespace, "dynCall", SourceType.USER_DEFINED)
 dynCalls = {}
 
 def getConst(inst):
@@ -88,16 +88,22 @@ def analyzeDyncall(function, calltype=None):
 def renameDyncalls(calltype):
     offset, mask = dynCalls.get(calltype, (0, 0))
     nullFunc = getTableFunction(offset)
-    nullFunc.setName("nullFuncPtr_" + calltype, SourceType.USER_DEFINED)
+    if nullFunc:
+        nullFunc.setName("nullFuncPtr_" + calltype, SourceType.USER_DEFINED)
+    else:
+        print("Warning: table index %d is invalid - has the table been loaded?" % offset)
     monitor.setMessage("Renaming " + calltype + " functions")
     monitor.initialize(mask)
     for i in range(mask+1):
         monitor.setProgress(i)
         func = getTableFunction(offset + i)
-        name = "func_" + calltype + "_%d" % i
-        if func.name.startswith("unnamed_function_"):
-            func.setName(name, SourceType.ANALYSIS)
-        currentProgram.symbolTable.createLabel(func.entryPoint, name, dynCallNamespace, SourceType.USER_DEFINED)
+        if func:
+            name = "func_" + calltype + "_%d" % i
+            if func.name.startswith("unnamed_function_"):
+                func.setName(name, SourceType.ANALYSIS)
+            currentProgram.symbolTable.createLabel(func.entryPoint, name, dynCallNamespace, SourceType.USER_DEFINED)
+        else:
+            print("Warning: table index %d is invalid - has the table been loaded?" % (offset + i))
 
 for function in currentProgram.functionManager.getFunctions(True):
     if function.parentNamespace.name == "export" and function.name.startswith("dynCall_"):
