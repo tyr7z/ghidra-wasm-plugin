@@ -344,7 +344,7 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 		for (int i = 0; i < codeEntries.size(); i++) {
 			WasmCodeEntry entry = codeEntries.get(i);
 			StructureBuilder builder = new StructureBuilder("code_" + (i + imports.size()));
-			builder.add(entry.getCodeSizeLeb128(), "code_size");
+			builder.addUnsignedLeb128(entry.getCodeSizeLeb128(), "code_size");
 			long offset = entry.getOffset() - entry.getCodeSizeLeb128().getLength();
 			createData(program, program.getListing(), moduleBlock.getStart().add(offset), builder.toStructure());
 		}
@@ -435,12 +435,12 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 
 	/**
 	 * Copy element segment to table.
-	 *
+	 * 
 	 * This is public so that it can be called after loading, e.g. to load a passive
 	 * element segment once the dynamic table index and offset are known.
 	 *
 	 * For example, this could be called from a script as follows:
-	 *
+	 * 
 	 * WasmLoader.loadElementsToTable(getCurrentProgram(),
 	 * WasmAnalysis.getState(getCurrentProgram()).getModule(), elemidx, tableidx,
 	 * offset, new ConsoleTaskMonitor())
@@ -520,12 +520,12 @@ public class WasmLoader extends AbstractLibrarySupportLoader {
 
 	/**
 	 * Copy data segment to memory.
-	 *
+	 * 
 	 * This is public so that it can be called after loading, e.g. to load a passive
 	 * data segment once the dynamic memory index and offset are known.
 	 *
 	 * For example, this could be called from a script as follows:
-	 *
+	 * 
 	 * WasmLoader.loadDataToMemory(getCurrentProgram(),
 	 * WasmAnalysis.getState(getCurrentProgram()).getModule(), dataidx, memidx,
 	 * offset, new ConsoleTaskMonitor())
