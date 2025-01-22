@@ -20,6 +20,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import ghidra.app.plugin.core.analysis.AutoAnalysisManager;
 import ghidra.app.services.AbstractAnalyzer;
 import ghidra.app.services.AnalysisPriority;
 import ghidra.app.services.AnalyzerType;
@@ -185,6 +186,8 @@ public class WasmPreAnalyzer extends AbstractAnalyzer {
 					funcAnalysis.getSignature().getStartAddr(),
 					funcAnalysis.getSignature().getEndAddr());
 				disassembler.disassemble(funcSet, funcSet, false);
+
+				AutoAnalysisManager.getAnalysisManager(program).codeDefined(funcSet);
 			} catch (Exception e) {
 				Msg.error(this, "Failed to analyze function " + function.getName() + " @ " + function.getEntryPoint(), e);
 			}
